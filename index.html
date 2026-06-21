@@ -1499,7 +1499,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     { id:'finance',        icon:iconFinance(),   label:'Finance'           },
     { id:'requests',       icon:iconRequests(),  label:'Demandes'          },
     { id:'history',        icon:iconHistory(),   label:'Historique'        },
-    { id:'ai-automation',  icon:iconAI(),        label:'Assistant IA' },
+    { id:'ai-automation',  icon:iconAI(),        label:'Rubis' },
     { id:'ai-visual',      icon:iconEye(),       label:'Sites liés' },
     { id:'profile',        icon:iconProfile(),   label:'Profil'            }
   ];
@@ -1622,11 +1622,9 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       { id:'documents', icon:iconDocs(),    label:'Documents' },
       { id:'profile',   icon:iconProfile(), label:'Profil'    }
     ];
-    // Discussion (assistant IA fusionné) — disponible pour tout client dont le projet a un site lié
-    const _discProject = getUserProject(me.id);
-    if(_discProject && _discProject.siteHtml){
-      base.splice(1,0,{ id:'discussion', icon:iconChat(), label:'Discussion' });
-    }
+    // Discussion (assistant IA fusionné) — disponible pour tous les clients,
+    // qu'un site soit lié à leur projet ou non (contenu adapté dans la vue elle-même).
+    base.splice(1,0,{ id:'discussion', icon:iconChat(), label:'Discussion' });
     return base;
   }
   function markAIRequestsSeen(){
@@ -5444,10 +5442,11 @@ DOCUMENTS
     }).filter(x=>x.client&&x.proj&&x.count>=3);
 
     return `<div class="fade-up">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
-        <h1 style="font-size:1.4rem;font-weight:700;">Assistant IA</h1>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:12px;">
+        <h1 style="font-size:1.4rem;font-weight:700;">Rubis</h1>
         ${weekReqs.length>0?`<button id="btn-weekly-report" class="btn btn-ghost btn-sm">📊 Résumé IA — 7 derniers jours (${weekReqs.length} Q&A)</button>`:''}
       </div>
+      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:24px;">Posez vos questions sur les projets en cours, les sites liés et les finances.</p>
 
       ${frustrated.length>0?`
       <div class="glass-card" style="padding:16px;margin-bottom:20px;border-color:rgba(240,138,138,.25);">
@@ -5871,11 +5870,11 @@ DOCUMENTS
 
   function renderClientDiscussionQA(){
     const proj = getUserProject(me.id);
-    if(!proj || !proj.siteHtml){
+    if(!proj){
       return `<div class="fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;padding:48px 24px;text-align:center;">
-        <div style="font-size:2.5rem;margin-bottom:16px;opacity:.6;">🌐</div>
-        <div style="font-size:.95rem;font-weight:600;color:var(--ink-2);margin-bottom:8px;">Fichier site non encore lié</div>
-        <div style="font-size:.82rem;color:var(--ink-4);line-height:1.6;max-width:280px;">Votre équipe associera bientôt le fichier de votre site. L'assistant sera disponible dès que c'est fait.</div>
+        <div style="font-size:2.5rem;margin-bottom:16px;opacity:.6;">📁</div>
+        <div style="font-size:.95rem;font-weight:600;color:var(--ink-2);margin-bottom:8px;">Aucun projet associé</div>
+        <div style="font-size:.82rem;color:var(--ink-4);line-height:1.6;max-width:280px;">L'assistant sera disponible dès que votre équipe aura créé votre projet.</div>
       </div>`;
     }
     const qaReqs = (db.aiRequests||[])
@@ -6011,7 +6010,7 @@ DOCUMENTS
     const ctxBlock = ctx.length ? `\n\nContexte du projet :\n${ctx.join('\n')}` : '';
     const siteBlock = siteText
       ? `\n\nExtrait textuel du site :\n"""\n${siteText}\n"""`
-      : '\n\n(Aucun fichier site lié — mode test.)';
+      : '\n\n(Aucun fichier site n\'est encore lié à ce projet — tu ne peux donc pas répondre à des questions sur le contenu du site, mais tu peux répondre sur l\'avancement, les délais et les documents du projet.)';
     // #10 — Bonnes pratiques selon le type de projet (tags)
     const sectorTips = project?.tags?.length ? (() => {
       const tips = [];
@@ -6797,18 +6796,23 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
     const now = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const projs   = (db.projects||[]).filter(p=>!p.archived);
     const clients = (db.users||[]).filter(u=>u.role==='client');
+    const sitesLinked = projs.filter(p=>p.siteHtml).length;
     const projLines = projs.map(p=>{
       const cl=db.users.find(u=>u.id===p.clientId);
       const done=(p.timeline||[]).filter(s=>s.status==='done').length;
       const tot=(p.timeline||[]).length;
-      return '- '+p.name+' ['+p.status+'] client:'+(cl?cl.username:'aucun')+' avancement:'+(tot>0?Math.round(done/tot*100):0)+'%'+(p.dueDate?' échéance:'+p.dueDate:'');
+      return '- '+p.name+' ['+p.status+'] client:'+(cl?cl.username:'aucun')+' avancement:'+(tot>0?Math.round(done/tot*100):0)+'%'+(p.dueDate?' échéance:'+p.dueDate:'')+(p.siteHtml?' (site lié)':'');
     }).join('\n');
     const clientLines = clients.map(u=>'- '+u.username+' ('+((u.firstName||'')+' '+(u.lastName||'')).trim()+') email:'+(u.email||'?')).join('\n');
     return 'Tu es Rubis, assistant IA de l\'équipe Flow (admin/contrôleur).\n'
       + 'Date : '+now+'.\n'
-      + 'PROJETS ('+projs.length+') :\n'+projLines+'\n'
+      + 'PROJETS ('+projs.length+', dont '+sitesLinked+' avec site lié) :\n'+projLines+'\n'
       + 'CLIENTS ('+clients.length+') :\n'+clientLines+'\n'
-      + 'Utilise tes outils pour plus de détails. Sois concis, précis, élégant.';
+      + 'Tu as accès à des outils pour : le détail d\'un projet précis (flow_projet_detail), '
+      + 'la recherche dans le contenu de tous les sites liés (flow_site_chercher), '
+      + 'et les données financières détaillées (flow_finance — total, par projet, par mois, objectifs). '
+      + 'Utilise ces outils dès qu\'une question porte sur un projet précis, un site, ou les finances — ne réponds jamais de mémoire sur ces sujets sans les interroger. '
+      + 'Sois concis, précis, élégant.';
   }
 
   const RUBIS_TOOLS_WEB = [
@@ -6854,6 +6858,15 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
     {type:'function',function:{name:'flow_chercher',
       description:'Recherche un projet ou client par nom dans Flow.',
       parameters:{type:'object',properties:{terme:{type:'string'}},required:['terme']}}},
+    {type:'function',function:{name:'flow_projet_detail',
+      description:'Détail complet d\'un projet précis : description, timeline, documents, échéance, et extrait du site lié si disponible.',
+      parameters:{type:'object',properties:{nom_projet:{type:'string'}},required:['nom_projet']}}},
+    {type:'function',function:{name:'flow_site_chercher',
+      description:'Recherche un terme dans le contenu textuel de tous les sites liés aux projets clients (ex: vérifier si un mot, une info ou une section existe sur un site).',
+      parameters:{type:'object',properties:{terme:{type:'string'}},required:['terme']}}},
+    {type:'function',function:{name:'flow_finance',
+      description:'Détail des finances Flow : revenus par projet, par mois, ou total. Accès admin/contrôleur uniquement.',
+      parameters:{type:'object',properties:{vue:{type:'string',enum:['total','par_projet','par_mois','objectifs']}},required:['vue']}}},
   ];
 
   async function rubisToolDispatch(name, args){
@@ -6938,6 +6951,75 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
         if(pr.length) out+='Projets :\n'+pr.map(p=>'  • '+p.name+' ['+p.status+']').join('\n')+'\n';
         if(cl.length) out+='Clients :\n'+cl.map(u=>'  • '+u.username+' ('+u.firstName+' '+u.lastName+')').join('\n');
         return out||'Aucun résultat pour "'+args.terme+'".';
+      }
+      if(name==='flow_projet_detail'){
+        const t=(args.nom_projet||'').toLowerCase();
+        const p=(db.projects||[]).find(x=>x.name.toLowerCase().includes(t));
+        if(!p) return 'Aucun projet trouvé pour "'+args.nom_projet+'".';
+        const cl=db.users.find(u=>u.id===p.clientId);
+        const docs=getProjectDocs(p.id);
+        const tl=(p.timeline||[]).map(s=>'  - '+s.label+' ['+s.status+']'+(s.dueDate?' (échéance '+s.dueDate+')':'')).join('\n')||'  (aucune étape)';
+        const docsLines=docs.map(d=>'  - '+d.name+' ['+d.status+']').join('\n')||'  (aucun document)';
+        const siteExtract = p.siteHtml ? p.siteHtml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().substring(0,600) : null;
+        return [
+          'Projet : '+p.name+' ['+p.status+']',
+          'Client : '+(cl?cl.username:'aucun'),
+          p.description?'Description : '+p.description:null,
+          p.dueDate?'Échéance : '+p.dueDate:null,
+          'Timeline :\n'+tl,
+          'Documents :\n'+docsLines,
+          siteExtract?'Extrait du site lié :\n"'+siteExtract+'..."':'(Aucun site lié à ce projet)'
+        ].filter(Boolean).join('\n');
+      }
+      if(name==='flow_site_chercher'){
+        const t=(args.terme||'').toLowerCase();
+        if(!t) return 'Terme de recherche vide.';
+        const projsWithSite=(db.projects||[]).filter(p=>!p.archived&&p.siteHtml);
+        if(!projsWithSite.length) return 'Aucun site lié actuellement dans Flow.';
+        const matches=[];
+        projsWithSite.forEach(p=>{
+          const text=p.siteHtml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+          const idx=text.toLowerCase().indexOf(t);
+          if(idx!==-1){
+            const cl=db.users.find(u=>u.id===p.clientId);
+            const start=Math.max(0,idx-60), end=Math.min(text.length,idx+t.length+60);
+            matches.push('• '+p.name+' ('+(cl?cl.username:'sans client')+') — "…'+text.substring(start,end)+'…"');
+          }
+        });
+        return matches.length ? matches.join('\n') : 'Aucune occurrence de "'+args.terme+'" trouvée sur les '+projsWithSite.length+' site(s) lié(s).';
+      }
+      if(name==='flow_finance'){
+        const fi=db.finance||[];
+        const vue=args.vue||'total';
+        if(vue==='total'){
+          const total=fi.reduce((s,e)=>s+Number(e.amount||0),0);
+          const thisMonth=new Date().toISOString().slice(0,7);
+          const monthTotal=fi.filter(e=>e.date&&e.date.slice(0,7)===thisMonth).reduce((s,e)=>s+Number(e.amount||0),0);
+          return 'Revenus totaux : '+total.toLocaleString('fr-FR')+'€ ('+fi.length+' entrée(s)) — dont '+monthTotal.toLocaleString('fr-FR')+'€ ce mois-ci.';
+        }
+        if(vue==='par_projet'){
+          const byProject={};
+          fi.forEach(e=>{ const proj=db.projects.find(p=>p.id===e.projectId); const key=proj?proj.name:(e.label||'—'); byProject[key]=(byProject[key]||0)+Number(e.amount||0); });
+          const lines=Object.entries(byProject).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'• '+k+' : '+v.toLocaleString('fr-FR')+'€');
+          return lines.length?lines.join('\n'):'Aucune entrée financière.';
+        }
+        if(vue==='par_mois'){
+          const byMonth={};
+          fi.forEach(e=>{ if(!e.date) return; const m=e.date.slice(0,7); byMonth[m]=(byMonth[m]||0)+Number(e.amount||0); });
+          const months=Object.keys(byMonth).sort().slice(-12);
+          return months.length ? months.map(m=>'• '+m+' : '+byMonth[m].toLocaleString('fr-FR')+'€').join('\n') : 'Aucune entrée financière.';
+        }
+        if(vue==='objectifs'){
+          const mg=db.financeGoal?.monthly||0, ag=db.financeGoal?.annual||0;
+          const thisMonth=new Date().toISOString().slice(0,7);
+          const monthTotal=fi.filter(e=>e.date&&e.date.slice(0,7)===thisMonth).reduce((s,e)=>s+Number(e.amount||0),0);
+          const yearTotal=fi.filter(e=>(e.date||'').startsWith(String(new Date().getFullYear()))).reduce((s,e)=>s+Number(e.amount||0),0);
+          return [
+            mg>0?'Objectif mensuel : '+monthTotal.toLocaleString('fr-FR')+'€ / '+mg.toLocaleString('fr-FR')+'€ ('+Math.round(monthTotal/mg*100)+'%)':'Aucun objectif mensuel défini.',
+            ag>0?'Objectif annuel : '+yearTotal.toLocaleString('fr-FR')+'€ / '+ag.toLocaleString('fr-FR')+'€ ('+Math.round(yearTotal/ag*100)+'%)':'Aucun objectif annuel défini.'
+          ].join('\n');
+        }
+        return 'Vue finance non reconnue.';
       }
       return 'Outil "'+name+'" non reconnu.';
     }catch(e){ return 'Erreur outil '+name+' : '+e.message; }
