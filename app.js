@@ -643,6 +643,7 @@
     { id:'history',        icon:iconHistory(),   label:'Historique'        },
     { id:'ai-automation',  icon:iconAI(),        label:'Automatisation IA', beta:true },
     { id:'rubis-admin',    icon:iconAI(),        label:'Assistant IA',      beta:true },
+    { id:'rubis',          icon:iconAI(),        label:'Rubis',             beta:true },
     { id:'ai-visual',      icon:iconEye(),       label:'Visuel',            beta:true },
     { id:'profile',        icon:iconProfile(),   label:'Profil'            }
   ];
@@ -655,6 +656,7 @@
     return adminTabs.filter(t=>
       (t.id!=='history'||canViewHistory()) &&
       (t.id!=='finance'||canAccessFinance()) &&
+      (t.id!=='rubis'||canAccessFinance()) &&
       (t.id!=='requests'||canReviewRequests()) &&
       (t.id!=='ai-automation'||canAccessAI()) &&
       (t.id!=='ai-visual'||canAccessAI())
@@ -725,6 +727,7 @@
     if(activeTab==='requests')       return renderAdminRequests();
     if(activeTab==='ai-automation')  return renderAdminAIAutomation();
     if(activeTab==='rubis-admin')     return renderAdminRubis();
+    if(activeTab==='rubis')           return canAccessFinance() ? renderRubisFinance() : renderAdminHome();
     if(activeTab==='ai-visual')      return renderAdminAIVisual();
     if(activeTab==='myproject')      return renderAdminMyProject();
     if(activeTab==='profile')        return renderAdminProfile();
@@ -763,6 +766,7 @@
     if(activeTab==='requests')      wireAdminRequests();
     if(activeTab==='ai-automation') wireAdminAIAutomation();
     if(activeTab==='rubis-admin')    wireAdminRubis();
+    if(activeTab==='rubis'&&canAccessFinance()) wireRubisFinance();
     if(activeTab==='ai-visual')     wireAdminAIVisual();
     if(activeTab==='myproject'){ document.querySelectorAll('.btn-download-delivery').forEach(btn=>{ btn.addEventListener('click',()=>downloadDelivery(btn.dataset.pid)); }); }
     if(activeTab==='profile')       wireAdminProfile();
@@ -3501,7 +3505,7 @@
             <input id="ai-claude-key" class="glass-input" type="password" placeholder="sk-ant-..." value="${esc(config.claudeKey||'')}"/>
           </div>
           <div>
-            <label class="label">Clé API Groq (Assistant IA Rubis)</label>
+            <label class="label">Clé API Groq (Assistant IA / Rubis)</label>
             <input id="ai-groq-key" class="glass-input" type="password" placeholder="gsk_..." value="${esc(config.groqKey||'')}"/>
             <div style="font-size:.72rem;color:var(--ink-4);margin-top:4px;">Obtenez une clé gratuite sur <strong>console.groq.com</strong></div>
           </div>
@@ -4044,7 +4048,7 @@
       <div class="glass-card" style="padding:22px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
           <span style="font-size:1.1rem;">🤖</span>
-          <div><h2 style="font-size:.95rem;font-weight:700;">Chat Rubis</h2>
+          <div><h2 style="font-size:.95rem;font-weight:700;">Chat Assistant IA</h2>
           <p style="font-size:.75rem;color:var(--ink-4);margin-top:1px;">Posez des questions sur vos projets, clients, statistiques et plus.</p></div>
           <button id="rubis-admin-clear" class="btn btn-ghost btn-sm" style="margin-left:auto;">🗑 Effacer</button>
         </div>
@@ -4173,6 +4177,194 @@
     if(rcClear) rcClear.addEventListener('click',()=>{ _rubisClientHist=[]; rcMsgs.innerHTML=''; if(rcInput) rcInput.focus(); });
     _rubisClientHist.forEach(m=>{ if(m.role==='user'||m.role==='assistant') rcAppend(m.role,m.content||''); });
     if(rcInput) rcInput.focus();
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  RUBIS — Assistant IA Finance & Projets (admin / contrôleur uniquement)
+  //  Accès volontairement restreint : noms de projets/entreprises, statuts,
+  //  montants et statistiques agrégées. AUCUN accès aux emails, mots de passe,
+  //  clés API, coordonnées bancaires ou toute autre donnée sensible.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  let _rubisFinHistory = [];
+  let _rubisFinBusy    = false;
+  const GROQ_MIN_GAP_RF = 800;
+  let _lastGroqCallRF   = 0;
+  const _groqDelayRF    = ms => new Promise(r => setTimeout(r, ms));
+
+  // Vue "entreprise" anonymisée : nom du projet + nom du client (entreprise),
+  // jamais l'email, le mot de passe, ni aucune donnée de paiement détaillée.
+  function rubisFinCompanyName(p){
+    const cl = (db.users||[]).find(u=>u.id===p.clientId);
+    return (cl && (cl.username)) || 'Sans entreprise';
+  }
+
+  function rubisFinSystemPrompt(){
+    const now = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const projs = (db.projects||[]).filter(p=>!p.archived);
+    const projLines = projs.map(p=>{
+      const done=(p.timeline||[]).filter(s=>s.status==='done').length;
+      const tot=(p.timeline||[]).length;
+      return '- '+p.name+' — entreprise:'+rubisFinCompanyName(p)+' — statut:'+p.status+' — avancement:'+(tot>0?Math.round(done/tot*100):0)+'%';
+    }).join('\n');
+    return 'Tu es Rubis, assistant IA Finance & Projets de l\'équipe Flow (admin/contrôleur uniquement).\n'
+      + 'Date : '+now+'.\n'
+      + 'RÈGLE ABSOLUE : tu n\'as accès qu\'aux noms de projets, noms d\'entreprises/clients, statuts et montants/agrégats financiers.\n'
+      + 'Tu n\'as JAMAIS accès aux emails, mots de passe, clés API, identifiants de connexion ou toute coordonnée bancaire — ces données ne te sont pas fournies et tu ne dois jamais prétendre les connaître.\n'
+      + 'PROJETS ('+projs.length+') :\n'+projLines+'\n'
+      + 'Utilise tes outils pour les détails financiers. Sois concis, précis, professionnel.';
+  }
+
+  // Outils strictement scopés : aucun outil web généraliste, aucun accès aux
+  // utilisateurs/emails. Uniquement projets (nom + entreprise) et finance agrégée.
+  const RUBIS_FIN_TOOLS = [
+    {type:'function',function:{name:'fin_projets',description:'Liste les projets avec le nom de l\'entreprise cliente et leur statut (aucune donnée sensible).',parameters:{type:'object',properties:{filtre:{type:'string',enum:['tous','en_cours','termines','en_attente']}},required:[]}}},
+    {type:'function',function:{name:'fin_resume',description:'Résumé financier global agrégé : total des revenus, dépenses, solde, objectifs.',parameters:{type:'object',properties:{}}}},
+    {type:'function',function:{name:'fin_par_entreprise',description:'Détail des entrées financières liées à une entreprise/projet précis (montants et statut de paiement uniquement, jamais de coordonnées bancaires).',parameters:{type:'object',properties:{nom:{type:'string'}},required:['nom']}}},
+    {type:'function',function:{name:'fin_par_statut_paiement',description:'Liste agrégée des montants par statut de paiement (payé / en attente / en retard, etc.).',parameters:{type:'object',properties:{}}}},
+    {type:'function',function:{name:'fin_chercher_entreprise',description:'Recherche une entreprise/projet par nom.',parameters:{type:'object',properties:{terme:{type:'string'}},required:['terme']}}},
+    {type:'function',function:{name:'calcul',description:'Évalue une expression mathématique simple.',parameters:{type:'object',properties:{expression:{type:'string'}},required:['expression']}}},
+  ];
+
+  async function rubisFinToolDispatch(name, args){
+    try{
+      const projs = (db.projects||[]).filter(p=>!p.archived);
+      const fin   = db.finance||[];
+      if(name==='fin_projets'){
+        const f=args.filtre||'tous';
+        let list=projs;
+        if(f==='en_cours') list=list.filter(p=>p.status==='in_progress');
+        if(f==='termines') list=list.filter(p=>p.status==='done');
+        if(f==='en_attente') list=list.filter(p=>p.status==='pending');
+        return list.map(p=>{
+          const done=(p.timeline||[]).filter(s=>s.status==='done').length;
+          const tot=(p.timeline||[]).length;
+          return '• '+p.name+' — entreprise: '+rubisFinCompanyName(p)+' — ['+p.status+'] — '+(tot>0?Math.round(done/tot*100):0)+'%';
+        }).join('\n') || 'Aucun projet.';
+      }
+      if(name==='fin_resume'){
+        const revenue = fin.filter(e=>e.type==='revenue').reduce((s,e)=>s+(e.amount||0),0);
+        const expense = fin.filter(e=>e.type==='expense').reduce((s,e)=>s+(e.amount||0),0);
+        const goalM = db.financeGoal?.monthly||0, goalA = db.financeGoal?.annual||0;
+        return ['Revenus totaux : '+revenue+' €','Dépenses totales : '+expense+' €','Solde : '+(revenue-expense)+' €','Objectif mensuel : '+goalM+' €','Objectif annuel : '+goalA+' €'].join('\n');
+      }
+      if(name==='fin_par_entreprise'){
+        const t=(args.nom||'').toLowerCase();
+        const matchProjs = projs.filter(p=>rubisFinCompanyName(p).toLowerCase().includes(t)||p.name.toLowerCase().includes(t));
+        if(!matchProjs.length) return 'Aucune entreprise/projet trouvé pour "'+args.nom+'".';
+        const ids = matchProjs.map(p=>p.id);
+        const entries = fin.filter(e=>ids.includes(e.projectId));
+        if(!entries.length) return matchProjs.map(p=>p.name+' ('+rubisFinCompanyName(p)+') — aucune entrée financière.').join('\n');
+        return entries.map(e=>{
+          const p=projs.find(x=>x.id===e.projectId);
+          return '• '+(p?p.name:'?')+' — '+(e.label||'')+' — '+(e.amount||0)+' € — statut: '+(e.paymentStatus||'?')+' — '+(e.date||'');
+        }).join('\n');
+      }
+      if(name==='fin_par_statut_paiement'){
+        const groups={};
+        fin.forEach(e=>{ const k=e.paymentStatus||'inconnu'; groups[k]=(groups[k]||0)+(e.amount||0); });
+        return Object.entries(groups).map(([k,v])=>'• '+k+' : '+v+' €').join('\n')||'Aucune entrée financière.';
+      }
+      if(name==='fin_chercher_entreprise'){
+        const t=(args.terme||'').toLowerCase();
+        const matchProjs = projs.filter(p=>p.name.toLowerCase().includes(t)||rubisFinCompanyName(p).toLowerCase().includes(t));
+        return matchProjs.map(p=>'• '+p.name+' — entreprise: '+rubisFinCompanyName(p)+' — ['+p.status+']').join('\n') || 'Aucun résultat pour "'+args.terme+'".';
+      }
+      if(name==='calcul'){ const expr=(args.expression||'').replace(/[^0-9+\-*\/().%\s]/g,''); return 'Résultat : '+Function('return '+expr)(); }
+      return 'Outil "'+name+'" non reconnu.';
+    }catch(e){ return 'Erreur outil '+name+' : '+e.message; }
+  }
+
+  async function groqPostWithToolsFin(apiKey, messages){
+    const gap=GROQ_MIN_GAP_RF-(Date.now()-_lastGroqCallRF);
+    if(gap>0) await _groqDelayRF(gap);
+    _lastGroqCallRF=Date.now();
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages,tools:RUBIS_FIN_TOOLS,tool_choice:'auto',max_tokens:1200,temperature:0.3})
+    });
+    if(!resp.ok) throw new Error('HTTP_'+resp.status);
+    return resp.json();
+  }
+
+  async function rubisFinAgentLoop(groqKey, userMsg, onToolCall){
+    _rubisFinHistory.push({role:'user',content:userMsg});
+    const msgs=[{role:'system',content:rubisFinSystemPrompt()},..._rubisFinHistory.slice(-24)];
+    for(let tour=0;tour<5;tour++){
+      const data=await groqPostWithToolsFin(groqKey,msgs);
+      const msg=data.choices[0].message;
+      if(!msg.tool_calls||!msg.tool_calls.length){ const text=msg.content||''; _rubisFinHistory.push({role:'assistant',content:text}); return text; }
+      msgs.push(msg); _rubisFinHistory.push({role:'assistant',content:msg.content||'',tool_calls:msg.tool_calls});
+      for(const tc of msg.tool_calls){
+        const args=JSON.parse(tc.function.arguments);
+        if(onToolCall) onToolCall(tc.function.name);
+        const result=await rubisFinToolDispatch(tc.function.name,args);
+        const tm={role:'tool',tool_call_id:tc.id,name:tc.function.name,content:String(result)};
+        msgs.push(tm); _rubisFinHistory.push(tm);
+      }
+    }
+    return 'Limite de tours atteinte.';
+  }
+
+  function renderRubisFinance(){
+    return `<div class="fade-up">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+        <h1 style="font-size:1.4rem;font-weight:700;">Rubis</h1>
+        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.65rem;font-weight:700;letter-spacing:.08em;padding:2px 8px;text-transform:uppercase;">BÊTA</span>
+      </div>
+      <div class="glass-card" style="padding:16px 22px;margin-bottom:20px;border:1px solid rgba(155,184,216,.2);">
+        <p style="font-size:.78rem;color:var(--ink-4);">🔒 Accès restreint : Rubis ne connaît que les noms de projets, noms d'entreprises clientes, statuts et montants financiers agrégés. Aucun email, mot de passe, clé API ou coordonnée bancaire ne lui est jamais fourni.</p>
+      </div>
+      <div class="glass-card" style="padding:22px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <span style="font-size:1.1rem;">💎</span>
+          <div><h2 style="font-size:.95rem;font-weight:700;">Chat Rubis</h2>
+          <p style="font-size:.75rem;color:var(--ink-4);margin-top:1px;">Posez des questions sur les finances et les projets par entreprise.</p></div>
+          <button id="rubis-fin-clear" class="btn btn-ghost btn-sm" style="margin-left:auto;">🗑 Effacer</button>
+        </div>
+        <div id="rubis-fin-msgs" style="min-height:120px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input id="rubis-fin-input" class="glass-input" placeholder="Ex: Quel est le solde de l'entreprise X ?" style="flex:1;" />
+          <button id="rubis-fin-send" class="btn btn-primary" style="flex-shrink:0;">Envoyer</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function wireRubisFinance(){
+    const rfInput = document.getElementById('rubis-fin-input');
+    const rfSend  = document.getElementById('rubis-fin-send');
+    const rfMsgs  = document.getElementById('rubis-fin-msgs');
+    const rfClear = document.getElementById('rubis-fin-clear');
+    function rfAppend(role, text){
+      if(!rfMsgs) return null;
+      const div=document.createElement('div');
+      div.style.cssText='display:flex;'+(role==='user'?'justify-content:flex-end;':'justify-content:flex-start;');
+      div.innerHTML=`<div style="max-width:80%;padding:9px 13px;border-radius:12px;font-size:.84rem;line-height:1.45;white-space:pre-wrap;${role==='user'?'background:rgba(155,184,216,.15);color:var(--ink);':'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:var(--ink-2);'}"></div>`;
+      div.querySelector('div').textContent=text;
+      rfMsgs.appendChild(div); rfMsgs.scrollTop=rfMsgs.scrollHeight;
+      return div;
+    }
+    async function rfSubmit(){
+      const txt=(rfInput.value||'').trim();
+      if(!txt||_rubisFinBusy) return;
+      const groqKey = db.aiConfig && db.aiConfig.groqKey;
+      if(!groqKey){ toast('Configurez une clé API Groq dans Automatisation IA.','error'); return; }
+      rfAppend('user',txt);
+      rfInput.value=''; _rubisFinBusy=true; rfSend.disabled=true;
+      const typing=rfAppend('assistant','⚙️ Réflexion…');
+      try{
+        const answer=await rubisFinAgentLoop(groqKey,txt,function(toolName){ typing.querySelector('div').textContent='⚙️ '+toolName+'…'; });
+        typing.querySelector('div').textContent=answer; rfMsgs.scrollTop=rfMsgs.scrollHeight;
+      }catch(e){ typing.querySelector('div').textContent='❌ '+e.message; }
+      _rubisFinBusy=false; rfSend.disabled=false; if(rfInput) rfInput.focus();
+    }
+    if(rfSend)  rfSend.addEventListener('click',rfSubmit);
+    if(rfInput) rfInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();rfSubmit();} });
+    if(rfClear) rfClear.addEventListener('click',()=>{ _rubisFinHistory=[]; rfMsgs.innerHTML=''; if(rfInput) rfInput.focus(); });
+    _rubisFinHistory.forEach(m=>{ if(m.role==='user'||m.role==='assistant') rfAppend(m.role,m.content||''); });
+    if(rfInput) rfInput.focus();
   }
 
   async function callGeminiModerate(text, photoBase64, apiKey){
