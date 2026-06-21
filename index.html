@@ -1499,7 +1499,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     { id:'finance',        icon:iconFinance(),   label:'Finance'           },
     { id:'requests',       icon:iconRequests(),  label:'Demandes'          },
     { id:'history',        icon:iconHistory(),   label:'Historique'        },
-    { id:'ai-automation',  icon:iconAI(),        label:'Rubis' },
+    { id:'ai-automation',  icon:iconAI(),        label:'Assistant IA' },
+    { id:'rubis',          icon:iconAI(),        label:'Rubis' },
     { id:'ai-visual',      icon:iconEye(),       label:'Sites liés' },
     { id:'profile',        icon:iconProfile(),   label:'Profil'            }
   ];
@@ -1613,6 +1614,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       (t.id!=='finance'||canAccessFinance()) &&
       (t.id!=='requests'||canReviewRequests()) &&
       (t.id!=='ai-automation'||canAccessAI()) &&
+      (t.id!=='rubis'||canAccessFinance()) &&
       (t.id!=='ai-visual'||canAccessAI())
     );
   }
@@ -1688,6 +1690,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(activeTab==='finance')        return renderAdminFinance();
     if(activeTab==='requests')       return renderAdminRequests();
     if(activeTab==='ai-automation')  return renderAdminAIAutomation();
+    if(activeTab==='rubis')          return canAccessFinance() ? renderRubisChat() : renderAdminHome();
     if(activeTab==='ai-visual')      return renderAdminAIVisual();
     if(activeTab==='myproject')      return renderAdminMyProject();
     if(activeTab==='profile')        return renderAdminProfile();
@@ -1726,6 +1729,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(activeTab==='finance')       wireAdminFinance();
     if(activeTab==='requests')      wireAdminRequests();
     if(activeTab==='ai-automation') wireAdminAIAutomation();
+    if(activeTab==='rubis'&&canAccessFinance()) wireRubisChat();
     if(activeTab==='ai-visual')     wireAdminAIVisual();
     if(activeTab==='myproject'){ document.querySelectorAll('.btn-download-delivery').forEach(btn=>{ btn.addEventListener('click',()=>downloadDelivery(btn.dataset.pid)); }); }
     if(activeTab==='profile')       wireAdminProfile();
@@ -5443,10 +5447,10 @@ DOCUMENTS
 
     return `<div class="fade-up">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:12px;">
-        <h1 style="font-size:1.4rem;font-weight:700;">Rubis</h1>
+        <h1 style="font-size:1.4rem;font-weight:700;">Assistant IA</h1>
         ${weekReqs.length>0?`<button id="btn-weekly-report" class="btn btn-ghost btn-sm">📊 Résumé IA — 7 derniers jours (${weekReqs.length} Q&A)</button>`:''}
       </div>
-      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:24px;">Posez vos questions sur les projets en cours, les sites liés et les finances.</p>
+      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:24px;">Vue d'ensemble des projets en cours, des sites liés et de l'activité IA.</p>
 
       ${frustrated.length>0?`
       <div class="glass-card" style="padding:16px;margin-bottom:20px;border-color:rgba(240,138,138,.25);">
@@ -5484,23 +5488,6 @@ DOCUMENTS
               <div style="text-align:right;flex-shrink:0;"><div style="font-size:.75rem;font-weight:600;color:${sc};">${pct}%</div><div style="font-size:.62rem;color:var(--ink-4);">${p.dueDate?'J-'+Math.ceil((new Date(p.dueDate)-Date.now())/(864e5)):''}</div></div>
             </div>`;
           }).join('')}
-        </div>
-      </div>
-
-      <!-- Rubis Chat Admin -->
-      <div class="glass-card" style="padding:22px;margin-bottom:20px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <span style="font-size:1.1rem;">🤖</span>
-          <div>
-            <h2 style="font-size:.95rem;font-weight:700;">Chat Rubis</h2>
-            <div style="font-size:.72rem;color:var(--ink-4);">Météo · Wikipedia · Calcul · Taux · Encodage · Projets Flow · Recherche web</div>
-          </div>
-          <button id="rubis-clear" class="btn btn-ghost btn-sm" style="margin-left:auto;">🗑 Effacer</button>
-        </div>
-        <div id="rubis-msgs" style="min-height:100px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
-        <div style="display:flex;gap:8px;">
-          <input id="rubis-input" class="glass-input" placeholder="Pose une question…" style="flex:1;" />
-          <button id="rubis-send" class="btn btn-primary" style="flex-shrink:0;">Envoyer</button>
         </div>
       </div>
 
@@ -5564,60 +5551,6 @@ DOCUMENTS
   }
 
   function wireAdminAIAutomation(){
-    // ── Rubis Chat ──────────────────────────────────────────────
-    const rubisInput=document.getElementById('rubis-input');
-    const rubisSend =document.getElementById('rubis-send');
-    const rubisMsgs =document.getElementById('rubis-msgs');
-    const rubisClear=document.getElementById('rubis-clear');
-
-    function rubisAppendMsg(role,text,toolName){
-      const el=document.createElement('div');
-      const isUser=role==='user';
-      el.style.cssText='display:flex;flex-direction:column;'+(isUser?'align-items:flex-end;':'align-items:flex-start;');
-      if(toolName){
-        el.innerHTML='<div style="font-size:.68rem;color:var(--ink-4);padding:3px 10px;background:rgba(155,184,216,.08);border:1px solid rgba(155,184,216,.15);border-radius:999px;">⚙️ '+esc(toolName)+'…</div>';
-      } else {
-        const bg=isUser?'rgba(217,119,87,.18)':'rgba(255,255,255,.05)';
-        const bd=isUser?'rgba(217,119,87,.3)':'rgba(255,255,255,.09)';
-        const br=isUser?'16px 16px 4px 16px':'16px 16px 16px 4px';
-        el.innerHTML='<div style="max-width:88%;padding:10px 14px;border-radius:'+br+';background:'+bg+';border:1px solid '+bd+';font-size:.85rem;line-height:1.55;white-space:pre-wrap;word-break:break-word;">'+esc(text)+'</div>';
-      }
-      rubisMsgs.appendChild(el);
-      rubisMsgs.scrollTop=rubisMsgs.scrollHeight;
-      return el;
-    }
-
-    async function rubisSubmit(){
-      if(_rubisBusy) return;
-      const groqKey=db.aiConfig&&db.aiConfig.groqKey;
-      if(!groqKey){ toast('Clé Groq non configurée — entrez-la ci-dessous.','error'); return; }
-      const txt=(rubisInput.value||'').trim();
-      if(!txt) return;
-      rubisInput.value='';
-      _rubisBusy=true; rubisSend.disabled=true;
-      rubisAppendMsg('user',txt);
-      const typingEl=rubisAppendMsg('assistant','…');
-      try{
-        const answer=await rubisAgentLoop(groqKey,txt,function(toolName){
-          typingEl.innerHTML='<div style="font-size:.68rem;color:var(--ink-4);padding:3px 10px;background:rgba(155,184,216,.08);border:1px solid rgba(155,184,216,.15);border-radius:999px;">⚙️ '+esc(toolName)+'…</div>';
-          rubisMsgs.scrollTop=rubisMsgs.scrollHeight;
-        });
-        typingEl.innerHTML='<div style="max-width:88%;padding:10px 14px;border-radius:16px 16px 16px 4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);font-size:.85rem;line-height:1.55;white-space:pre-wrap;word-break:break-word;">'+esc(answer)+'</div>';
-        rubisMsgs.scrollTop=rubisMsgs.scrollHeight;
-      }catch(e){
-        typingEl.innerHTML='<div style="padding:8px 12px;color:#f08a8a;font-size:.82rem;">❌ '+esc(e.message)+'</div>';
-      }
-      _rubisBusy=false; rubisSend.disabled=false;
-      if(rubisInput) rubisInput.focus();
-    }
-
-    if(rubisSend)  rubisSend.addEventListener('click',rubisSubmit);
-    if(rubisInput) rubisInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();rubisSubmit();} });
-    if(rubisClear) rubisClear.addEventListener('click',()=>{ _rubisHistory=[]; rubisMsgs.innerHTML=''; if(rubisInput) rubisInput.focus(); });
-
-    // Restaure l'historique si on revient sur l'onglet
-    _rubisHistory.forEach(m=>{ if(m.role==='user'||m.role==='assistant') rubisAppendMsg(m.role,m.content||''); });
-
     const saveBtn = document.getElementById('btn-save-ai-config');
     if(saveBtn) saveBtn.addEventListener('click',()=>{
       const g = document.getElementById('ai-groq-key').value.trim();
@@ -5687,6 +5620,90 @@ DOCUMENTS
         btn.disabled=false; btn.textContent='✨ Générer FAQ';
       });
     });
+  }
+
+  // ════════════════════════════════════════════════
+  //  RUBIS — Onglet chat seul (finance & projets, accès restreint)
+  // ════════════════════════════════════════════════
+  function renderRubisChat(){
+    return `<div class="fade-up">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <h1 style="font-size:1.4rem;font-weight:700;">Rubis</h1>
+        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.65rem;font-weight:700;letter-spacing:.08em;padding:2px 8px;text-transform:uppercase;">BÊTA</span>
+      </div>
+      <p style="color:rgba(244,238,229,.45);font-size:.78rem;margin-bottom:20px;">🔒 Accès restreint : noms de projets, noms d'entreprises clientes, statuts et montants financiers agrégés uniquement. Aucun email, mot de passe, clé API ou coordonnée bancaire ne lui est jamais fourni.</p>
+      <div class="glass-card" style="padding:22px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <span style="font-size:1.1rem;">💎</span>
+          <div>
+            <h2 style="font-size:.95rem;font-weight:700;">Chat Rubis</h2>
+            <div style="font-size:.72rem;color:var(--ink-4);">Projets · Entreprises clientes · Finances agrégées · Calcul</div>
+          </div>
+          <button id="rubis-clear" class="btn btn-ghost btn-sm" style="margin-left:auto;">🗑 Effacer</button>
+        </div>
+        <div id="rubis-msgs" style="min-height:120px;max-height:480px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input id="rubis-input" class="glass-input" placeholder="Ex: Quel est le solde de l'entreprise X ?" style="flex:1;" />
+          <button id="rubis-send" class="btn btn-primary" style="flex-shrink:0;">Envoyer</button>
+        </div>
+        ${!(db.aiConfig&&db.aiConfig.groqKey)?`<p style="font-size:.75rem;color:var(--ink-4);margin-top:10px;">Aucune clé Groq configurée — ajoutez-la dans l'onglet Assistant IA.</p>`:''}
+      </div>
+    </div>`;
+  }
+
+  function wireRubisChat(){
+    const rubisInput=document.getElementById('rubis-input');
+    const rubisSend =document.getElementById('rubis-send');
+    const rubisMsgs =document.getElementById('rubis-msgs');
+    const rubisClear=document.getElementById('rubis-clear');
+
+    function rubisAppendMsg(role,text,toolName){
+      const el=document.createElement('div');
+      const isUser=role==='user';
+      el.style.cssText='display:flex;flex-direction:column;'+(isUser?'align-items:flex-end;':'align-items:flex-start;');
+      if(toolName){
+        el.innerHTML='<div style="font-size:.68rem;color:var(--ink-4);padding:3px 10px;background:rgba(155,184,216,.08);border:1px solid rgba(155,184,216,.15);border-radius:999px;">⚙️ '+esc(toolName)+'…</div>';
+      } else {
+        const bg=isUser?'rgba(217,119,87,.18)':'rgba(255,255,255,.05)';
+        const bd=isUser?'rgba(217,119,87,.3)':'rgba(255,255,255,.09)';
+        const br=isUser?'16px 16px 4px 16px':'16px 16px 16px 4px';
+        el.innerHTML='<div style="max-width:88%;padding:10px 14px;border-radius:'+br+';background:'+bg+';border:1px solid '+bd+';font-size:.85rem;line-height:1.55;white-space:pre-wrap;word-break:break-word;">'+esc(text)+'</div>';
+      }
+      rubisMsgs.appendChild(el);
+      rubisMsgs.scrollTop=rubisMsgs.scrollHeight;
+      return el;
+    }
+
+    async function rubisSubmit(){
+      if(_rubisBusy) return;
+      const groqKey=db.aiConfig&&db.aiConfig.groqKey;
+      if(!groqKey){ toast('Clé Groq non configurée — ajoutez-la dans l\'onglet Assistant IA.','error'); return; }
+      const txt=(rubisInput.value||'').trim();
+      if(!txt) return;
+      rubisInput.value='';
+      _rubisBusy=true; rubisSend.disabled=true;
+      rubisAppendMsg('user',txt);
+      const typingEl=rubisAppendMsg('assistant','…');
+      try{
+        const answer=await rubisAgentLoop(groqKey,txt,function(toolName){
+          typingEl.innerHTML='<div style="font-size:.68rem;color:var(--ink-4);padding:3px 10px;background:rgba(155,184,216,.08);border:1px solid rgba(155,184,216,.15);border-radius:999px;">⚙️ '+esc(toolName)+'…</div>';
+          rubisMsgs.scrollTop=rubisMsgs.scrollHeight;
+        });
+        typingEl.innerHTML='<div style="max-width:88%;padding:10px 14px;border-radius:16px 16px 16px 4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);font-size:.85rem;line-height:1.55;white-space:pre-wrap;word-break:break-word;">'+esc(answer)+'</div>';
+        rubisMsgs.scrollTop=rubisMsgs.scrollHeight;
+      }catch(e){
+        typingEl.innerHTML='<div style="padding:8px 12px;color:#f08a8a;font-size:.82rem;">❌ '+esc(e.message)+'</div>';
+      }
+      _rubisBusy=false; rubisSend.disabled=false;
+      if(rubisInput) rubisInput.focus();
+    }
+
+    if(rubisSend)  rubisSend.addEventListener('click',rubisSubmit);
+    if(rubisInput) rubisInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();rubisSubmit();} });
+    if(rubisClear) rubisClear.addEventListener('click',()=>{ _rubisHistory=[]; rubisMsgs.innerHTML=''; if(rubisInput) rubisInput.focus(); });
+
+    _rubisHistory.forEach(m=>{ if(m.role==='user'||m.role==='assistant') rubisAppendMsg(m.role,m.content||''); });
+    if(rubisInput) rubisInput.focus();
   }
 
   // ════════════════════════════════════════════════
@@ -6786,86 +6803,49 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
 
 
   // ════════════════════════════════════════════════
-  //  RUBIS AGENT — Chat admin avec tool-calling multi-tour
+  //  RUBIS — Assistant IA Finance & Projets (admin/contrôleur)
+  //  Accès volontairement restreint : noms de projets, noms d'entreprises
+  //  clientes, statuts et montants/agrégats financiers uniquement.
+  //  AUCUN accès aux emails, mots de passe, clés API, contenu des sites
+  //  liés ou toute autre donnée sensible.
   // ════════════════════════════════════════════════
 
   let _rubisHistory = [];
   let _rubisBusy    = false;
 
+  function rubisCompanyName(p){
+    const cl=(db.users||[]).find(u=>u.id===p.clientId);
+    return (cl&&cl.username)||'Sans entreprise';
+  }
+
   function rubisSystemPrompt(){
     const now = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    const projs   = (db.projects||[]).filter(p=>!p.archived);
-    const clients = (db.users||[]).filter(u=>u.role==='client');
-    const sitesLinked = projs.filter(p=>p.siteHtml).length;
+    const projs = (db.projects||[]).filter(p=>!p.archived);
     const projLines = projs.map(p=>{
-      const cl=db.users.find(u=>u.id===p.clientId);
       const done=(p.timeline||[]).filter(s=>s.status==='done').length;
       const tot=(p.timeline||[]).length;
-      return '- '+p.name+' ['+p.status+'] client:'+(cl?cl.username:'aucun')+' avancement:'+(tot>0?Math.round(done/tot*100):0)+'%'+(p.dueDate?' échéance:'+p.dueDate:'')+(p.siteHtml?' (site lié)':'');
+      return '- '+p.name+' — entreprise:'+rubisCompanyName(p)+' — statut:'+p.status+' — avancement:'+(tot>0?Math.round(done/tot*100):0)+'%'+(p.dueDate?' — échéance:'+p.dueDate:'');
     }).join('\n');
-    const clientLines = clients.map(u=>'- '+u.username+' ('+((u.firstName||'')+' '+(u.lastName||'')).trim()+') email:'+(u.email||'?')).join('\n');
-    return 'Tu es Rubis, assistant IA de l\'équipe Flow (admin/contrôleur).\n'
+    return 'Tu es Rubis, assistant IA Finance & Projets de l\'équipe Flow (admin/contrôleur uniquement).\n'
       + 'Date : '+now+'.\n'
-      + 'PROJETS ('+projs.length+', dont '+sitesLinked+' avec site lié) :\n'+projLines+'\n'
-      + 'CLIENTS ('+clients.length+') :\n'+clientLines+'\n'
-      + 'Tu as accès à des outils pour : le détail d\'un projet précis (flow_projet_detail), '
-      + 'la recherche dans le contenu de tous les sites liés (flow_site_chercher), '
-      + 'et les données financières détaillées (flow_finance — total, par projet, par mois, objectifs). '
-      + 'Utilise ces outils dès qu\'une question porte sur un projet précis, un site, ou les finances — ne réponds jamais de mémoire sur ces sujets sans les interroger. '
-      + 'Sois concis, précis, élégant.';
+      + 'RÈGLE ABSOLUE : tu n\'as accès qu\'aux noms de projets, noms d\'entreprises/clients, statuts et montants/agrégats financiers.\n'
+      + 'Tu n\'as JAMAIS accès aux emails, mots de passe, clés API, identifiants de connexion, contenu des sites liés ou toute coordonnée bancaire — ces données ne te sont pas fournies et tu ne dois jamais prétendre les connaître.\n'
+      + 'PROJETS ('+projs.length+') :\n'+projLines+'\n'
+      + 'Utilise tes outils pour les détails financiers. Sois concis, précis, professionnel.';
   }
 
   const RUBIS_TOOLS_WEB = [
     {type:'function',function:{name:'calcul',
-      description:'Evalue une expression mathématique (supporte Math.sqrt, **, etc.)',
+      description:'Evalue une expression mathématique simple.',
       parameters:{type:'object',properties:{expression:{type:'string'}},required:['expression']}}},
-    {type:'function',function:{name:'meteo',
-      description:'Météo actuelle pour une ville.',
-      parameters:{type:'object',properties:{ville:{type:'string'}},required:['ville']}}},
-    {type:'function',function:{name:'wikipedia',
-      description:'Résumé Wikipedia francophone sur un sujet.',
-      parameters:{type:'object',properties:{sujet:{type:'string'}},required:['sujet']}}},
-    {type:'function',function:{name:'taux_change',
-      description:'Taux de change actuels depuis une devise ISO (EUR, USD...).',
-      parameters:{type:'object',properties:{base:{type:'string'}},required:['base']}}},
-    {type:'function',function:{name:'search_web',
-      description:'Recherche web Tavily (nécessite clé Tavily).',
-      parameters:{type:'object',properties:{requete:{type:'string'}},required:['requete']}}},
-    {type:'function',function:{name:'base64',
-      description:'Encode ou décode du texte en Base64.',
-      parameters:{type:'object',properties:{action:{type:'string',enum:['encode','decode']},texte:{type:'string'}},required:['action','texte']}}},
-    {type:'function',function:{name:'sha256',
-      description:"Hash SHA-256 d'une chaîne.",
-      parameters:{type:'object',properties:{texte:{type:'string'}},required:['texte']}}},
-    {type:'function',function:{name:'generer_mdp',
-      description:'Génère un mot de passe aléatoire sécurisé.',
-      parameters:{type:'object',properties:{longueur:{type:'number'}},required:[]}}},
-    {type:'function',function:{name:'uuid',
-      description:'Génère un UUID v4 unique.',
-      parameters:{type:'object',properties:{}}}},
-    {type:'function',function:{name:'timestamp',
-      description:'Timestamp UNIX actuel ou pour une date ISO.',
-      parameters:{type:'object',properties:{date:{type:'string'}},required:[]}}},
-    {type:'function',function:{name:'ouvrir_url',
-      description:'Ouvre une URL dans un nouvel onglet.',
-      parameters:{type:'object',properties:{url:{type:'string'}},required:['url']}}},
     {type:'function',function:{name:'flow_projets',
-      description:'Liste les projets Flow avec statut, client et avancement.',
+      description:'Liste les projets avec le nom de l\'entreprise cliente, le statut et l\'avancement (aucune donnée sensible).',
       parameters:{type:'object',properties:{filtre:{type:'string',enum:['tous','en_cours','termines','en_attente']}},required:[]}}},
-    {type:'function',function:{name:'flow_stats',
-      description:'Statistiques globales de Flow : projets, clients, documents, revenus.',
-      parameters:{type:'object',properties:{}}}},
-    {type:'function',function:{name:'flow_chercher',
-      description:'Recherche un projet ou client par nom dans Flow.',
-      parameters:{type:'object',properties:{terme:{type:'string'}},required:['terme']}}},
-    {type:'function',function:{name:'flow_projet_detail',
-      description:'Détail complet d\'un projet précis : description, timeline, documents, échéance, et extrait du site lié si disponible.',
-      parameters:{type:'object',properties:{nom_projet:{type:'string'}},required:['nom_projet']}}},
-    {type:'function',function:{name:'flow_site_chercher',
-      description:'Recherche un terme dans le contenu textuel de tous les sites liés aux projets clients (ex: vérifier si un mot, une info ou une section existe sur un site).',
+    {type:'function',function:{name:'flow_chercher_entreprise',
+      description:'Recherche un projet ou une entreprise cliente par nom.',
       parameters:{type:'object',properties:{terme:{type:'string'}},required:['terme']}}},
     {type:'function',function:{name:'flow_finance',
-      description:'Détail des finances Flow : revenus par projet, par mois, ou total. Accès admin/contrôleur uniquement.',
+      description:'Données financières agrégées : total, par projet/entreprise, par mois, ou objectifs. Jamais de coordonnées bancaires.',
       parameters:{type:'object',properties:{vue:{type:'string',enum:['total','par_projet','par_mois','objectifs']}},required:['vue']}}},
   ];
 
@@ -6876,49 +6856,6 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
         if(!expr) return 'Expression vide.';
         try{ return 'Résultat : '+Function('"use strict";return ('+expr+')')(); }catch(_){ return 'Expression invalide.'; }
       }
-      if(name==='meteo'){
-        const r=await fetch('https://wttr.in/'+encodeURIComponent(args.ville||'Paris')+'?format=3');
-        return await r.text();
-      }
-      if(name==='wikipedia'){
-        const r=await fetch('https://fr.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(args.sujet||''),{headers:{Accept:'application/json'}});
-        const d=await r.json();
-        return d.extract||d.title||'Aucun résultat Wikipedia.';
-      }
-      if(name==='taux_change'){
-        const base=(args.base||'EUR').toUpperCase();
-        const r=await fetch('https://open.er-api.com/v6/latest/'+base);
-        const d=await r.json();
-        const rt=d.rates||{};
-        return '1 '+base+' = '+(rt.USD||'?')+' USD | '+(rt.GBP||'?')+' GBP | '+(rt.JPY||'?')+' JPY | '+(rt.CAD||'?')+' CAD';
-      }
-      if(name==='search_web'){
-        const tk=db.aiConfig&&db.aiConfig.tavilyKey;
-        if(!tk) return 'Clé Tavily non configurée.';
-        const r=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:tk,query:args.requete,max_results:4,search_depth:'basic'})});
-        const d=await r.json();
-        return (d.results||[]).map(x=>'['+x.title+'] '+(x.content||'').substring(0,220)).join('\n')||'Aucun résultat.';
-      }
-      if(name==='base64'){
-        if(args.action==='encode') return btoa(unescape(encodeURIComponent(args.texte||'')));
-        return decodeURIComponent(escape(atob(args.texte||'')));
-      }
-      if(name==='sha256'){
-        const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(args.texte||''));
-        return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-      }
-      if(name==='generer_mdp'){
-        const len=Math.min(Math.max(parseInt(args.longueur)||16,8),64);
-        const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
-        const arr=crypto.getRandomValues(new Uint8Array(len));
-        return Array.from(arr).map(b=>chars[b%chars.length]).join('');
-      }
-      if(name==='uuid')   return crypto.randomUUID();
-      if(name==='timestamp'){
-        if(args.date) return 'Timestamp de '+args.date+' : '+new Date(args.date).getTime();
-        return 'Timestamp UNIX : '+Math.floor(Date.now()/1000);
-      }
-      if(name==='ouvrir_url'){ window.open(args.url,'_blank','noopener'); return 'URL ouverte : '+args.url; }
       if(name==='flow_projets'){
         const f=args.filtre||'tous';
         let projs=(db.projects||[]).filter(p=>!p.archived);
@@ -6932,61 +6869,10 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
           return '• '+p.name+' ['+p.status+'] — client: '+(cl?cl.username:'aucun')+' — avancement: '+(tot>0?Math.round(done/tot*100):0)+'%'+(p.dueDate?' — échéance: '+p.dueDate:'');
         }).join('\n')||'Aucun projet.';
       }
-      if(name==='flow_stats'){
-        const pr=db.projects||[],us=db.users||[],dc=db.documents||[],fi=db.finance||[];
-        const rev=fi.reduce((s,e)=>s+(e.type==='revenue'?e.amount:0),0);
-        return [
-          'Projets : '+pr.filter(p=>!p.archived).length+' actifs / '+pr.filter(p=>p.archived).length+' archivés',
-          'Statuts : '+pr.filter(p=>p.status==='in_progress').length+' en cours, '+pr.filter(p=>p.status==='done').length+' terminés',
-          'Clients : '+us.filter(u=>u.role==='client').length,
-          'Documents : '+dc.length+' ('+dc.filter(d=>d.status==='filled').length+' remplis)',
-          'Revenus : '+rev+' €',
-        ].join('\n');
-      }
-      if(name==='flow_chercher'){
+      if(name==='flow_chercher_entreprise'){
         const t=(args.terme||'').toLowerCase();
-        const pr=(db.projects||[]).filter(p=>p.name.toLowerCase().includes(t));
-        const cl=(db.users||[]).filter(u=>u.role==='client'&&(u.username+' '+(u.firstName||'')+' '+(u.lastName||'')).toLowerCase().includes(t));
-        let out='';
-        if(pr.length) out+='Projets :\n'+pr.map(p=>'  • '+p.name+' ['+p.status+']').join('\n')+'\n';
-        if(cl.length) out+='Clients :\n'+cl.map(u=>'  • '+u.username+' ('+u.firstName+' '+u.lastName+')').join('\n');
-        return out||'Aucun résultat pour "'+args.terme+'".';
-      }
-      if(name==='flow_projet_detail'){
-        const t=(args.nom_projet||'').toLowerCase();
-        const p=(db.projects||[]).find(x=>x.name.toLowerCase().includes(t));
-        if(!p) return 'Aucun projet trouvé pour "'+args.nom_projet+'".';
-        const cl=db.users.find(u=>u.id===p.clientId);
-        const docs=getProjectDocs(p.id);
-        const tl=(p.timeline||[]).map(s=>'  - '+s.label+' ['+s.status+']'+(s.dueDate?' (échéance '+s.dueDate+')':'')).join('\n')||'  (aucune étape)';
-        const docsLines=docs.map(d=>'  - '+d.name+' ['+d.status+']').join('\n')||'  (aucun document)';
-        const siteExtract = p.siteHtml ? p.siteHtml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().substring(0,600) : null;
-        return [
-          'Projet : '+p.name+' ['+p.status+']',
-          'Client : '+(cl?cl.username:'aucun'),
-          p.description?'Description : '+p.description:null,
-          p.dueDate?'Échéance : '+p.dueDate:null,
-          'Timeline :\n'+tl,
-          'Documents :\n'+docsLines,
-          siteExtract?'Extrait du site lié :\n"'+siteExtract+'..."':'(Aucun site lié à ce projet)'
-        ].filter(Boolean).join('\n');
-      }
-      if(name==='flow_site_chercher'){
-        const t=(args.terme||'').toLowerCase();
-        if(!t) return 'Terme de recherche vide.';
-        const projsWithSite=(db.projects||[]).filter(p=>!p.archived&&p.siteHtml);
-        if(!projsWithSite.length) return 'Aucun site lié actuellement dans Flow.';
-        const matches=[];
-        projsWithSite.forEach(p=>{
-          const text=p.siteHtml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-          const idx=text.toLowerCase().indexOf(t);
-          if(idx!==-1){
-            const cl=db.users.find(u=>u.id===p.clientId);
-            const start=Math.max(0,idx-60), end=Math.min(text.length,idx+t.length+60);
-            matches.push('• '+p.name+' ('+(cl?cl.username:'sans client')+') — "…'+text.substring(start,end)+'…"');
-          }
-        });
-        return matches.length ? matches.join('\n') : 'Aucune occurrence de "'+args.terme+'" trouvée sur les '+projsWithSite.length+' site(s) lié(s).';
+        const pr=(db.projects||[]).filter(p=>p.name.toLowerCase().includes(t)||rubisCompanyName(p).toLowerCase().includes(t));
+        return pr.length ? pr.map(p=>'• '+p.name+' — entreprise: '+rubisCompanyName(p)+' — ['+p.status+']').join('\n') : 'Aucun résultat pour "'+args.terme+'".';
       }
       if(name==='flow_finance'){
         const fi=db.finance||[];
@@ -6999,7 +6885,7 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
         }
         if(vue==='par_projet'){
           const byProject={};
-          fi.forEach(e=>{ const proj=db.projects.find(p=>p.id===e.projectId); const key=proj?proj.name:(e.label||'—'); byProject[key]=(byProject[key]||0)+Number(e.amount||0); });
+          fi.forEach(e=>{ const proj=db.projects.find(p=>p.id===e.projectId); const key=proj?(proj.name+' ('+rubisCompanyName(proj)+')'):(e.label||'—'); byProject[key]=(byProject[key]||0)+Number(e.amount||0); });
           const lines=Object.entries(byProject).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'• '+k+' : '+v.toLocaleString('fr-FR')+'€');
           return lines.length?lines.join('\n'):'Aucune entrée financière.';
         }

@@ -4045,57 +4045,12 @@
           }).join('')}
         </div>
       </div>
-      <div class="glass-card" style="padding:22px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <span style="font-size:1.1rem;">🤖</span>
-          <div><h2 style="font-size:.95rem;font-weight:700;">Chat Assistant IA</h2>
-          <p style="font-size:.75rem;color:var(--ink-4);margin-top:1px;">Posez des questions sur vos projets, clients, statistiques et plus.</p></div>
-          <button id="rubis-admin-clear" class="btn btn-ghost btn-sm" style="margin-left:auto;">🗑 Effacer</button>
-        </div>
-        <div id="rubis-admin-msgs" style="min-height:120px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
-        <div style="display:flex;gap:8px;">
-          <input id="rubis-admin-input" class="glass-input" placeholder="Pose une question sur Flow…" style="flex:1;" />
-          <button id="rubis-admin-send" class="btn btn-primary" style="flex-shrink:0;">Envoyer</button>
-        </div>
-      </div>
     </div>`;
   }
 
   function wireAdminRubis(){
-    const raInput = document.getElementById('rubis-admin-input');
-    const raSend  = document.getElementById('rubis-admin-send');
-    const raMsgs  = document.getElementById('rubis-admin-msgs');
-    const raClear = document.getElementById('rubis-admin-clear');
-    function raAppend(role, text){
-      const el=document.createElement('div');
-      const isUser=role==='user';
-      el.style.cssText='display:flex;flex-direction:column;'+(isUser?'align-items:flex-end;':'align-items:flex-start;');
-      const bg=isUser?'rgba(217,119,87,.18)':'rgba(255,255,255,.05)';
-      const bd=isUser?'rgba(217,119,87,.3)':'rgba(255,255,255,.09)';
-      const br=isUser?'16px 16px 4px 16px':'16px 16px 16px 4px';
-      el.innerHTML='<div style="max-width:88%;padding:10px 14px;border-radius:'+br+';background:'+bg+';border:1px solid '+bd+';font-size:.875rem;line-height:1.6;white-space:pre-wrap;word-break:break-word;">'+esc(text)+'</div>';
-      raMsgs.appendChild(el); raMsgs.scrollTop=raMsgs.scrollHeight; return el;
-    }
-    async function raSubmit(){
-      if(_rubisBusy) return;
-      const groqKey = db.aiConfig&&db.aiConfig.groqKey;
-      if(!groqKey){ raAppend('assistant','(Clé Groq non configurée — ajoutez-la dans Automatisation IA.)'); return; }
-      const txt=(raInput.value||'').trim();
-      if(!txt) return;
-      raInput.value=''; _rubisBusy=true; raSend.disabled=true;
-      raAppend('user',txt);
-      const typing=raAppend('assistant','…');
-      try{
-        const answer=await rubisAgentLoop(groqKey,txt,function(toolName){ typing.querySelector('div').textContent='⚙️ '+toolName+'…'; });
-        typing.querySelector('div').textContent=answer;
-      }catch(e){ typing.querySelector('div').textContent='❌ '+e.message; }
-      _rubisBusy=false; raSend.disabled=false; if(raInput) raInput.focus();
-    }
-    if(raSend)  raSend.addEventListener('click',raSubmit);
-    if(raInput) raInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();raSubmit();} });
-    if(raClear) raClear.addEventListener('click',()=>{ _rubisHistory=[]; raMsgs.innerHTML=''; if(raInput) raInput.focus(); });
-    _rubisHistory.forEach(m=>{ if(m.role==='user'||m.role==='assistant') raAppend(m.role,m.content||''); });
-    if(raInput) raInput.focus();
+    // Cet onglet n'affiche plus que la vue d'ensemble (stats/projets).
+    // Le chat IA se trouve désormais uniquement dans l'onglet "Rubis".
   }
 
   function renderClientRubis(){
