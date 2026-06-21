@@ -802,6 +802,7 @@ select.glass-input option { background: #111; color: var(--ink); }
     if(!Array.isArray(db.activityLog)) db.activityLog = [];
     if(!Array.isArray(db.finance)) db.finance = [];
     if(!Array.isArray(db.invoices)) db.invoices = [];
+    if(!db.companyInfo || typeof db.companyInfo!=='object') db.companyInfo = {};
     if(!db.financeGoal || typeof db.financeGoal !== 'object') db.financeGoal = {monthly:0, annual:0};
     if(!Array.isArray(db.pendingUsers)) db.pendingUsers = [];
     if(!Array.isArray(db.blockedAccounts)) db.blockedAccounts = [];
@@ -5160,6 +5161,7 @@ DOCUMENTS
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button id="btn-export-finance-csv" class="btn btn-ghost btn-sm">📊 Exporter CSV</button>
           <button id="btn-gen-devis" class="btn btn-ghost">📄 Devis / Facture</button>
+          <button id="btn-company-info" class="btn btn-ghost" title="Informations légales affichées sur vos devis et factures">⚙️ Mes informations</button>
           <button id="btn-add-revenue" class="btn btn-primary">${iconPlus()} Ajouter entrée</button>
         </div>
       </div>
@@ -5348,6 +5350,7 @@ DOCUMENTS
     if(btnAdd) btnAdd.addEventListener('click',()=>openAddRevenueModal());
 
     document.getElementById('btn-gen-devis')?.addEventListener('click',openDevisModal);
+    document.getElementById('btn-company-info')?.addEventListener('click',openCompanyInfoModal);
 
     const btnGoals=document.getElementById('btn-edit-goals');
     if(btnGoals) btnGoals.addEventListener('click',()=>{
@@ -5544,6 +5547,36 @@ DOCUMENTS
     });
   }
 
+  function openCompanyInfoModal(){
+    const c = db.companyInfo||{};
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">⚙️ Mes informations légales</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:18px;">Ces informations apparaissent sur tous vos devis et factures générés.</p>
+      <div style="margin-bottom:12px;"><label class="label">Raison sociale</label><input id="ci-name" class="glass-input" placeholder="Flow Agence" value="${esc(c.legalName||'')}" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div><label class="label">SIRET</label><input id="ci-siret" class="glass-input" placeholder="000 000 000 00000" value="${esc(c.siret||'')}" /></div>
+        <div><label class="label">N° TVA intracommunautaire</label><input id="ci-vat" class="glass-input" placeholder="FR00 000000000" value="${esc(c.vat||'')}" /></div>
+      </div>
+      <div style="margin-bottom:12px;"><label class="label">Adresse</label><input id="ci-address" class="glass-input" placeholder="12 rue de l'Innovation, 75000 Paris" value="${esc(c.address||'')}" /></div>
+      <div style="margin-bottom:18px;"><label class="label">Email de contact</label><input id="ci-email" class="glass-input" placeholder="contact@votre-agence.fr" value="${esc(c.email||'')}" /></div>
+      <button id="ci-save" class="btn btn-primary" style="width:100%;justify-content:center;">Enregistrer</button>`,
+    ()=>{
+      document.getElementById('ci-save').addEventListener('click',()=>{
+        db.companyInfo = {
+          legalName: document.getElementById('ci-name').value.trim(),
+          siret: document.getElementById('ci-siret').value.trim(),
+          vat: document.getElementById('ci-vat').value.trim(),
+          address: document.getElementById('ci-address').value.trim(),
+          email: document.getElementById('ci-email').value.trim(),
+        };
+        saveDB(); toast('Informations enregistrées ✓','success'); closeModal();
+      });
+    });
+  }
+
   function openDevisModal(){
     const clients=db.users.filter(u=>u.role==='client');
     const lineRowHTML = ()=>`
@@ -5634,9 +5667,10 @@ DOCUMENTS
         if(!window.jspdf){ toast('jsPDF non chargé','error'); return; }
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF();
-        const PW=210, PH=297, MX=16; // marges horizontales
+        const PW=210, PH=297, MX=18;
 
         const docType = document.getElementById('dv-type').value||'Devis';
+        const isFacture = docType==='Facture';
         const cid     = document.getElementById('dv-client').value;
         const client  = db.users.find(u=>u.id===cid);
         const num     = document.getElementById('dv-num').value||'001';
@@ -5649,99 +5683,150 @@ DOCUMENTS
         if(!lines.length){ toast('Ajoutez au moins une ligne avec une description.','error'); return; }
         const ht=lines.reduce((s,l)=>s+l.qty*l.price,0);
         const tva=ht*tvaRate, ttc=ht+tva;
-        const money = n => n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 
-        // ── En-tête ──────────────────────────────────────────────
-        pdf.setFillColor(217,119,87); pdf.rect(0,0,PW,32,'F');
-        pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(20);
-        pdf.text('flow', MX, 20);
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(9);
-        pdf.text('Agence web', MX, 26);
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(15);
-        pdf.text(docType.toUpperCase(), PW-MX, 18, {align:'right'});
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(9);
-        pdf.text('N° '+num, PW-MX, 24, {align:'right'});
-        pdf.text(new Date().toLocaleDateString('fr-FR'), PW-MX, 29, {align:'right'});
+        // Formatage monétaire SANS espace insécable Unicode : la police
+        // Helvetica intégrée à jsPDF ne possède pas ce glyphe et l'affiche
+        // comme un caractère cassé ("/"). On utilise une espace normale.
+        const money = n => {
+          const fixed = (n||0).toFixed(2).replace('.', ',');
+          const [intPart, decPart] = fixed.split(',');
+          return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + decPart + ' €';
+        };
+
+        const CORAL=[217,119,87], CORAL_DEEP=[162,75,48], INK=[26,19,14],
+              INK_3=[120,103,90], INK_4=[165,150,138], PAPER=[250,247,243], LINE=[228,217,206];
+
+        // ── En-tête : logo Flow (serif, fidèle à l'identité du site) ──────
+        pdf.setTextColor(...CORAL);
+        pdf.setFont('times','italic'); pdf.setFontSize(26);
+        pdf.text('flow', MX, 26);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(...INK_3);
+        pdf.text('Agence web', MX, 32);
+
+        // Bloc émetteur (mentions légales minimales)
+        pdf.setFontSize(7.6); pdf.setTextColor(...INK_3);
+        const issuerCfg = (db.companyInfo)||{};
+        const issuer = [
+          issuerCfg.legalName || 'Flow Agence',
+          [issuerCfg.siret?('SIRET '+issuerCfg.siret):'', issuerCfg.vat?('TVA '+issuerCfg.vat):''].filter(Boolean).join(' · '),
+          issuerCfg.address || '',
+          issuerCfg.email || '',
+        ].filter(Boolean);
+        issuer.forEach((line,i)=> pdf.text(line, MX, 40 + i*4));
+
+        // Bloc type/numéro/date, aligné à droite
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.setTextColor(...INK);
+        pdf.text(docType.toUpperCase(), PW-MX, 22, {align:'right'});
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(8.5); pdf.setTextColor(...INK_3);
+        pdf.text('N° '+num, PW-MX, 28, {align:'right'});
+        pdf.text('Date d\'émission : '+new Date().toLocaleDateString('fr-FR'), PW-MX, 33, {align:'right'});
+        if(isFacture){
+          const due = new Date(); due.setDate(due.getDate()+30);
+          pdf.text('Échéance : '+due.toLocaleDateString('fr-FR'), PW-MX, 38, {align:'right'});
+        } else {
+          const valid = new Date(); valid.setDate(valid.getDate()+30);
+          pdf.text('Valable jusqu\'au : '+valid.toLocaleDateString('fr-FR'), PW-MX, 38, {align:'right'});
+        }
+
+        pdf.setDrawColor(...CORAL); pdf.setLineWidth(.6);
+        pdf.line(MX, 58, PW-MX, 58);
 
         // ── Bloc client ──────────────────────────────────────────
-        let y = 46;
-        pdf.setTextColor(140,120,100); pdf.setFont('helvetica','bold'); pdf.setFontSize(8);
-        pdf.text('ADRESSÉ À', MX, y);
+        let y = 68;
+        pdf.setTextColor(...INK_4); pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5);
+        pdf.text(isFacture?'FACTURÉ À':'ADRESSÉ À', MX, y);
         y += 6;
-        pdf.setTextColor(26,19,14); pdf.setFont('helvetica','bold'); pdf.setFontSize(11);
+        pdf.setTextColor(...INK); pdf.setFont('helvetica','bold'); pdf.setFontSize(11.5);
         pdf.text(client ? ((client.firstName||'')+' '+(client.lastName||'')).trim()||client.username : 'Client libre', MX, y);
         if(client){
-          y += 5.5;
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(9.5); pdf.setTextColor(90,75,65);
-          if(client.email) { pdf.text(client.email, MX, y); y += 5; }
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(...INK_3);
+          if(client.email){ y += 5.5; pdf.text(client.email, MX, y); }
         }
 
         // ── Objet ────────────────────────────────────────────────
-        y += 8;
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(12.5); pdf.setTextColor(217,119,87);
-        pdf.text(title, MX, y);
+        y += 12;
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(12.5); pdf.setTextColor(...CORAL_DEEP);
+        pdf.splitTextToSize(title, PW-2*MX).forEach(l=>{ pdf.text(l, MX, y); y+=6; });
 
         // ── Tableau des lignes ───────────────────────────────────
-        y += 10;
-        const colDesc=MX+2, colQty=130, colPU=152, colTot=PW-MX-2;
-        pdf.setFillColor(38,28,22); pdf.rect(MX, y-6.5, PW-2*MX, 9, 'F');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5); pdf.setTextColor(255,255,255);
+        y += 6;
+        const colDesc=MX+4, colQty=128, colPU=152, colTot=PW-MX-4;
+        pdf.setFillColor(...INK); pdf.rect(MX, y-6.5, PW-2*MX, 9.5, 'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(255,255,255);
         pdf.text('DESCRIPTION', colDesc, y);
         pdf.text('QTÉ', colQty, y, {align:'center'});
         pdf.text('PU HT', colPU, y, {align:'right'});
         pdf.text('TOTAL HT', colTot, y, {align:'right'});
-        y += 8;
+        y += 9.5;
 
         pdf.setFont('helvetica','normal'); pdf.setFontSize(9.5);
         lines.forEach((l,i)=>{
-          if(y>262){ pdf.addPage(); y=24; }
-          const rowH = 9;
-          if(i%2===0){ pdf.setFillColor(248,243,237); pdf.rect(MX, y-6, PW-2*MX, rowH, 'F'); }
-          pdf.setTextColor(26,19,14);
-          const descLines = pdf.splitTextToSize(l.desc, colQty-colDesc-6);
+          if(y>250){ pdf.addPage(); y=28; }
+          const rowH = 10;
+          if(i%2===0){ pdf.setFillColor(...PAPER); pdf.rect(MX, y-6.5, PW-2*MX, rowH, 'F'); }
+          pdf.setTextColor(...INK);
+          const descLines = pdf.splitTextToSize(l.desc, colQty-colDesc-8);
           pdf.text(descLines[0]||'', colDesc, y);
+          pdf.setTextColor(...INK_3);
           pdf.text(String(l.qty), colQty, y, {align:'center'});
           pdf.text(money(l.price), colPU, y, {align:'right'});
-          pdf.setFont('helvetica','bold');
+          pdf.setFont('helvetica','bold'); pdf.setTextColor(...INK);
           pdf.text(money(l.qty*l.price), colTot, y, {align:'right'});
           pdf.setFont('helvetica','normal');
           y += rowH;
         });
+        pdf.setDrawColor(...LINE); pdf.setLineWidth(.3);
+        pdf.line(MX, y-4, PW-MX, y-4);
 
         // ── Totaux ───────────────────────────────────────────────
-        y += 4;
-        pdf.setDrawColor(225,210,195); pdf.setLineWidth(.3);
-        pdf.line(120, y, PW-MX, y);
-        y += 7;
-        pdf.setFontSize(9.5); pdf.setTextColor(90,75,65);
-        pdf.text('Total HT', 152, y, {align:'right'}); pdf.text(money(ht), colTot, y, {align:'right'});
+        y += 6;
+        pdf.setFontSize(9.5); pdf.setTextColor(...INK_3); pdf.setFont('helvetica','normal');
+        pdf.text('Total HT', 150, y, {align:'right'}); pdf.text(money(ht), colTot, y, {align:'right'});
         y += 6.5;
-        pdf.text('TVA ('+(tvaRate*100).toFixed(tvaRate*100%1===0?0:1)+' %)', 152, y, {align:'right'}); pdf.text(money(tva), colTot, y, {align:'right'});
-        y += 9;
-        pdf.setFillColor(217,119,87); pdf.rect(118, y-7, PW-MX-118, 11, 'F');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(255,255,255);
-        pdf.text('TOTAL TTC', 152, y, {align:'right'});
+        const tvaLabel = tvaRate>0 ? 'TVA ('+(tvaRate*100).toFixed(tvaRate*100%1===0?0:1)+' %)' : 'TVA non applicable — art. 293B du CGI';
+        pdf.text(tvaLabel, 150, y, {align:'right'}); if(tvaRate>0) pdf.text(money(tva), colTot, y, {align:'right'});
+        y += 10;
+        pdf.setFillColor(...CORAL); pdf.roundedRect(112, y-7.5, PW-MX-112, 12, 1.5, 1.5, 'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(11.5); pdf.setTextColor(255,255,255);
+        pdf.text(isFacture?'TOTAL À PAYER':'TOTAL TTC', 150, y, {align:'right'});
         pdf.text(money(ttc), colTot, y, {align:'right'});
 
         // ── Notes ────────────────────────────────────────────────
+        y += 16;
+        if(y>260){ pdf.addPage(); y=28; }
         if(notes){
-          y += 16;
-          if(y>270){ pdf.addPage(); y=24; }
-          pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(140,120,100);
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(...INK_4);
           pdf.text('NOTES', MX, y);
           y += 5;
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(80,65,55);
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(...INK_3);
           pdf.splitTextToSize(notes, PW-2*MX).forEach(line=>{ pdf.text(line, MX, y); y+=4.6; });
+          y += 4;
         }
 
-        // ── Pied de page sur toutes les pages ───────────────────
+        // ── Mentions légales (facture uniquement) ─────────────────
+        if(isFacture){
+          if(y>255){ pdf.addPage(); y=28; }
+          pdf.setDrawColor(...LINE); pdf.line(MX, y, PW-MX, y);
+          y += 6;
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(...INK_4);
+          pdf.text('CONDITIONS & MENTIONS LÉGALES', MX, y);
+          y += 5;
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(7.6); pdf.setTextColor(...INK_4);
+          [
+            'Paiement à réception, sauf échéance indiquée ci-dessus. Tout retard de paiement entraîne, conformément à la loi,',
+            'des pénalités au taux légal en vigueur ainsi qu\'une indemnité forfaitaire de 40 € pour frais de recouvrement.',
+            'Aucun escompte n\'est accordé pour paiement anticipé.',
+          ].forEach(l=>{ pdf.text(l, MX, y); y += 3.8; });
+        }
+
+        // ── Pied de page sur toutes les pages ─────────────────────
         const pageCount = pdf.internal.getNumberOfPages();
         for(let p=1;p<=pageCount;p++){
           pdf.setPage(p);
-          pdf.setDrawColor(230,220,210); pdf.line(MX, 282, PW-MX, 282);
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(170,150,130);
-          pdf.text('Généré par Flow le '+new Date().toLocaleString('fr-FR'), MX, 288);
-          pdf.text('Page '+p+'/'+pageCount, PW-MX, 288, {align:'right'});
+          pdf.setDrawColor(...LINE); pdf.line(MX, 280, PW-MX, 280);
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(...INK_4);
+          pdf.text((issuerCfg.legalName||'Flow Agence')+' · '+num, MX, 286);
+          pdf.text('Page '+p+'/'+pageCount, PW-MX, 286, {align:'right'});
         }
 
         // ── Sauvegarde dans l'historique Flow ───────────────────
@@ -5749,7 +5834,7 @@ DOCUMENTS
         db.invoices.unshift({ id:uid(), type:docType, num, title, clientId:cid||null, ht, tva, ttc, createdAt:new Date().toISOString(), createdBy:me.username });
         saveDB();
 
-        pdf.save((docType==='Facture'?'facture_':'devis_')+num+'_'+(client?.username||'client')+'.pdf');
+        pdf.save((isFacture?'facture_':'devis_')+num+'_'+(client?.username||'client')+'.pdf');
         toast(docType+' généré ✓','success'); closeModal(); refreshAdminTab();
       });
     });
