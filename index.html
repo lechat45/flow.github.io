@@ -801,6 +801,7 @@ select.glass-input option { background: #111; color: var(--ink); }
     if(!Array.isArray(db.documents)) db.documents = [];
     if(!Array.isArray(db.activityLog)) db.activityLog = [];
     if(!Array.isArray(db.finance)) db.finance = [];
+    if(!Array.isArray(db.invoices)) db.invoices = [];
     if(!db.financeGoal || typeof db.financeGoal !== 'object') db.financeGoal = {monthly:0, annual:0};
     if(!Array.isArray(db.pendingUsers)) db.pendingUsers = [];
     if(!Array.isArray(db.blockedAccounts)) db.blockedAccounts = [];
@@ -826,6 +827,7 @@ select.glass-input option { background: #111; color: var(--ink); }
     db.projects.forEach(p=>{
       if(!p.priority) p.priority='normal';
       if(!Array.isArray(p.internalTasks)) p.internalTasks=[];
+      if(!Array.isArray(p.clientTasks)) p.clientTasks=[];
       if(p.pinned===undefined) p.pinned=false;
       if(!Array.isArray(p.timeline)) p.timeline=[];
       if(!Array.isArray(p.tags)) p.tags=[];
@@ -941,6 +943,28 @@ select.glass-input option { background: #111; color: var(--ink); }
 
   // ─── "Quoi de neuf ?" version modal ─────────────
   function showWhatsNew(){
+    const isAdminLike = me && (me.role==='admin'||me.role==='controller');
+    const isTeste1    = me && me.id==='u_teste1';
+
+    const commonItems = [
+      ['📄','Devis & factures entièrement repensés : mise en page propre, TVA modifiable, notes de paiement, et historique conservé'],
+    ];
+    const adminItems = [
+      ['💎','Nouvel onglet « Rubis » : un chat dédié finance & projets, séparé de l\'Assistant IA, avec accès volontairement restreint (noms d\'entreprises, statuts, montants agrégés — jamais d\'email, mot de passe ou clé API)'],
+      ['🤖','L\'onglet « Assistant IA » se concentre maintenant sur la vue d\'ensemble, les alertes et la configuration'],
+    ];
+    const testeItems = [
+      ['🧪','Deux nouveaux onglets bêta réservés à ce compte de test : « Mes factures » et « À faire »'],
+      ['📋','« À faire » : une checklist que votre équipe peut remplir pour vous demander des éléments (logo, textes, accès…)'],
+      ['🧾','« Mes factures » : retrouvez vos devis et factures avec leur statut, au même endroit'],
+    ];
+
+    const items = [
+      ...commonItems,
+      ...(isAdminLike ? adminItems : []),
+      ...(isTeste1 ? testeItems : []),
+    ];
+
     showModal(`
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
         <div>
@@ -949,37 +973,24 @@ select.glass-input option { background: #111; color: var(--ink); }
         </div>
         <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
       </div>
+      ${isTeste1?`<div style="font-size:.72rem;color:var(--sky);background:rgba(155,184,216,.08);border:1px solid rgba(155,184,216,.2);border-radius:10px;padding:8px 12px;margin-bottom:16px;">🧪 Ce compte a accès à des fonctionnalités bêta en avant-première, avant un éventuel déploiement à tous les clients.</div>`:''}
       <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
-        ${[
-          ['⏱️','Déconnexion automatique après 30 min d\'inactivité'],
-          ['🔒','Blocage après 5 tentatives de connexion échouées'],
-          ['📡','Bannière hors-ligne en cas de perte de connexion'],
-          ['⌨️','Raccourcis clavier (Esc, N)'],
-          ['📊','Graphique de répartition des projets'],
-          ['📅','Calendrier des échéances — 30 prochains jours'],
-          ['🎯','Compte à rebours de livraison côté client'],
-          ['📝','Notes par étape dans l\'éditeur de timeline'],
-          ['📋','Duplication de projet'],
-          ['🗂️','Modèles de timeline prédéfinis'],
-          ['🎨','Couleur personnalisée par projet'],
-          ['💬','Message d\'accueil client par projet'],
-          ['🗄️','Archivage de projet (au lieu de suppression)'],
-          ['🏷️','Tags sur les projets'],
-          ['✅','Commentaire admin lors de la validation d\'un document'],
-          ['⚠️','Indicateur de relance (doc en attente > 7 jours)'],
-          ['👤','Profil enrichi client (téléphone, secteur)']
-        ].map(([icon,text])=>`
+        ${items.map(([icon,text])=>`
           <li style="display:flex;align-items:flex-start;gap:12px;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.07);">
             <span style="font-size:1.1rem;flex-shrink:0;">${icon}</span>
             <span style="font-size:.875rem;color:var(--ink-2);">${text}</span>
           </li>`).join('')}
       </ul>
       <button onclick="closeModal()" class="btn btn-primary" style="width:100%;justify-content:center;">Super, c'est noté !</button>`,
-    ()=>{ localStorage.setItem('flow_seen_version', APP_VERSION); });
+    ()=>{ localStorage.setItem(isTeste1?'flow_seen_version_teste1':'flow_seen_version', APP_VERSION); });
   }
 
   function checkVersion(){
-    if(localStorage.getItem('flow_seen_version') !== APP_VERSION){
+    // Le compte de test (teste1) a son propre suivi de version, pour garantir
+    // qu'il voit toujours le récap des nouveautés bêta même si la popup
+    // générale a déjà été vue sur ce navigateur sous un autre compte.
+    const key = (me && me.id==='u_teste1') ? 'flow_seen_version_teste1' : 'flow_seen_version';
+    if(localStorage.getItem(key) !== APP_VERSION){
       showWhatsNew();
     }
   }
@@ -1482,6 +1493,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       }
       localStorage.removeItem('flow_attempts'); localStorage.removeItem('flow_lock');
       render();
+      checkVersion();
     };
     document.getElementById('li-btn').addEventListener('click',doLogin);
     document.getElementById('li-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
@@ -1627,6 +1639,12 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     // Discussion (assistant IA fusionné) — disponible pour tous les clients,
     // qu'un site soit lié à leur projet ou non (contenu adapté dans la vue elle-même).
     base.splice(1,0,{ id:'discussion', icon:iconChat(), label:'Discussion' });
+    // Fonctionnalités bêta — testées uniquement sur le compte teste1 avant
+    // un éventuel déploiement à tous les clients.
+    if(me && me.id==='u_teste1'){
+      base.splice(2,0,{ id:'client-invoices', icon:iconFinance(), label:'Mes factures', beta:true });
+      base.splice(3,0,{ id:'client-checklist', icon:iconRequests(), label:'À faire', beta:true });
+    }
     return base;
   }
   function markAIRequestsSeen(){
@@ -2670,6 +2688,22 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
               </div>`).join('')}
             </div>`:canEdit&&tasks.length===0?`<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ Tâches internes</button><button class="btn btn-ghost btn-sm btn-extract-tasks" data-pid="${project.id}" title="Extraire des tâches depuis la description" style="font-size:.75rem;">✨ Extraire</button></div>`:'';
         })()}
+        ${(()=>{
+          if(!(canEdit&&u&&u.id==='u_teste1')) return '';
+          const ctasks = project.clientTasks||[];
+          const cDoneCount = ctasks.filter(t=>t.done).length;
+          return ctasks.length>0?`
+            <div style="margin:10px 0 0;padding:10px 14px;background:rgba(155,184,216,.04);border-radius:10px;border:1px solid rgba(155,184,216,.15);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:.78rem;font-weight:600;color:var(--sky);">📋 À FAIRE CÔTÉ CLIENT — TEST (${cDoneCount}/${ctasks.length})</span>
+                <button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}">Gérer</button>
+              </div>
+              ${ctasks.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${t.done?'var(--sage)':'rgba(255,255,255,.2)'};background:${t.done?'rgba(147,181,148,.2)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--sage);flex-shrink:0;">${t.done?'✓':''}</div>
+                <span style="font-size:.78rem;color:${t.done?'var(--ink-4)':'var(--ink-2)'};text-decoration:${t.done?'line-through':'none'};">${esc(t.label)}</span>
+              </div>`).join('')}
+            </div>`:`<div style="margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ À faire côté client (test)</button></div>`;
+        })()}
         <div class="divider"></div>
         <div style="font-size:.8rem;font-weight:600;color:rgba(244,238,229,.5);margin-bottom:8px;">DOCUMENTS (${docs.length})</div>
         ${docs.length===0
@@ -2774,6 +2808,9 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     document.querySelectorAll('.btn-manage-tasks').forEach(b=>{
       b.addEventListener('click',()=>openManageTasksModal(b.dataset.pid));
+    });
+    document.querySelectorAll('.btn-manage-client-tasks').forEach(b=>{
+      b.addEventListener('click',()=>openManageClientTasksModal(b.dataset.pid));
     });
     document.querySelectorAll('.btn-extract-tasks').forEach(b=>{
       b.addEventListener('click',()=>{
@@ -3226,10 +3263,12 @@ DOCUMENTS
   }
 
   function renderClientTab(){
-    if(activeTab==='home')         return renderClientHome();
-    if(activeTab==='documents')    return renderClientDocuments();
-    if(activeTab==='discussion')   return renderClientDiscussion();
-    if(activeTab==='profile')      return renderClientProfile();
+    if(activeTab==='home')              return renderClientHome();
+    if(activeTab==='documents')         return renderClientDocuments();
+    if(activeTab==='discussion')        return renderClientDiscussion();
+    if(activeTab==='client-invoices')   return me.id==='u_teste1' ? renderClientInvoices() : renderClientHome();
+    if(activeTab==='client-checklist')  return me.id==='u_teste1' ? renderClientChecklist() : renderClientHome();
+    if(activeTab==='profile')           return renderClientProfile();
     return '';
   }
 
@@ -3263,6 +3302,8 @@ DOCUMENTS
     if(activeTab==='home')         wireClientHome();
     if(activeTab==='documents')    wireClientDocuments();
     if(activeTab==='discussion'){ wireClientDiscussionQA(); const m=document.getElementById('qa-messages'); if(m) m.scrollTop=m.scrollHeight; }
+    if(activeTab==='client-invoices'&&me.id==='u_teste1')  wireClientInvoices();
+    if(activeTab==='client-checklist'&&me.id==='u_teste1') wireClientChecklist();
     if(activeTab==='profile')      wireClientProfile();
     renderMobileTabbar('client');
   }
@@ -3640,6 +3681,111 @@ DOCUMENTS
   function wireClientDocuments(){
     document.querySelectorAll('.btn-fill-doc').forEach(b=>{
       b.addEventListener('click',()=>openFillDocModal(b.dataset.did));
+    });
+  }
+
+  // ─── Client: Mes factures (BÊTA — teste1 uniquement) ────────────
+  function renderClientInvoices(){
+    const myProjects = getUserProjects(me.id);
+    const myProjectIds = myProjects.map(p=>p.id);
+    const invs = (db.invoices||[]).filter(inv=>inv.clientId===me.id || (inv.projectId&&myProjectIds.includes(inv.projectId)));
+    const fmtAmt = n => (n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+    const totalTTC = invs.reduce((s,i)=>s+(i.ttc||0),0);
+
+    return `<div class="fade-up">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <h1 style="font-size:1.4rem;font-weight:700;">Mes factures</h1>
+        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;text-transform:uppercase;">TEST</span>
+      </div>
+      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:24px;">Retrouvez ici vos devis et factures émis par votre équipe Flow.</p>
+
+      ${invs.length===0 ? `
+        <div class="glass-card" style="padding:48px 24px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:12px;opacity:.6;">📄</div>
+          <div style="font-size:.9rem;font-weight:600;color:var(--ink-2);margin-bottom:6px;">Aucun document pour le moment</div>
+          <div style="font-size:.8rem;color:var(--ink-4);">Vos devis et factures apparaîtront ici dès qu'ils seront émis.</div>
+        </div>` : `
+        <div class="glass-card" style="padding:18px 22px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:.85rem;color:var(--ink-3);">${invs.length} document(s)</span>
+          <span style="font-size:1rem;font-weight:700;color:var(--coral);">Total : ${fmtAmt(totalTTC)}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${invs.map(inv=>`
+            <div class="glass-card" style="padding:16px 18px;display:flex;align-items:center;gap:12px;">
+              <span style="font-size:.68rem;padding:3px 9px;border-radius:999px;flex-shrink:0;${inv.type==='Facture'?'background:rgba(217,119,87,.15);color:var(--coral);border:1px solid rgba(217,119,87,.3);':'background:rgba(155,184,216,.12);color:var(--sky);border:1px solid rgba(155,184,216,.3);'}">${esc(inv.type)}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:.88rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(inv.title)}</div>
+                <div style="font-size:.72rem;color:var(--ink-4);">N° ${esc(inv.num)} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}</div>
+              </div>
+              <div style="font-size:.95rem;font-weight:700;color:var(--sage);flex-shrink:0;">${fmtAmt(inv.ttc)}</div>
+            </div>`).join('')}
+        </div>`}
+    </div>`;
+  }
+  function wireClientInvoices(){ /* lecture seule — rien à câbler */ }
+
+  // ─── Client: À faire / checklist partagée (BÊTA — teste1 uniquement) ──
+  function renderClientChecklist(){
+    const project = getUserProject(me.id);
+    if(!project){
+      return `<div class="fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;padding:48px 24px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:16px;opacity:.6;">✅</div>
+        <div style="font-size:.95rem;font-weight:600;color:var(--ink-2);margin-bottom:8px;">Aucun projet associé</div>
+        <div style="font-size:.82rem;color:var(--ink-4);line-height:1.6;max-width:280px;">Votre checklist apparaîtra dès que votre équipe aura créé votre projet.</div>
+      </div>`;
+    }
+    if(!Array.isArray(project.clientTasks)) project.clientTasks=[];
+    const tasks = project.clientTasks;
+    const doneCount = tasks.filter(t=>t.done).length;
+    const pct = tasks.length>0 ? Math.round(doneCount/tasks.length*100) : 0;
+
+    return `<div class="fade-up">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <h1 style="font-size:1.4rem;font-weight:700;">À faire</h1>
+        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;text-transform:uppercase;">TEST</span>
+      </div>
+      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:20px;">Les actions à réaliser de votre côté pour avancer sur votre projet.</p>
+
+      ${tasks.length>0?`
+      <div class="glass-card" style="padding:16px 20px;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:.8rem;color:var(--ink-3);">${doneCount} / ${tasks.length} terminée(s)</span>
+          <span style="font-size:.85rem;font-weight:700;color:var(--sage);">${pct}%</span>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:var(--sage);border-radius:999px;transition:width .3s;"></div>
+        </div>
+      </div>`:''}
+
+      ${tasks.length===0 ? `
+        <div class="glass-card" style="padding:48px 24px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:12px;opacity:.6;">🎉</div>
+          <div style="font-size:.9rem;font-weight:600;color:var(--ink-2);">Rien à faire pour l'instant</div>
+          <div style="font-size:.8rem;color:var(--ink-4);margin-top:4px;">Votre équipe vous demandera ici les éléments nécessaires (logo, textes, accès…).</div>
+        </div>` : `
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${tasks.map((t,i)=>`
+            <label style="display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.02);cursor:pointer;">
+              <input type="checkbox" class="ctk-check" data-i="${i}" ${t.done?'checked':''} style="margin-top:2px;width:16px;height:16px;accent-color:var(--sage);flex-shrink:0;cursor:pointer;" />
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:.88rem;color:${t.done?'var(--ink-4)':'var(--ink-2)'};text-decoration:${t.done?'line-through':'none'};">${esc(t.label)}</div>
+                ${t.note?`<div style="font-size:.76rem;color:var(--ink-4);margin-top:2px;">${esc(t.note)}</div>`:''}
+              </div>
+            </label>`).join('')}
+        </div>`}
+    </div>`;
+  }
+  function wireClientChecklist(){
+    const project = getUserProject(me.id);
+    if(!project) return;
+    document.querySelectorAll('.ctk-check').forEach(cb=>{
+      cb.addEventListener('change',()=>{
+        const i = Number(cb.dataset.i);
+        if(project.clientTasks && project.clientTasks[i]){
+          project.clientTasks[i].done = cb.checked;
+          saveDB(); refreshClientTab(true);
+        }
+      });
     });
   }
 
@@ -5160,6 +5306,27 @@ DOCUMENTS
               </tbody>
             </table>
           </div>`}
+
+        ${(()=>{
+          const invs = (db.invoices||[]).slice(0,10);
+          if(!invs.length) return '';
+          return `<div class="glass-card" style="padding:22px;margin-top:20px;">
+            <h2 style="font-size:.95rem;font-weight:700;margin-bottom:14px;">📄 Devis & factures générés</h2>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${invs.map(inv=>{
+                const cl=db.users.find(u=>u.id===inv.clientId);
+                return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(255,255,255,.02);">
+                  <span style="font-size:.68rem;padding:2px 8px;border-radius:999px;flex-shrink:0;${inv.type==='Facture'?'background:rgba(217,119,87,.15);color:var(--coral);border:1px solid rgba(217,119,87,.3);':'background:rgba(155,184,216,.12);color:var(--sky);border:1px solid rgba(155,184,216,.3);'}">${esc(inv.type)}</span>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:.82rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(inv.title)} — N° ${esc(inv.num)}</div>
+                    <div style="font-size:.7rem;color:var(--ink-4);">${cl?esc(cl.username):'Client libre'} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}</div>
+                  </div>
+                  <div style="font-size:.85rem;font-weight:700;color:var(--sage);flex-shrink:0;">${fmtAmt(inv.ttc)}</div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+        })()}
       </div>
     </div>`;
   }
@@ -5341,67 +5508,249 @@ DOCUMENTS
     });
   }
 
+  // BÊTA — gestion de la checklist client (testée uniquement sur teste1)
+  function openManageClientTasksModal(projectId){
+    const p = db.projects.find(x=>x.id===projectId);
+    if(!p) return;
+    if(!Array.isArray(p.clientTasks)) p.clientTasks=[];
+    const renderList=()=>{
+      const c=document.getElementById('ctasks-list');
+      if(!c) return;
+      c.innerHTML=p.clientTasks.map((t,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+          <input type="checkbox" class="ctask-ck" data-i="${i}" ${t.done?'checked':''} style="accent-color:var(--sky);width:16px;height:16px;cursor:pointer;" />
+          <span style="flex:1;font-size:.875rem;color:${t.done?'var(--ink-4)':'var(--ink)'};text-decoration:${t.done?'line-through':'none'};">${esc(t.label)}</span>
+          <button class="btn btn-danger btn-sm ctask-dl" data-i="${i}">🗑</button>
+        </div>`).join('') || `<div style="padding:16px 0;text-align:center;font-size:.82rem;color:var(--ink-4);">Aucune action demandée au client.</div>`;
+      c.querySelectorAll('.ctask-ck').forEach(cb=>cb.addEventListener('change',()=>{ p.clientTasks[cb.dataset.i].done=cb.checked; saveDB(); renderList(); refreshAdminTab(); }));
+      c.querySelectorAll('.ctask-dl').forEach(b=>b.addEventListener('click',()=>{ p.clientTasks.splice(Number(b.dataset.i),1); saveDB(); renderList(); refreshAdminTab(); }));
+    };
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">📋 À faire côté client — ${esc(p.name)}</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">Fonctionnalité bêta : ces actions seront visibles par le client dans son onglet "À faire".</p>
+      <div id="ctasks-list"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <input id="new-ctask-inp" class="glass-input" placeholder="Ex: Envoyer le logo en haute résolution" style="flex:1;" />
+        <button id="add-ctask-btn" class="btn btn-primary btn-sm">Ajouter</button>
+      </div>`,
+    ()=>{
+      renderList();
+      const doAdd=()=>{ const v=document.getElementById('new-ctask-inp')?.value.trim(); if(!v) return; p.clientTasks.push({id:uid(),label:v,done:false,createdAt:new Date().toISOString()}); document.getElementById('new-ctask-inp').value=''; saveDB(); renderList(); refreshAdminTab(); };
+      document.getElementById('add-ctask-btn')?.addEventListener('click',doAdd);
+      document.getElementById('new-ctask-inp')?.addEventListener('keydown',e=>{ if(e.key==='Enter') doAdd(); });
+    });
+  }
+
   function openDevisModal(){
     const clients=db.users.filter(u=>u.role==='client');
+    const lineRowHTML = ()=>`
+        <div class="dv-line" style="display:grid;grid-template-columns:1fr 56px 92px 92px auto;gap:6px;margin-bottom:6px;align-items:center;">
+          <input class="glass-input dv-desc" placeholder="Description" />
+          <input class="glass-input dv-qty" type="number" value="1" min="1" style="text-align:center;" />
+          <input class="glass-input dv-price" type="number" placeholder="Prix HT €" style="text-align:right;" />
+          <div class="dv-line-total" style="font-size:.8rem;color:var(--ink-3);text-align:right;padding-right:4px;">0,00 €</div>
+          <button class="btn btn-danger btn-sm dv-dl">🗑</button>
+        </div>`;
     showModal(`
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
         <h2 style="font-size:1.1rem;font-weight:700;">📄 Devis / Facture</h2>
         <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div>
+          <label class="label">Type</label>
+          <select id="dv-type" class="glass-input">
+            <option value="Devis">Devis</option>
+            <option value="Facture">Facture</option>
+          </select>
+        </div>
         <div><label class="label">Client</label><select id="dv-client" class="glass-input"><option value="">— Libre —</option>${clients.map(c=>`<option value="${c.id}">${esc(c.username)}</option>`).join('')}</select></div>
-        <div><label class="label">N° document</label><input id="dv-num" class="glass-input" value="${new Date().getFullYear()}-${String(Date.now()).slice(-3)}" /></div>
+        <div><label class="label">N° document</label><input id="dv-num" class="glass-input" value="${new Date().getFullYear()}-${String(Date.now()).slice(-4)}" /></div>
       </div>
-      <div style="margin-bottom:14px;"><label class="label">Objet</label><input id="dv-title" class="glass-input" placeholder="Création site vitrine" /></div>
+      <div style="display:grid;grid-template-columns:1fr 110px;gap:10px;margin-bottom:14px;">
+        <div><label class="label">Objet</label><input id="dv-title" class="glass-input" placeholder="Création site vitrine" /></div>
+        <div><label class="label">TVA %</label><input id="dv-tva" class="glass-input" type="number" value="20" min="0" max="100" style="text-align:center;" /></div>
+      </div>
       <div id="dv-lines">
-        <div style="font-size:.78rem;font-weight:600;color:var(--ink-3);margin-bottom:6px;">Lignes</div>
-        <div class="dv-line" style="display:grid;grid-template-columns:1fr 60px 90px auto;gap:6px;margin-bottom:6px;">
-          <input class="glass-input dv-desc" placeholder="Description" />
-          <input class="glass-input dv-qty" type="number" value="1" min="1" />
-          <input class="glass-input dv-price" type="number" placeholder="Prix HT €" />
-          <button class="btn btn-danger btn-sm dv-dl">🗑</button>
+        <div style="display:grid;grid-template-columns:1fr 56px 92px 92px 34px;gap:6px;margin-bottom:8px;font-size:.7rem;font-weight:700;color:var(--ink-4);letter-spacing:.04em;text-transform:uppercase;padding:0 2px;">
+          <span>Description</span><span style="text-align:center;">Qté</span><span style="text-align:right;">PU HT</span><span style="text-align:right;">Total HT</span><span></span>
+        </div>
+        ${lineRowHTML()}
+      </div>
+      <button id="dv-add-line" class="btn btn-ghost btn-sm" style="margin-bottom:14px;">+ Ligne</button>
+      <div style="margin-bottom:16px;"><label class="label">Notes / conditions de paiement (optionnel)</label><input id="dv-notes" class="glass-input" placeholder="Ex: Paiement à 30 jours, virement bancaire" /></div>
+      <div style="display:flex;justify-content:flex-end;gap:24px;margin-bottom:18px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;">
+        <div style="text-align:right;font-size:.8rem;color:var(--ink-3);">
+          <div>Total HT : <span id="dv-sum-ht" style="color:var(--ink-2);font-weight:600;">0,00 €</span></div>
+          <div>TVA : <span id="dv-sum-tva" style="color:var(--ink-2);font-weight:600;">0,00 €</span></div>
+        </div>
+        <div style="text-align:right;font-size:1rem;font-weight:700;color:var(--coral);align-self:center;">
+          Total TTC : <span id="dv-sum-ttc">0,00 €</span>
         </div>
       </div>
-      <button id="dv-add-line" class="btn btn-ghost btn-sm" style="margin-bottom:16px;">+ Ligne</button>
       <div style="display:flex;gap:10px;">
         <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;justify-content:center;">Annuler</button>
-        <button id="dv-gen" class="btn btn-primary" style="flex:1;justify-content:center;">Générer PDF</button>
+        <button id="dv-gen" class="btn btn-primary" style="flex:1;justify-content:center;">Générer le PDF</button>
       </div>`,
     ()=>{
-      const addLine=()=>{ const d=document.createElement('div'); d.className='dv-line'; d.style.cssText='display:grid;grid-template-columns:1fr 60px 90px auto;gap:6px;margin-bottom:6px;'; d.innerHTML=`<input class="glass-input dv-desc" placeholder="Description"/><input class="glass-input dv-qty" type="number" value="1" min="1"/><input class="glass-input dv-price" type="number" placeholder="Prix HT €"/><button class="btn btn-danger btn-sm dv-dl">🗑</button>`; d.querySelector('.dv-dl').addEventListener('click',()=>d.remove()); document.getElementById('dv-lines').appendChild(d); };
+      const fmtEUR = n => (n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+      function recalc(){
+        const tvaRate=(parseFloat(document.getElementById('dv-tva').value)||0)/100;
+        let ht=0;
+        document.querySelectorAll('.dv-line').forEach(l=>{
+          const qty=parseFloat(l.querySelector('.dv-qty')?.value)||0;
+          const price=parseFloat(l.querySelector('.dv-price')?.value)||0;
+          const lineTotal=qty*price;
+          ht+=lineTotal;
+          const totalEl=l.querySelector('.dv-line-total');
+          if(totalEl) totalEl.textContent=fmtEUR(lineTotal);
+        });
+        const tva=ht*tvaRate, ttc=ht+tva;
+        document.getElementById('dv-sum-ht').textContent=fmtEUR(ht);
+        document.getElementById('dv-sum-tva').textContent=fmtEUR(tva);
+        document.getElementById('dv-sum-ttc').textContent=fmtEUR(ttc);
+      }
+      function wireLine(d){
+        d.querySelector('.dv-dl').addEventListener('click',()=>{ d.remove(); recalc(); });
+        d.querySelectorAll('.dv-qty,.dv-price').forEach(inp=>inp.addEventListener('input',recalc));
+      }
+      const addLine=()=>{
+        const d=document.createElement('div');
+        d.className='dv-line';
+        d.style.cssText='display:grid;grid-template-columns:1fr 56px 92px 92px auto;gap:6px;margin-bottom:6px;align-items:center;';
+        d.innerHTML=`<input class="glass-input dv-desc" placeholder="Description"/><input class="glass-input dv-qty" type="number" value="1" min="1" style="text-align:center;"/><input class="glass-input dv-price" type="number" placeholder="Prix HT €" style="text-align:right;"/><div class="dv-line-total" style="font-size:.8rem;color:var(--ink-3);text-align:right;padding-right:4px;">0,00 €</div><button class="btn btn-danger btn-sm dv-dl">🗑</button>`;
+        document.getElementById('dv-lines').appendChild(d);
+        wireLine(d);
+      };
       document.getElementById('dv-add-line').addEventListener('click',addLine);
-      document.querySelectorAll('.dv-dl').forEach(b=>b.addEventListener('click',()=>b.closest('.dv-line').remove()));
+      document.querySelectorAll('.dv-line').forEach(wireLine);
+      document.getElementById('dv-tva').addEventListener('input',recalc);
+      recalc();
+
       document.getElementById('dv-gen').addEventListener('click',()=>{
         if(!window.jspdf){ toast('jsPDF non chargé','error'); return; }
-        const {jsPDF}=window.jspdf;
-        const pdf=new jsPDF();
-        const cid=document.getElementById('dv-client').value;
-        const client=db.users.find(u=>u.id===cid);
-        const num=document.getElementById('dv-num').value||'001';
-        const title=document.getElementById('dv-title').value||'Devis';
-        const lines=[...document.querySelectorAll('.dv-line')].map(l=>({desc:l.querySelector('.dv-desc')?.value||'',qty:parseFloat(l.querySelector('.dv-qty')?.value)||1,price:parseFloat(l.querySelector('.dv-price')?.value)||0})).filter(l=>l.desc);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        const PW=210, PH=297, MX=16; // marges horizontales
+
+        const docType = document.getElementById('dv-type').value||'Devis';
+        const cid     = document.getElementById('dv-client').value;
+        const client  = db.users.find(u=>u.id===cid);
+        const num     = document.getElementById('dv-num').value||'001';
+        const title   = document.getElementById('dv-title').value||docType;
+        const notes   = document.getElementById('dv-notes').value||'';
+        const tvaRate = (parseFloat(document.getElementById('dv-tva').value)||0)/100;
+        const lines   = [...document.querySelectorAll('.dv-line')]
+          .map(l=>({desc:l.querySelector('.dv-desc')?.value||'',qty:parseFloat(l.querySelector('.dv-qty')?.value)||0,price:parseFloat(l.querySelector('.dv-price')?.value)||0}))
+          .filter(l=>l.desc);
+        if(!lines.length){ toast('Ajoutez au moins une ligne avec une description.','error'); return; }
         const ht=lines.reduce((s,l)=>s+l.qty*l.price,0);
-        const tva=ht*0.2; const ttc=ht+tva;
-        pdf.setFillColor(217,119,87); pdf.rect(0,0,210,28,'F');
-        pdf.setTextColor(255,255,255); pdf.setFontSize(22); pdf.setFont('helvetica','bold'); pdf.text('flow',14,18);
-        pdf.setFontSize(11); pdf.setFont('helvetica','normal'); pdf.text('N° '+num,50,18); pdf.text(new Date().toLocaleDateString('fr-FR'),160,18);
-        pdf.setTextColor(26,19,14); pdf.setFontSize(13); pdf.setFont('helvetica','bold'); pdf.text('Pour :',14,42);
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
-        if(client){ pdf.text((client.firstName||'')+' '+(client.lastName||client.username),14,52); if(client.email) pdf.text(client.email,14,60); }
-        pdf.setFontSize(14); pdf.setFont('helvetica','bold'); pdf.setTextColor(217,119,87); pdf.text(title,14,72);
-        let y=84; pdf.setFillColor(245,238,230); pdf.rect(14,y-6,182,10,'F');
-        pdf.setFontSize(10); pdf.setFont('helvetica','bold'); pdf.setTextColor(80,60,40);
-        pdf.text('Description',16,y); pdf.text('Qté',128,y); pdf.text('PU HT',148,y); pdf.text('Total HT',172,y); y+=10;
-        pdf.setFont('helvetica','normal'); pdf.setTextColor(26,19,14);
-        lines.forEach(l=>{ pdf.text(l.desc.slice(0,55),16,y); pdf.text(String(l.qty),128,y); pdf.text(l.price.toLocaleString('fr-FR')+'€',148,y); pdf.text((l.qty*l.price).toLocaleString('fr-FR')+'€',172,y); y+=8; if(y>265){pdf.addPage();y=20;} });
-        y+=4; pdf.setDrawColor(200,180,160); pdf.line(128,y,196,y); y+=8;
-        pdf.text('Total HT',128,y); pdf.text(ht.toLocaleString('fr-FR')+'€',172,y); y+=8;
-        pdf.text('TVA 20%',128,y); pdf.text(tva.toLocaleString('fr-FR')+'€',172,y); y+=8;
-        pdf.setFont('helvetica','bold'); pdf.setTextColor(217,119,87);
-        pdf.text('Total TTC',128,y); pdf.text(ttc.toLocaleString('fr-FR')+'€',172,y);
-        pdf.setFontSize(8); pdf.setTextColor(180,160,140); pdf.setFont('helvetica','normal'); pdf.text('Généré par Flow — '+new Date().toLocaleString('fr-FR'),14,285);
-        pdf.save('devis_'+num+'_'+(client?.username||'client')+'.pdf');
-        toast('Devis généré !','success'); closeModal();
+        const tva=ht*tvaRate, ttc=ht+tva;
+        const money = n => n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+
+        // ── En-tête ──────────────────────────────────────────────
+        pdf.setFillColor(217,119,87); pdf.rect(0,0,PW,32,'F');
+        pdf.setTextColor(255,255,255); pdf.setFont('helvetica','bold'); pdf.setFontSize(20);
+        pdf.text('flow', MX, 20);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(9);
+        pdf.text('Agence web', MX, 26);
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(15);
+        pdf.text(docType.toUpperCase(), PW-MX, 18, {align:'right'});
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(9);
+        pdf.text('N° '+num, PW-MX, 24, {align:'right'});
+        pdf.text(new Date().toLocaleDateString('fr-FR'), PW-MX, 29, {align:'right'});
+
+        // ── Bloc client ──────────────────────────────────────────
+        let y = 46;
+        pdf.setTextColor(140,120,100); pdf.setFont('helvetica','bold'); pdf.setFontSize(8);
+        pdf.text('ADRESSÉ À', MX, y);
+        y += 6;
+        pdf.setTextColor(26,19,14); pdf.setFont('helvetica','bold'); pdf.setFontSize(11);
+        pdf.text(client ? ((client.firstName||'')+' '+(client.lastName||'')).trim()||client.username : 'Client libre', MX, y);
+        if(client){
+          y += 5.5;
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(9.5); pdf.setTextColor(90,75,65);
+          if(client.email) { pdf.text(client.email, MX, y); y += 5; }
+        }
+
+        // ── Objet ────────────────────────────────────────────────
+        y += 8;
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(12.5); pdf.setTextColor(217,119,87);
+        pdf.text(title, MX, y);
+
+        // ── Tableau des lignes ───────────────────────────────────
+        y += 10;
+        const colDesc=MX+2, colQty=130, colPU=152, colTot=PW-MX-2;
+        pdf.setFillColor(38,28,22); pdf.rect(MX, y-6.5, PW-2*MX, 9, 'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5); pdf.setTextColor(255,255,255);
+        pdf.text('DESCRIPTION', colDesc, y);
+        pdf.text('QTÉ', colQty, y, {align:'center'});
+        pdf.text('PU HT', colPU, y, {align:'right'});
+        pdf.text('TOTAL HT', colTot, y, {align:'right'});
+        y += 8;
+
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(9.5);
+        lines.forEach((l,i)=>{
+          if(y>262){ pdf.addPage(); y=24; }
+          const rowH = 9;
+          if(i%2===0){ pdf.setFillColor(248,243,237); pdf.rect(MX, y-6, PW-2*MX, rowH, 'F'); }
+          pdf.setTextColor(26,19,14);
+          const descLines = pdf.splitTextToSize(l.desc, colQty-colDesc-6);
+          pdf.text(descLines[0]||'', colDesc, y);
+          pdf.text(String(l.qty), colQty, y, {align:'center'});
+          pdf.text(money(l.price), colPU, y, {align:'right'});
+          pdf.setFont('helvetica','bold');
+          pdf.text(money(l.qty*l.price), colTot, y, {align:'right'});
+          pdf.setFont('helvetica','normal');
+          y += rowH;
+        });
+
+        // ── Totaux ───────────────────────────────────────────────
+        y += 4;
+        pdf.setDrawColor(225,210,195); pdf.setLineWidth(.3);
+        pdf.line(120, y, PW-MX, y);
+        y += 7;
+        pdf.setFontSize(9.5); pdf.setTextColor(90,75,65);
+        pdf.text('Total HT', 152, y, {align:'right'}); pdf.text(money(ht), colTot, y, {align:'right'});
+        y += 6.5;
+        pdf.text('TVA ('+(tvaRate*100).toFixed(tvaRate*100%1===0?0:1)+' %)', 152, y, {align:'right'}); pdf.text(money(tva), colTot, y, {align:'right'});
+        y += 9;
+        pdf.setFillColor(217,119,87); pdf.rect(118, y-7, PW-MX-118, 11, 'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(255,255,255);
+        pdf.text('TOTAL TTC', 152, y, {align:'right'});
+        pdf.text(money(ttc), colTot, y, {align:'right'});
+
+        // ── Notes ────────────────────────────────────────────────
+        if(notes){
+          y += 16;
+          if(y>270){ pdf.addPage(); y=24; }
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(140,120,100);
+          pdf.text('NOTES', MX, y);
+          y += 5;
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(80,65,55);
+          pdf.splitTextToSize(notes, PW-2*MX).forEach(line=>{ pdf.text(line, MX, y); y+=4.6; });
+        }
+
+        // ── Pied de page sur toutes les pages ───────────────────
+        const pageCount = pdf.internal.getNumberOfPages();
+        for(let p=1;p<=pageCount;p++){
+          pdf.setPage(p);
+          pdf.setDrawColor(230,220,210); pdf.line(MX, 282, PW-MX, 282);
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(170,150,130);
+          pdf.text('Généré par Flow le '+new Date().toLocaleString('fr-FR'), MX, 288);
+          pdf.text('Page '+p+'/'+pageCount, PW-MX, 288, {align:'right'});
+        }
+
+        // ── Sauvegarde dans l'historique Flow ───────────────────
+        if(!Array.isArray(db.invoices)) db.invoices=[];
+        db.invoices.unshift({ id:uid(), type:docType, num, title, clientId:cid||null, ht, tva, ttc, createdAt:new Date().toISOString(), createdBy:me.username });
+        saveDB();
+
+        pdf.save((docType==='Facture'?'facture_':'devis_')+num+'_'+(client?.username||'client')+'.pdf');
+        toast(docType+' généré ✓','success'); closeModal(); refreshAdminTab();
       });
     });
   }
