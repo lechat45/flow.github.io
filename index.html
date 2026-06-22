@@ -1728,9 +1728,18 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     wireAdminTabContent();
   }
 
+  // Retire du <body> tout menu kebab qui y aurait été déplacé temporairement
+  // pour échapper au `contain: layout` de #main/#tab-content (voir wiring des
+  // .kebab-btn). Sans ça, un re-rendu de #tab-content laisserait un menu
+  // fantôme hors de la zone remplacée.
+  function cleanupOrphanKebabMenus(){
+    document.querySelectorAll('body > .kebab-menu').forEach(m=>m.remove());
+  }
+
   function refreshAdminTab(){
     try{
       normalizeDB();
+      cleanupOrphanKebabMenus();
       document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===activeTab));
       const c=document.getElementById('tab-content');
       c.innerHTML=renderAdminTab();
@@ -2770,6 +2779,17 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         // Fermer tout menu ouvert
         document.querySelectorAll('.kebab-menu.open').forEach(m=>m.classList.remove('open'));
         if(!isOpen){
+          // IMPORTANT : #main et #tab-content utilisent `contain: layout`, ce
+          // qui crée un containing block pour les descendants en position:fixed
+          // et fausse tout calcul fait par rapport à la fenêtre. On déplace donc
+          // le menu directement dans <body> (hors de cette portée) avant de le
+          // positionner, et on mémorise son emplacement d'origine pour le
+          // remettre en place à la fermeture.
+          if(menu.parentElement !== document.body){
+            menu._origParent = menu.parentElement;
+            menu._origNext   = menu.nextSibling;
+            document.body.appendChild(menu);
+          }
           const rect = btn.getBoundingClientRect();
           // Positionner en dessous du bouton, aligné à droite
           const top   = rect.bottom + 6;
@@ -2796,7 +2816,17 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     if(!window._kebabCloseWired){
       window._kebabCloseWired = true;
-      document.addEventListener('click',()=>document.querySelectorAll('.kebab-menu.open').forEach(m=>m.classList.remove('open')));
+      document.addEventListener('click',()=>{
+        document.querySelectorAll('.kebab-menu.open').forEach(m=>{
+          m.classList.remove('open');
+          // Remettre le menu à sa place d'origine dans le DOM pour que le
+          // prochain re-rendu de la liste (innerHTML) le retrouve bien.
+          if(m._origParent){
+            if(m._origNext) m._origParent.insertBefore(m, m._origNext);
+            else m._origParent.appendChild(m);
+          }
+        });
+      });
     }
 
     document.querySelectorAll('.btn-pin-project').forEach(b=>{
@@ -3290,6 +3320,7 @@ DOCUMENTS
   function _doRefreshClientTab(){
     try{
       normalizeDB();
+      cleanupOrphanKebabMenus();
       document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===activeTab));
       const c=document.getElementById('tab-content');
       c.innerHTML=renderClientTab();
