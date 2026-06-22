@@ -829,6 +829,7 @@ select.glass-input option { background: #111; color: var(--ink); }
       if(!p.priority) p.priority='normal';
       if(!Array.isArray(p.internalTasks)) p.internalTasks=[];
       if(!Array.isArray(p.clientTasks)) p.clientTasks=[];
+      if(p.paused===undefined) p.paused=false;
       if(p.pinned===undefined) p.pinned=false;
       if(!Array.isArray(p.timeline)) p.timeline=[];
       if(!Array.isArray(p.tags)) p.tags=[];
@@ -2645,7 +2646,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         ${avatar(u)}
         <div style="flex:1;">
           <div style="font-weight:600;">${esc(u.username)}</div>
-          <div style="font-size:.78rem;color:rgba(244,238,229,.4);">${project?esc(project.name):'Aucun projet'}${project&&project.siteHtml?` <span style="font-size:.62rem;background:rgba(147,181,148,.15);border:1px solid rgba(147,181,148,.3);color:var(--sage);border-radius:999px;padding:1px 6px;vertical-align:middle;">🌐 Site lié</span>`:''}</div>
+          <div style="font-size:.78rem;color:rgba(244,238,229,.4);">${project?esc(project.name):'Aucun projet'}${project&&project.siteHtml?` <span style="font-size:.62rem;background:rgba(147,181,148,.15);border:1px solid rgba(147,181,148,.3);color:var(--sage);border-radius:999px;padding:1px 6px;vertical-align:middle;">🌐 Site lié</span>`:''}${project&&project.paused?` <span style="font-size:.62rem;background:rgba(240,169,136,.15);border:1px solid rgba(240,169,136,.35);color:var(--peach);border-radius:999px;padding:1px 6px;vertical-align:middle;font-weight:600;">⏸ EN PAUSE</span>`:''}</div>
           ${project&&project.description?`<div style="font-size:.8rem;color:var(--ink-3);margin-top:2px;">${esc(project.description)}</div>`:''}
           ${project&&project.tags&&project.tags.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">${project.tags.map(tag=>`<span style="font-size:.68rem;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--ink-3);">${esc(tag)}</span>`).join('')}</div>`:''}
         </div>
@@ -2656,6 +2657,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             <button class="btn btn-ghost btn-sm kebab-btn" data-pid="${project.id}" title="Plus d'actions">⋮</button>
             <div class="kebab-menu" id="kebab-${project.id}">
               <button class="kebab-item btn-pin-project" data-pid="${project.id}">${project.pinned?'📌 Désépingler':'📍 Épingler'}</button>
+              <button class="kebab-item btn-pause-project" data-pid="${project.id}">${project.paused?'▶️ Reprendre le projet':'⏸ Mettre en pause'}</button>
               <button class="kebab-item btn-report" data-uid="${u.id}">📄 Rapport PDF</button>
               <button class="kebab-item btn-text-summary" data-pid="${project.id}" data-uid="${u.id}">📝 Résumé texte</button>
               <button class="kebab-item btn-dup-project" data-pid="${project.id}">📋 Dupliquer</button>
@@ -2834,6 +2836,17 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         if(!p) return;
         p.pinned=!p.pinned;
         saveDB(); toast(p.pinned?'Projet épinglé 📌':'Projet désépinglé.','info'); refreshAdminTab();
+      });
+    });
+    document.querySelectorAll('.btn-pause-project').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const p=db.projects.find(x=>x.id===b.dataset.pid);
+        if(!p) return;
+        p.paused=!p.paused;
+        saveDB();
+        toast(p.paused?'Projet mis en pause ⏸':'Projet repris ▶️', p.paused?'info':'success');
+        if(p.paused) pushNotification(p.clientId, '⏸ Projet en pause', 'Votre projet "'+p.name+'" est temporairement mis en pause par votre équipe.', 'info');
+        refreshAdminTab();
       });
     });
     document.querySelectorAll('.btn-manage-tasks').forEach(b=>{
@@ -3376,6 +3389,12 @@ DOCUMENTS
       <div style="font-size:.9rem;color:var(--ink-2);line-height:1.5;">${esc(project.welcomeMessage)}</div>
     </div>` : '';
 
+    // Bandeau projet en pause
+    const pausedBanner = project && project.paused ? `<div style="background:rgba(240,169,136,.1);border:1px solid rgba(240,169,136,.3);border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:1.4rem;">⏸</span>
+      <div><div style="font-size:.9rem;font-weight:600;color:var(--peach);">Projet en pause</div><div style="font-size:.75rem;color:rgba(244,238,229,.5);">Votre équipe a temporairement suspendu l'avancement. N'hésitez pas à la contacter pour plus de détails.</div></div>
+    </div>` : '';
+
     return `<div class="fade-up">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px;flex-wrap:wrap;">
         <h1 style="font-size:1.4rem;font-weight:700;">Bonjour, ${esc(me.firstName||me.username)} 👋</h1>
@@ -3387,6 +3406,7 @@ DOCUMENTS
       <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:20px;">Voici l'avancement de votre projet.</p>
       ${projectSelector}
       ${welcomeBanner}
+      ${pausedBanner}
       ${ctrDue}
       ${projects.length===0 ? renderNoProject() : renderProjectCard(project||projects[0])}
       ${(()=>{
@@ -5256,6 +5276,7 @@ DOCUMENTS
         <h1 style="font-size:1.4rem;font-weight:700;">Finance</h1>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button id="btn-export-finance-csv" class="btn btn-ghost btn-sm">📊 Exporter CSV</button>
+          <button id="btn-export-accounting" class="btn btn-ghost btn-sm">🧾 Export comptable</button>
           <button id="btn-gen-devis" class="btn btn-ghost">📄 Devis / Facture</button>
           <button id="btn-company-info" class="btn btn-ghost" title="Informations légales affichées sur vos devis et factures">⚙️ Mes informations</button>
           <button id="btn-add-revenue" class="btn btn-primary">${iconPlus()} Ajouter entrée</button>
@@ -5406,19 +5427,30 @@ DOCUMENTS
           </div>`}
 
         ${(()=>{
-          const invs = (db.invoices||[]).slice(0,10);
+          const invs = (db.invoices||[]).slice(0,15);
           if(!invs.length) return '';
+          const today = new Date();
           return `<div class="glass-card" style="padding:22px;margin-top:20px;">
             <h2 style="font-size:.95rem;font-weight:700;margin-bottom:14px;">📄 Devis & factures générés</h2>
             <div style="display:flex;flex-direction:column;gap:6px;">
               ${invs.map(inv=>{
                 const cl=db.users.find(u=>u.id===inv.clientId);
-                return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(255,255,255,.02);">
-                  <span style="font-size:.68rem;padding:2px 8px;border-radius:999px;flex-shrink:0;${inv.type==='Facture'?'background:rgba(217,119,87,.15);color:var(--coral);border:1px solid rgba(217,119,87,.3);':'background:rgba(155,184,216,.12);color:var(--sky);border:1px solid rgba(155,184,216,.3);'}">${esc(inv.type)}</span>
-                  <div style="flex:1;min-width:0;">
+                const isFac = inv.type==='Facture';
+                const daysSince = Math.floor((today - new Date(inv.createdAt)) / 86400000);
+                const overdue = isFac && inv.paymentStatus==='pending' && daysSince>=30;
+                const statusBadge = !isFac ? '' : `
+                  <select class="inv-payment-status" data-id="${inv.id}" style="font-size:.68rem;padding:2px 6px;border-radius:999px;border:1px solid ${inv.paymentStatus==='paid'?'rgba(147,181,148,.3)':overdue?'rgba(240,138,138,.4)':'rgba(155,184,216,.3)'};background:${inv.paymentStatus==='paid'?'rgba(147,181,148,.15)':overdue?'rgba(240,138,138,.12)':'rgba(155,184,216,.12)'};color:${inv.paymentStatus==='paid'?'#b6d1b7':overdue?'#f08a8a':'var(--sky)'};cursor:pointer;">
+                    <option value="pending" ${inv.paymentStatus==='pending'?'selected':''}>⏳ En attente</option>
+                    <option value="paid" ${inv.paymentStatus==='paid'?'selected':''}>✅ Payée</option>
+                  </select>`;
+                return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid ${overdue?'rgba(240,138,138,.3)':'rgba(255,255,255,.07)'};border-radius:8px;background:rgba(255,255,255,.02);flex-wrap:wrap;">
+                  <span style="font-size:.68rem;padding:2px 8px;border-radius:999px;flex-shrink:0;${isFac?'background:rgba(217,119,87,.15);color:var(--coral);border:1px solid rgba(217,119,87,.3);':'background:rgba(155,184,216,.12);color:var(--sky);border:1px solid rgba(155,184,216,.3);'}">${esc(inv.type)}</span>
+                  <div style="flex:1;min-width:140px;">
                     <div style="font-size:.82rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(inv.title)} — N° ${esc(inv.num)}</div>
-                    <div style="font-size:.7rem;color:var(--ink-4);">${cl?esc(cl.username):'Client libre'} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}</div>
+                    <div style="font-size:.7rem;color:var(--ink-4);">${cl?esc(cl.username):'Client libre'} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}${overdue?` · <span style="color:#f08a8a;font-weight:600;">⚠️ ${daysSince}j sans paiement</span>`:''}</div>
                   </div>
+                  ${statusBadge}
+                  ${overdue?`<button class="btn btn-ghost btn-sm inv-relance" data-id="${inv.id}" title="Générer un message de relance" style="border-color:rgba(240,138,138,.4);color:#f08a8a;">✉ Relancer</button>`:''}
                   <div style="font-size:.85rem;font-weight:700;color:var(--sage);flex-shrink:0;">${fmtAmt(inv.ttc)}</div>
                 </div>`;
               }).join('')}
@@ -5442,11 +5474,35 @@ DOCUMENTS
       a.download='flow_finance_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
       toast('CSV exporté !','success');
     });
+    document.getElementById('btn-export-accounting')?.addEventListener('click',openAccountingExportModal);
     const btnAdd = document.getElementById('btn-add-revenue');
     if(btnAdd) btnAdd.addEventListener('click',()=>openAddRevenueModal());
 
     document.getElementById('btn-gen-devis')?.addEventListener('click',openDevisModal);
     document.getElementById('btn-company-info')?.addEventListener('click',openCompanyInfoModal);
+
+    document.querySelectorAll('.inv-payment-status').forEach(sel=>{
+      sel.addEventListener('change',()=>{
+        const inv = (db.invoices||[]).find(x=>x.id===sel.dataset.id);
+        if(!inv) return;
+        inv.paymentStatus = sel.value;
+        saveDB(); toast('Statut de paiement mis à jour ✓','success'); refreshAdminTab();
+      });
+    });
+    document.querySelectorAll('.inv-relance').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const inv = (db.invoices||[]).find(x=>x.id===b.dataset.id);
+        if(!inv) return;
+        const cl = db.users.find(u=>u.id===inv.clientId);
+        const prenom = cl?.firstName || cl?.username || 'bonjour';
+        const daysSince = Math.floor((new Date() - new Date(inv.createdAt)) / 86400000);
+        const fmtAmt2 = n => (n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+        const msg = `Bonjour ${prenom},\n\nJ'espère que vous allez bien. Je me permets de vous relancer concernant la facture N° ${inv.num} ("${inv.title}") d'un montant de ${fmtAmt2(inv.ttc)}, émise il y a ${daysSince} jours et toujours en attente de règlement.\n\nN'hésitez pas à me contacter si vous avez des questions.\n\nMerci d'avance,\nL'équipe Flow`;
+        navigator.clipboard?.writeText(msg).then(()=>toast('Message de relance copié dans le presse-papiers ✓','success')).catch(()=>{
+          showModal(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><h2 style="font-size:1rem;font-weight:700;">✉ Message de relance</h2><button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button></div><textarea class="glass-input" style="width:100%;min-height:200px;" readonly>${esc(msg)}</textarea>`,()=>{});
+        });
+      });
+    });
 
     const btnGoals=document.getElementById('btn-edit-goals');
     if(btnGoals) btnGoals.addEventListener('click',()=>{
@@ -5707,6 +5763,87 @@ DOCUMENTS
         document.querySelectorAll('.acf-row').forEach(row=>{
           row.style.display = row.dataset.name.includes(t) ? 'flex' : 'none';
         });
+      });
+    });
+  }
+
+  // Export comptable : ventile revenus/dépenses + factures par mois ou
+  // trimestre, avec total TVA collectée — utile pour la déclaration de TVA
+  // ou la transmission au comptable.
+  function openAccountingExportModal(){
+    const now = new Date();
+    const years = [...new Set([
+      ...(db.finance||[]).map(e=>(e.date||'').slice(0,4)),
+      ...(db.invoices||[]).map(i=>(i.createdAt||'').slice(0,4)),
+    ])].filter(Boolean).sort((a,b)=>b-a);
+    if(!years.includes(String(now.getFullYear()))) years.unshift(String(now.getFullYear()));
+
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">🧾 Export comptable</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">Génère un CSV détaillé (entrées financières + factures émises) avec ventilation TVA, pour votre comptable ou votre déclaration.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+        <div><label class="label">Période</label>
+          <select id="ae-period" class="glass-input">
+            <option value="month">Par mois</option>
+            <option value="quarter">Par trimestre</option>
+            <option value="year">Année complète</option>
+          </select>
+        </div>
+        <div><label class="label">Année</label>
+          <select id="ae-year" class="glass-input">
+            ${years.map(y=>`<option value="${y}" ${y===String(now.getFullYear())?'selected':''}>${y}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <button id="ae-generate" class="btn btn-primary" style="width:100%;justify-content:center;">Générer le CSV</button>`,
+    ()=>{
+      document.getElementById('ae-generate').addEventListener('click',()=>{
+        const period = document.getElementById('ae-period').value;
+        const year   = document.getElementById('ae-year').value;
+
+        // Regroupe toutes les opérations (entrées finance + factures émises)
+        const ops = [];
+        (db.finance||[]).forEach(e=>{
+          if(!(e.date||'').startsWith(year)) return;
+          const proj = db.projects.find(p=>p.id===e.projectId);
+          ops.push({ date:e.date, type:'Entrée manuelle', label:e.note||e.label||(proj?proj.name:'—'), montantHT:Number(e.amount||0), tva:0, montantTTC:Number(e.amount||0), statut:e.paymentStatus||'paid' });
+        });
+        (db.invoices||[]).forEach(inv=>{
+          if(inv.type!=='Facture') return;
+          const d = (inv.createdAt||'').slice(0,10);
+          if(!d.startsWith(year)) return;
+          ops.push({ date:d, type:'Facture N°'+inv.num, label:inv.title, montantHT:Number(inv.ht||0), tva:Number(inv.tva||0), montantTTC:Number(inv.ttc||0), statut:inv.paymentStatus||'pending' });
+        });
+        ops.sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+        function periodKey(dateStr){
+          const m = Number(dateStr.slice(5,7));
+          if(period==='year') return year;
+          if(period==='quarter') return year+'-T'+(Math.ceil(m/3));
+          return dateStr.slice(0,7);
+        }
+
+        const rows = [['Période','Date','Type','Libellé','Montant HT','TVA','Montant TTC','Statut']];
+        ops.forEach(o=>rows.push([periodKey(o.date), o.date, o.type, o.label, o.montantHT.toFixed(2), o.tva.toFixed(2), o.montantTTC.toFixed(2), o.statut]));
+
+        // Ligne de synthèse par période
+        const byPeriod = {};
+        ops.forEach(o=>{ const k=periodKey(o.date); if(!byPeriod[k]) byPeriod[k]={ht:0,tva:0,ttc:0}; byPeriod[k].ht+=o.montantHT; byPeriod[k].tva+=o.tva; byPeriod[k].ttc+=o.montantTTC; });
+        rows.push([]);
+        rows.push(['SYNTHÈSE PAR PÉRIODE']);
+        rows.push(['Période','','','','Total HT','Total TVA','Total TTC','']);
+        Object.entries(byPeriod).sort((a,b)=>a[0]<b[0]?-1:1).forEach(([k,v])=>rows.push([k,'','','',v.ht.toFixed(2),v.tva.toFixed(2),v.ttc.toFixed(2),'']));
+
+        if(!ops.length){ toast('Aucune opération trouvée pour cette période.','error'); return; }
+
+        const csv = rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+        const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+        const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+        a.download='flow_export_comptable_'+year+'_'+period+'.csv'; a.click();
+        toast('Export comptable généré ✓','success'); closeModal();
       });
     });
   }
@@ -5995,7 +6132,7 @@ DOCUMENTS
 
         // ── Sauvegarde dans l'historique Flow ───────────────────
         if(!Array.isArray(db.invoices)) db.invoices=[];
-        db.invoices.unshift({ id:uid(), type:docType, num, title, clientId:cid||null, ht, tva, ttc, createdAt:new Date().toISOString(), createdBy:me.username });
+        db.invoices.unshift({ id:uid(), type:docType, num, title, clientId:cid||null, ht, tva, ttc, createdAt:new Date().toISOString(), createdBy:me.username, paymentStatus: isFacture?'pending':null });
         saveDB();
 
         pdf.save((isFacture?'facture_':'devis_')+num+'_'+(client?.username||'client')+'.pdf');
