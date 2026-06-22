@@ -2269,6 +2269,26 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             }
           }
         });
+        // Détecteur de scope creep : compare le périmètre facturé (dernier
+        // devis/facture émis au client, qui sert de référence du périmètre
+        // payé) au nombre de demandes de tâches (#7 possibleTask, détecté
+        // par mots-clés sur les messages Q&A client) accumulées DEPUIS cette
+        // facture. Au-delà de 3 demandes non refacturées, le client demande
+        // probablement plus que ce qui a été initialement chiffré — signal
+        // à vérifier avant que le volume de travail non facturé ne grossisse
+        // sans contrepartie.
+        db.projects.filter(p=>!p.archived&&p.status!=='done'&&p.clientId).forEach(p=>{
+          const clientInvoices = (db.invoices||[]).filter(i=>i.clientId===p.clientId).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+          const lastInvoiceDate = clientInvoices[0]?.createdAt || p.createdAt || null;
+          if(!lastInvoiceDate) return;
+          const taskRequestsSince = (db.aiRequests||[]).filter(r=>
+            r.clientId===p.clientId && r.possibleTask && new Date(r.createdAt) > new Date(lastInvoiceDate)
+          );
+          if(taskRequestsSince.length>=3){
+            const client=db.users.find(u=>u.id===p.clientId);
+            alerts.push({type:'scopeCreep',icon:'📐',color:'rgba(217,119,87,.85)',bg:'rgba(217,119,87,.08)',border:'rgba(217,119,87,.22)',msg:`<strong>${esc(p.name)}</strong>${client?` · @${esc(client.username)}`:''} — <strong>${taskRequestsSince.length} demandes</strong> de fonctionnalités depuis le dernier devis/facture : périmètre potentiellement dépassé`, action:`activeTab='ai-automation';refreshAdminTab()`});
+          }
+        });
         if(!alerts.length) return '';
         return `<div class="glass-card" style="padding:16px;margin-bottom:20px;border-color:rgba(240,169,136,.2);">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -5808,6 +5828,73 @@ DOCUMENTS
     const annualTotal = entries.reduce((s,e)=>{ return (e.date||'').startsWith(new Date().getFullYear().toString())?s+Number(e.amount||0):s; },0);
     const annualPct = annualGoal>0?Math.min(100,Math.round(annualTotal/annualGoal*100)):0;
 
+    // Prévision de trésorerie sur 3 mois, basée sur les factures émises.
+    // Deux composantes par mois, affichées séparément pour ne pas créer de
+    // fausse certitude :
+    // - "confirmé"  : factures déjà émises et en attente de paiement,
+    //   réparties sur le mois où elles devraient être encaissées (hypothèse
+    //   de délai de paiement de 30 jours après émission, cohérente avec le
+    //   seuil "overdue" déjà utilisé ailleurs dans l'app).
+    // - "estimé"    : nouvelles factures non encore émises, projetées à
+    //   partir de la moyenne mensuelle de facturation des 6 derniers mois
+    //   (Factures émises, tous statuts confondus) — un simple indicateur de
+    //   tendance, pas une promesse de revenu.
+    const cashflowForecast = (()=>{
+      const allInvoices = db.invoices||[];
+      const pendingInv = allInvoices.filter(i=>i.type==='Facture'&&i.paymentStatus==='pending');
+      const now2 = new Date();
+      const months = [0,1,2].map(offset=>{
+        const d = new Date(now2.getFullYear(), now2.getMonth()+offset, 1);
+        return { key:d.toISOString().slice(0,7), label:d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) };
+      });
+      // Moyenne mensuelle de facturation sur les 6 derniers mois (toutes
+      // factures émises, indépendamment du statut de paiement).
+      const sixMonthsAgo = new Date(now2.getFullYear(), now2.getMonth()-6, 1);
+      const recentInvoices = allInvoices.filter(i=>i.type==='Facture'&&new Date(i.createdAt)>=sixMonthsAgo);
+      const monthsWithData = new Set(recentInvoices.map(i=>i.createdAt.slice(0,7))).size || 1;
+      const avgMonthlyBilling = recentInvoices.reduce((s,i)=>s+Number(i.ttc||0),0) / monthsWithData;
+
+      return months.map((m,idx)=>{
+        const confirmed = pendingInv.filter(i=>{
+          const expectedPaymentDate = new Date(i.createdAt);
+          expectedPaymentDate.setDate(expectedPaymentDate.getDate()+30);
+          return expectedPaymentDate.toISOString().slice(0,7)===m.key;
+        }).reduce((s,i)=>s+Number(i.ttc||0),0);
+        // Le mois courant (idx 0) est déjà partiellement engagé (factures
+        // déjà émises ce mois) : on n'estime de nouvelles factures que pour
+        // les mois encore entièrement à venir.
+        const estimated = idx===0 ? 0 : avgMonthlyBilling;
+        return { ...m, confirmed, estimated };
+      });
+    })();
+
+    // Revenu moyen par type de prestation (tags projet) — PAS une marge
+    // réelle : l'app ne suit aucun coût/dépense par projet, uniquement des
+    // revenus. Ceci compare donc le revenu facturé moyen entre catégories de
+    // projets (selon leurs tags libres existants), pour orienter quels
+    // types de mission sont les plus rémunérateurs en pratique — un projet
+    // avec plusieurs tags compte dans chacune de ses catégories.
+    const revenueByTag = (()=>{
+      const byTag = {}; // { tag: { total, projectIds:Set } }
+      db.projects.forEach(p=>{
+        if(!p.clientId || !p.tags || !p.tags.length) return;
+        const paidTotal = (db.invoices||[])
+          .filter(i=>i.clientId===p.clientId && i.type==='Facture' && i.paymentStatus==='paid')
+          .reduce((s,i)=>s+Number(i.ttc||0),0);
+        p.tags.forEach(tag=>{
+          if(!byTag[tag]) byTag[tag] = { total:0, projectIds:new Set() };
+          if(!byTag[tag].projectIds.has(p.id)){
+            byTag[tag].total += paidTotal;
+            byTag[tag].projectIds.add(p.id);
+          }
+        });
+      });
+      return Object.entries(byTag)
+        .map(([tag,v])=>({ tag, avg: v.projectIds.size ? v.total/v.projectIds.size : 0, count: v.projectIds.size }))
+        .filter(x=>x.count>0)
+        .sort((a,b)=>b.avg-a.avg);
+    })();
+
     // Revenue by project
     const byProject = {};
     entries.forEach(e=>{
@@ -5848,6 +5935,7 @@ DOCUMENTS
           <button id="btn-export-finance-csv" class="btn btn-ghost btn-sm">📊 Exporter CSV</button>
           <button id="btn-export-accounting" class="btn btn-ghost btn-sm">🧾 Export comptable</button>
           <button id="btn-gen-devis" class="btn btn-ghost">📄 Devis / Facture</button>
+          <button id="btn-quick-quote-ai" class="btn btn-ghost">✨ Devis express IA</button>
           <button id="btn-company-info" class="btn btn-ghost" title="Informations légales affichées sur vos devis et factures">⚙️ Mes informations</button>
           <button id="btn-add-revenue" class="btn btn-primary">${iconPlus()} Ajouter entrée</button>
         </div>
@@ -5909,6 +5997,45 @@ DOCUMENTS
           <div style="height:8px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;"><div style="height:100%;width:${annualPct}%;background:linear-gradient(90deg,var(--sage),var(--sky));border-radius:6px;"></div></div>
         </div>`:''}
       </div>
+
+      <div class="glass-card" style="padding:22px;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-size:1rem;">📊</span>
+          <h2 style="font-size:.95rem;font-weight:700;">Prévision de trésorerie — 3 mois</h2>
+        </div>
+        <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:18px;">Confirmé = factures déjà émises, en attente de paiement (échéance estimée à 30j). Estimé = projection basée sur votre moyenne de facturation des 6 derniers mois — une tendance, pas une garantie.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+          ${cashflowForecast.map((m,idx)=>{
+            const totalMonth = m.confirmed + m.estimated;
+            return `<div class="glass-card" style="padding:16px;background:rgba(255,255,255,.02);">
+              <div style="font-size:.72rem;color:var(--ink-4);text-transform:capitalize;margin-bottom:8px;">${esc(m.label)}</div>
+              <div style="font-size:1.3rem;font-weight:700;color:var(--coral);margin-bottom:8px;">${fmtAmt(totalMonth)}</div>
+              <div style="font-size:.7rem;color:var(--sage);margin-bottom:2px;">✓ Confirmé : ${fmtAmt(m.confirmed)}</div>
+              ${m.estimated>0?`<div style="font-size:.7rem;color:var(--ink-4);">~ Estimé : ${fmtAmt(m.estimated)}</div>`:idx===0?`<div style="font-size:.7rem;color:var(--ink-4);">Mois en cours</div>`:''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      ${revenueByTag.length>0?`
+      <div class="glass-card" style="padding:22px;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-size:1rem;">🏷️</span>
+          <h2 style="font-size:.95rem;font-weight:700;">Revenu moyen par type de prestation</h2>
+        </div>
+        <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:18px;">Basé sur les tags de vos projets et les factures payées. Pas une marge réelle (aucun coût de production suivi) — un comparatif pour orienter quels types de mission privilégier.</p>
+        ${revenueByTag.slice(0,8).map(rt=>{
+          const maxAvg = revenueByTag[0].avg || 1;
+          const pct = Math.round(rt.avg/maxAvg*100);
+          return `<div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:5px;">
+              <span style="color:var(--ink-2);">${esc(rt.tag)} <span style="color:var(--ink-4);font-size:.72rem;">(${rt.count} projet${rt.count>1?'s':''})</span></span>
+              <span style="color:var(--peach);font-weight:600;">${fmtAmt(Math.round(rt.avg))}</span>
+            </div>
+            <div style="height:8px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--peach),var(--coral));border-radius:6px;"></div></div>
+          </div>`;
+        }).join('')}
+      </div>`:''}
 
       <!-- Charts -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
@@ -6107,6 +6234,7 @@ DOCUMENTS
     if(btnAdd) btnAdd.addEventListener('click',()=>openAddRevenueModal());
 
     document.getElementById('btn-gen-devis')?.addEventListener('click',openDevisModal);
+    document.getElementById('btn-quick-quote-ai')?.addEventListener('click',openQuickQuoteAIModal);
     document.getElementById('btn-company-info')?.addEventListener('click',openCompanyInfoModal);
 
     document.querySelectorAll('.inv-payment-status').forEach(sel=>{
@@ -6750,7 +6878,75 @@ DOCUMENTS
     });
   }
 
-  function openDevisModal(){
+  // Devis express par IA : un brief en langage libre est envoyé à Groq, qui
+  // retourne une structure de lignes de devis (description/quantité/prix HT
+  // estimé). Le résultat n'est qu'une proposition de structure et de
+  // fourchette de prix — il pré-remplit le formulaire de devis normal
+  // (openDevisModal) pour que l'admin ajuste les montants avant génération
+  // du PDF ; aucun PDF n'est créé directement depuis ce mini-modal.
+  function openQuickQuoteAIModal(){
+    const groqKey = db.aiConfig?.groqKey;
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">✨ Devis express par IA</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.8rem;color:var(--ink-3);margin-bottom:14px;">Décrivez le besoin client en langage libre — l'IA propose une structure de devis avec postes et prix indicatifs, que vous pourrez ajuster avant de générer le PDF.</p>
+      <textarea id="qq-brief" class="glass-input" rows="4" placeholder="Ex : Site vitrine 8 pages avec formulaire de contact, design responsive, délai 1 mois, client petit budget"></textarea>
+      <div id="qq-error" style="display:none;margin-top:10px;font-size:.78rem;color:#f08a8a;"></div>
+      <div style="display:flex;gap:10px;margin-top:18px;">
+        <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;justify-content:center;">Annuler</button>
+        <button id="qq-generate" class="btn btn-primary" style="flex:1;justify-content:center;">✨ Générer la structure</button>
+      </div>`,
+    ()=>{
+      document.getElementById('qq-generate').addEventListener('click', async()=>{
+        const errEl = document.getElementById('qq-error');
+        errEl.style.display = 'none';
+        if(!groqKey){ errEl.textContent = 'Clé Groq non configurée (onglet Assistant IA).'; errEl.style.display = 'block'; return; }
+        const brief = document.getElementById('qq-brief').value.trim();
+        if(!brief){ errEl.textContent = 'Décrivez le besoin client avant de générer.'; errEl.style.display = 'block'; return; }
+
+        const btn = document.getElementById('qq-generate');
+        btn.disabled = true; btn.textContent = 'Génération…';
+        try{
+          const prompt = `Tu es un chef de projet dans une agence web qui prépare un devis pour un client, en euros, en français.
+
+Brief du besoin client : ${brief}
+
+Propose une structure de devis réaliste : décompose le besoin en postes de travail distincts (ex: conception graphique, développement, intégration, formulaire, hébergement/configuration, formation/livraison...), avec pour chacun une quantité (souvent 1) et un prix unitaire HT en euros, basé sur des tarifs d'agence web freelance/petite structure en France.
+
+Règles :
+- 3 à 8 postes, ni plus ni moins que nécessaire pour ce besoin précis.
+- Prix réalistes pour le marché français (ni dérisoires, ni excessifs).
+- Réponds UNIQUEMENT avec un objet JSON de la forme {"title":"Objet court du devis","lines":[{"desc":"...","qty":1,"price":000}],"notes":"conditions de paiement suggérées, courtes"}, sans texte avant ni après, sans balises markdown.`;
+
+          const json = await groqPost(groqKey, [{role:'user', content:prompt}], 700);
+          let raw = json.choices?.[0]?.message?.content || '';
+          raw = raw.replace(/```json\n?/g,'').replace(/```/g,'').trim();
+          let parsed;
+          try{ parsed = JSON.parse(raw); }
+          catch(_){ throw new Error('Format de réponse IA invalide.'); }
+          const lines = Array.isArray(parsed.lines) ? parsed.lines.filter(l=>l&&typeof l.desc==='string'&&l.desc.trim()).map(l=>({
+            desc: l.desc.trim(),
+            qty: Number(l.qty)>0 ? Number(l.qty) : 1,
+            price: Number(l.price)>=0 ? Number(l.price) : 0
+          })) : [];
+          if(!lines.length) throw new Error('Aucun poste généré.');
+
+          closeModal();
+          openDevisModal({ title: parsed.title||'', notes: parsed.notes||'', lines });
+          toast('Structure de devis générée — vérifiez et ajustez les montants avant envoi.','success');
+        }catch(e){
+          errEl.textContent = 'Erreur lors de la génération : '+(e.message||'inconnue');
+          errEl.style.display = 'block';
+        }
+        btn.disabled = false; btn.textContent = '✨ Générer la structure';
+      });
+    });
+  }
+
+  function openDevisModal(prefill){
+    prefill = prefill || null;
     const clients=db.users.filter(u=>u.role==='client');
     const lineRowHTML = ()=>`
         <div class="dv-line" style="display:grid;grid-template-columns:1fr 56px 92px 92px auto;gap:6px;margin-bottom:6px;align-items:center;">
@@ -6777,17 +6973,17 @@ DOCUMENTS
         <div><label class="label">N° document</label><input id="dv-num" class="glass-input" value="${new Date().getFullYear()}-${String(Date.now()).slice(-4)}" /></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 110px;gap:10px;margin-bottom:14px;">
-        <div><label class="label">Objet</label><input id="dv-title" class="glass-input" placeholder="Création site vitrine" /></div>
+        <div><label class="label">Objet</label><input id="dv-title" class="glass-input" placeholder="Création site vitrine" value="${esc(prefill?.title||'')}" /></div>
         <div><label class="label">TVA %</label><input id="dv-tva" class="glass-input" type="number" value="20" min="0" max="100" style="text-align:center;" /></div>
       </div>
       <div id="dv-lines">
         <div style="display:grid;grid-template-columns:1fr 56px 92px 92px 34px;gap:6px;margin-bottom:8px;font-size:.7rem;font-weight:700;color:var(--ink-4);letter-spacing:.04em;text-transform:uppercase;padding:0 2px;">
           <span>Description</span><span style="text-align:center;">Qté</span><span style="text-align:right;">PU HT</span><span style="text-align:right;">Total HT</span><span></span>
         </div>
-        ${lineRowHTML()}
+        ${(prefill?.lines&&prefill.lines.length ? prefill.lines : [null]).map(()=>lineRowHTML()).join('')}
       </div>
       <button id="dv-add-line" class="btn btn-ghost btn-sm" style="margin-bottom:14px;">+ Ligne</button>
-      <div style="margin-bottom:16px;"><label class="label">Notes / conditions de paiement (optionnel)</label><input id="dv-notes" class="glass-input" placeholder="Ex: Paiement à 30 jours, virement bancaire" /></div>
+      <div style="margin-bottom:16px;"><label class="label">Notes / conditions de paiement (optionnel)</label><input id="dv-notes" class="glass-input" placeholder="Ex: Paiement à 30 jours, virement bancaire" value="${esc(prefill?.notes||'')}" /></div>
       <div style="display:flex;justify-content:flex-end;gap:24px;margin-bottom:18px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;">
         <div style="text-align:right;font-size:.8rem;color:var(--ink-3);">
           <div>Total HT : <span id="dv-sum-ht" style="color:var(--ink-2);font-weight:600;">0,00 €</span></div>
@@ -6835,6 +7031,19 @@ DOCUMENTS
       };
       document.getElementById('dv-add-line').addEventListener('click',addLine);
       document.querySelectorAll('.dv-line').forEach(wireLine);
+      // Remplit les lignes (générées vides ou en nombre = prefill.lines.length
+      // côté HTML ci-dessus) avec les valeurs du devis express IA, si fourni.
+      if(prefill?.lines?.length){
+        const lineEls = [...document.querySelectorAll('.dv-line')];
+        prefill.lines.forEach((pl,i)=>{
+          const el = lineEls[i];
+          if(!el) return;
+          const descEl = el.querySelector('.dv-desc'), qtyEl = el.querySelector('.dv-qty'), priceEl = el.querySelector('.dv-price');
+          if(descEl) descEl.value = pl.desc||'';
+          if(qtyEl) qtyEl.value = pl.qty||1;
+          if(priceEl) priceEl.value = pl.price||0;
+        });
+      }
       document.getElementById('dv-tva').addEventListener('input',recalc);
       recalc();
 
@@ -7184,9 +7393,17 @@ DOCUMENTS
           ${allReqs.slice(0,60).map(r=>{
             const ts=(d=>isNaN(d)?'':d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))(new Date(r.createdAt));
             const q = r.originalMessage ? r.originalMessage.substring(0,90)+(r.originalMessage.length>90?'…':'') : '—';
-            return `<div style="padding:10px 14px;border:1px solid ${r.frustration?'rgba(240,138,138,.22)':'rgba(255,255,255,.07)'};border-radius:10px;background:${r.frustration?'rgba(240,138,138,.05)':'rgba(255,255,255,.02)'};display:flex;align-items:center;gap:12px;">
+            const t = r.triage;
+            const urgencyColor = t?.urgency==='élevée' ? '#f08a8a' : t?.urgency==='faible' ? 'var(--ink-4)' : 'var(--sky)';
+            const sentimentIcon = t?.sentiment==='négatif' ? '🙁' : t?.sentiment==='positif' ? '🙂' : '😐';
+            return `<div style="padding:10px 14px;border:1px solid ${r.frustration?'rgba(240,138,138,.22)':'rgba(255,255,255,.07)'};border-radius:10px;background:${r.frustration?'rgba(240,138,138,.05)':'rgba(255,255,255,.02)'};display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
               <div style="flex:1;min-width:0;">
                 <div style="font-size:.78rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.frustration?'😟 ':''}${esc(q)}</div>
+                ${t?`<div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;">
+                  <span style="font-size:.62rem;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.05);color:${urgencyColor};border:1px solid rgba(255,255,255,.1);">${esc(t.urgency)}</span>
+                  <span style="font-size:.62rem;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.05);color:var(--ink-3);border:1px solid rgba(255,255,255,.1);">${esc(t.category)}</span>
+                  <span style="font-size:.62rem;">${sentimentIcon}</span>
+                </div>`:''}
               </div>
               <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                 <span style="font-size:.75rem;font-weight:600;color:var(--ink-3);">${esc(r.clientUsername||'—')}</span>
@@ -7848,6 +8065,34 @@ Règles :
     return taskWords.test(text);
   }
 
+  // Triage automatique des demandes Q&A clients par IA : classe chaque
+  // question entrante par urgence/catégorie/sentiment via un appel Groq léger
+  // et non bloquant (ne retarde jamais l'affichage de la réponse au client —
+  // appelé après coup, en arrière-plan, pour enrichir l'entrée déjà
+  // sauvegardée dans db.aiRequests). Complète detectFrustration/
+  // detectTaskRequest (locaux, par mots-clés) avec une classification plus
+  // nuancée que de simples regex ne peuvent capturer.
+  const QA_TRIAGE_URGENCY   = ['faible','normale','élevée'];
+  const QA_TRIAGE_CATEGORY  = ['technique','facturation','contenu','délai','autre'];
+  const QA_TRIAGE_SENTIMENT = ['positif','neutre','négatif'];
+  async function triageClientRequest(groqKey, userText){
+    const prompt = `Classe ce message d'un client envoyé à son agence web, en français. Message : "${userText}"
+
+Réponds UNIQUEMENT avec un objet JSON de la forme {"urgency":"...","category":"...","sentiment":"..."}, sans texte avant ni après, sans balises markdown.
+- urgency : une valeur parmi ${QA_TRIAGE_URGENCY.map(v=>'"'+v+'"').join(', ')}
+- category : une valeur parmi ${QA_TRIAGE_CATEGORY.map(v=>'"'+v+'"').join(', ')}
+- sentiment : une valeur parmi ${QA_TRIAGE_SENTIMENT.map(v=>'"'+v+'"').join(', ')}`;
+    const json = await groqPost(groqKey, [{role:'user', content:prompt}], 80);
+    let raw = json.choices?.[0]?.message?.content || '';
+    raw = raw.replace(/```json\n?/g,'').replace(/```/g,'').trim();
+    const parsed = JSON.parse(raw);
+    return {
+      urgency:   QA_TRIAGE_URGENCY.includes(parsed.urgency)     ? parsed.urgency   : 'normale',
+      category:  QA_TRIAGE_CATEGORY.includes(parsed.category)   ? parsed.category  : 'autre',
+      sentiment: QA_TRIAGE_SENTIMENT.includes(parsed.sentiment) ? parsed.sentiment : 'neutre'
+    };
+  }
+
   // Cooldown : après QA_BURST_SIZE messages, pause QA_COOLDOWN_MS ms avant la prochaine salve
   const QA_BURST_SIZE   = 3;
   const QA_COOLDOWN_MS  = 60_000; // 60 secondes
@@ -8377,6 +8622,15 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
           createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()
         });
         saveDB();
+
+        // Triage IA en arrière-plan (urgence/catégorie/sentiment) : ne bloque
+        // jamais l'affichage déjà terminé de la réponse au client. Si le
+        // triage échoue (clé absente, erreur réseau), la demande reste
+        // simplement non classée — non bloquant par design.
+        triageClientRequest(groqKey, userText).then(triage=>{
+          const req = db.aiRequests.find(r=>r.id===reqId);
+          if(req){ req.triage = triage; saveDB(); }
+        }).catch(()=>{});
 
         // 6 — Mettre à jour la mémoire multi-tour
         _qaConversationHistory.push({role:'user',      content:userText});
