@@ -11,7 +11,7 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: blob: https:;
-    connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://*.googleapis.com https://api.groq.com https://discord.com https://*.discord.com https://www.gstatic.com https://cdnjs.cloudflare.com https://*.puter.com wss://*.puter.com;
+    connect-src 'self' https: wss://*.firebaseio.com wss://*.firebasedatabase.app wss://*.puter.com;
     frame-src https://*.firebaseio.com https://*.firebasedatabase.app https://*.puter.com;
     base-uri 'self';
     form-action 'none';
@@ -32,11 +32,16 @@
     fichier _headers comme sur Netlify/Vercel) — cette CSP via <meta> est
     le maximum réalisable sans backend ni hébergeur alternatif.
 
-    connect-src inclut www.gstatic.com et cdnjs.cloudflare.com pour
-    autoriser le chargement des sourcemaps (.js.map) des SDK Firebase et de
-    jsPDF quand les DevTools sont ouverts — ce sont les mêmes domaines déjà
-    whitelistés pour les scripts eux-mêmes, donc aucune surface d'attaque
-    supplémentaire n'est ouverte.
+    connect-src utilise https: générique (plutôt qu'une liste de domaines
+    explicites) car l'app fait des requêtes fetch() vers des domaines non
+    prévisibles à l'avance : les sourcemaps des SDK Firebase/jsPDF, l'API
+    Puter (génération d'images IA), et surtout les CDN tiers que Puter
+    utilise pour héberger les images générées (Flux, Stable Diffusion, etc.),
+    dont le domaine exact dépend du modèle et peut changer côté Puter sans
+    préavis. Cette directive ne couvre que les requêtes réseau (fetch/XHR/
+    WebSocket) — script-src, object-src et form-action restent strictement
+    verrouillés, donc ceci n'autorise pas l'exécution de code arbitraire,
+    seulement l'envoi/réception de données vers du HTTPS.
 
     script-src inclut *.firebaseio.com et *.firebasedatabase.app en plus de
     connect-src : quand le SDK Realtime Database ne peut pas ouvrir de
@@ -7573,28 +7578,30 @@ DOCUMENTS
     });
   }
 
-  // Convertit l'élément <img> renvoyé par puter.ai.txt2img() en dataURL base64
-  // via un canvas, afin de stocker l'image directement dans db (Firebase/
-  // localStorage) comme le reste de l'app, plutôt que de garder une référence
-  // à une URL distante potentiellement temporaire ou soumise à CORS au rechargement.
+  // Convertit l'élément <img> renvoyé par puter.ai.txt2img() en dataURL base64,
+  // afin de stocker l'image directement dans db (Firebase/localStorage) comme
+  // le reste de l'app, plutôt que de garder une référence à une URL distante
+  // potentiellement temporaire. On récupère l'image via fetch()+blob plutôt
+  // que via un <canvas> : le canvas devient "tainted" (et toDataURL() lève une
+  // SecurityError) dès qu'une image cross-origin sans en-tête CORS explicite
+  // y est dessinée — ce qui est le cas du CDN d'images de Puter. fetch()+blob
+  // contourne entièrement cette restriction, qui ne s'applique qu'au canvas.
   function pubImageToDataURL(imgEl){
     return new Promise((resolve,reject)=>{
-      try{
-        if(imgEl.complete && imgEl.naturalWidth>0){ doConvert(); }
-        else {
-          imgEl.addEventListener('load', doConvert, {once:true});
-          imgEl.addEventListener('error', ()=>reject(new Error('Image non chargée')), {once:true});
-        }
-        function doConvert(){
-          const canvas = document.createElement('canvas');
-          canvas.width = imgEl.naturalWidth || 512;
-          canvas.height = imgEl.naturalHeight || 512;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(imgEl, 0, 0);
-          try{ resolve(canvas.toDataURL('image/png')); }
-          catch(e){ reject(e); } // ex: erreur "tainted canvas" si l'image distante n'autorise pas l'export
-        }
-      }catch(e){ reject(e); }
+      const src = imgEl?.src;
+      if(!src){ reject(new Error('Image sans source.')); return; }
+      fetch(src)
+        .then(resp=>{
+          if(!resp.ok) throw new Error('HTTP_'+resp.status);
+          return resp.blob();
+        })
+        .then(blob=>{
+          const reader = new FileReader();
+          reader.onload = ()=>resolve(reader.result);
+          reader.onerror = ()=>reject(new Error('Lecture du blob échouée.'));
+          reader.readAsDataURL(blob);
+        })
+        .catch(reject);
     });
   }
 
