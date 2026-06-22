@@ -2,6 +2,35 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: blob: https:;
+    connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app https://*.googleapis.com https://api.groq.com https://discord.com https://*.discord.com;
+    frame-ancestors 'none';
+    base-uri 'self';
+    form-action 'none';
+    object-src 'none';
+    upgrade-insecure-requests;
+  " />
+  <!--
+    Note CSP : 'unsafe-inline' est nécessaire pour script-src/style-src car
+    l'app utilise massivement des attributs onclick= et style= inline
+    (~80 et ~1270 occurrences). Les retirer demanderait de refondre tout le
+    rendu HTML vers des classes CSS + addEventListener — hors de portée
+    sans réécrire l'app entière. La CSP reste néanmoins utile : elle bloque
+    le chargement de scripts/styles depuis n'importe quel domaine non
+    listé, ce qui empêche l'exécution d'un script injecté via une faille
+    tierce (ex: une dépendance CDN compromise) et limite frame-ancestors,
+    form-action et object-src de façon stricte.
+    GitHub Pages ne permet pas de vrais en-têtes HTTP serveur (pas de
+    fichier _headers comme sur Netlify/Vercel) — cette CSP via <meta> est
+    le maximum réalisable sans backend ni hébergeur alternatif.
+  -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Flow — Gestion de Projet</title>
   <meta name="description" content="Plateforme de gestion de projet et suivi client" />
@@ -837,6 +866,7 @@ select.glass-input option { background: #111; color: var(--ink); }
       if(p.assignedTo===undefined) p.assignedTo=null;
       if(p.portfolioPublic===undefined) p.portfolioPublic=false;
       if(p.portfolioDescription===undefined) p.portfolioDescription='';
+      if(!Array.isArray(p.toneScores)) p.toneScores=[];
       if(!Array.isArray(p.internalTasks)) p.internalTasks=[];
       if(!Array.isArray(p.clientTasks)) p.clientTasks=[];
       if(p.paused===undefined) p.paused=false;
@@ -1006,6 +1036,11 @@ select.glass-input option { background: #111; color: var(--ink); }
   const initials = u=>(((u.firstName||u.username||'?')[0])+(u.lastName?u.lastName[0]:'')).toUpperCase();
   // Sécurité : valider les URLs de photos (no javascript: / data: URIs non-image)
   function safePhotoUrl(url){ return url && /^https?:\/\//i.test(url) ? url : null; }
+  // Alias générique : même validation que safePhotoUrl (n'autorise que http(s)://,
+  // bloque javascript:, data:, vbscript: et autres schémas dangereux), utilisé
+  // pour toute URL externe affichée dans un attribut href (site web du projet,
+  // liens partagés, etc.) — esc() seul ne bloque pas le schéma javascript:.
+  function safeUrl(url){ return safePhotoUrl(url); }
   const avatar = u => { const p=safePhotoUrl(u.photo);
     return p ? `<img src="${esc(p)}" class="avatar" style="width:36px;height:36px;" />`
              : `<div class="avatar" style="width:36px;height:36px;background:${avatarColor(u)}">${initials(u)}</div>`; };
@@ -1061,7 +1096,38 @@ select.glass-input option { background: #111; color: var(--ink); }
     return fromFinance + fromInvoices;
   }
 
+  // Score de priorité de relance d'une facture impayée : combine montant,
+  // ancienneté, et historique de paiement du client (un client qui a déjà
+  // payé en retard plusieurs fois est plus risqué qu'un nouveau client).
+  // Plus le score est élevé, plus la relance est urgente.
+  function computeRelancePriority(inv){
+    if(inv.type!=='Facture' || inv.paymentStatus!=='pending') return null;
+    const daysSince = Math.floor((Date.now() - new Date(inv.createdAt).getTime()) / 86400000);
+    const amountScore = Math.min(40, (inv.ttc||0) / 50);             // gros montants pèsent plus
+    const ageScore = Math.min(40, daysSince * 1.5);                   // plus c'est vieux, plus c'est urgent
+    const clientHistory = (db.invoices||[]).filter(i=>i.clientId===inv.clientId && i.type==='Facture' && i.id!==inv.id);
+    const latePaidCount = clientHistory.filter(i=>{
+      if(i.paymentStatus!=='paid') return false;
+      const wasOverdue = Math.floor((new Date(i.signedAt||i.createdAt).getTime() - new Date(i.createdAt).getTime())/86400000) >= 30;
+      return wasOverdue;
+    }).length;
+    const historyScore = Math.min(20, latePaidCount * 10);           // mauvais payeur récurrent
+    return { score: Math.round(amountScore+ageScore+historyScore), daysSince, latePaidCount };
+  }
+
   // ─── Auth & crypto ──────────────────────────────
+  // Politique de robustesse minimale : 8+ caractères, au moins une majuscule,
+  // une minuscule et un chiffre. Retourne null si valide, ou un message
+  // d'erreur explicite sinon — à appeler avant toute création/changement de
+  // mot de passe (création de compte, profil, édition admin, inscription).
+  function validatePasswordStrength(pwd){
+    if(!pwd || pwd.length < 8) return 'Le mot de passe doit faire au moins 8 caractères.';
+    if(!/[a-z]/.test(pwd)) return 'Le mot de passe doit contenir au moins une lettre minuscule.';
+    if(!/[A-Z]/.test(pwd)) return 'Le mot de passe doit contenir au moins une lettre majuscule.';
+    if(!/[0-9]/.test(pwd)) return 'Le mot de passe doit contenir au moins un chiffre.';
+    return null;
+  }
+
   async function hashPwd(pwd){
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pwd));
     return 'sha256:'+Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -1539,7 +1605,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
         if(!un || !pw){ showMsg(msg,'Le pseudo et le mot de passe sont requis.','error'); return; }
         if(pw !== pw2){ showMsg(msg,'Les mots de passe ne correspondent pas.','error'); return; }
-        if(pw.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
+        { const pwErr = validatePasswordStrength(pw); if(pwErr){ showMsg(msg,pwErr,'error'); return; } }
 
         // Check blocked
         const blocked = (db.blockedAccounts||[]).some(b=>
@@ -2329,7 +2395,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
           ${prioBadge}
         </div>
         ${dueBadge}
-        ${project&&project.websiteUrl?`<a href="${esc(project.websiteUrl)}" target="_blank" class="btn btn-ghost btn-sm">🔗 Site</a>`:''}
+        ${project&&project.websiteUrl&&safeUrl(project.websiteUrl)?`<a href="${esc(safeUrl(project.websiteUrl))}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">🔗 Site</a>`:''}
       </div>
       ${tl.length>0?`
         <div style="display:flex;align-items:center;gap:8px;">
@@ -2475,6 +2541,24 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
   }
 
+  // Prévision de charge : durée moyenne réelle des projets déjà terminés
+  // ayant un nombre d'étapes similaire (±2), pour affiner les délais annoncés
+  // sans deviner — basé sur les données réelles de l'agence, pas sur l'IA.
+  function estimateProjectDuration(stepCount){
+    const finished = db.projects.filter(p=>p.status==='done' && Array.isArray(p.timeline) && p.timeline.length>0 && p.createdAt);
+    const similar = finished.filter(p=>Math.abs(p.timeline.length-stepCount)<=2);
+    const pool = similar.length>=3 ? similar : finished;
+    if(pool.length<2) return null;
+    const durations = pool.map(p=>{
+      const lastDone = [...p.timeline].reverse().find(s=>s.status==='done'&&s.dueDate);
+      const endDate = lastDone?.dueDate ? new Date(lastDone.dueDate) : new Date(p.updatedAt||p.createdAt);
+      return Math.round((endDate - new Date(p.createdAt)) / 86400000);
+    }).filter(d=>d>0 && d<365);
+    if(durations.length<2) return null;
+    const avg = Math.round(durations.reduce((s,d)=>s+d,0)/durations.length);
+    return { avgDays: avg, sampleSize: durations.length, basedOnSimilar: similar.length>=3 };
+  }
+
   function openCreateProjectModal(){
     const clients = db.users.filter(u=>u.role==='client'||u.role==='controller');
     const defaultSteps = ['Prise de contact','Cahier des charges','Maquette validée','Développement','Tests & Recette','Mise en ligne'];
@@ -2484,6 +2568,14 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
       </div>
       <div style="margin-bottom:14px;"><label class="label">Nom du projet *</label><input id="np-name" class="glass-input" placeholder="Ex : Site Vitrine Dupont" /></div>
+      <div style="margin-bottom:14px;padding:12px 14px;background:rgba(155,184,216,.06);border:1px solid rgba(155,184,216,.18);border-radius:10px;">
+        <label class="label">✨ Brief rapide (optionnel)</label>
+        <div style="display:flex;gap:8px;">
+          <input id="np-brief" class="glass-input" placeholder="Ex : site vitrine boulangerie, 5 pages, ton chaleureux" style="flex:1;" />
+          <button id="np-brief-generate" class="btn btn-primary btn-sm" style="flex-shrink:0;">✨ Générer</button>
+        </div>
+        <div id="np-brief-msg" style="font-size:.72rem;color:var(--ink-4);margin-top:6px;">Décrivez le projet en une phrase — l'IA pré-remplit description, FAQ et étapes ci-dessous (à relire avant validation).</div>
+      </div>
       <div style="margin-bottom:14px;">
         <label class="label">Utilisateur associé</label>
         <select id="np-client" class="glass-input">
@@ -2555,6 +2647,36 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         advBtn.textContent = open ? '⚙️ Options avancées' : '🔼 Masquer les options';
       });
 
+      document.getElementById('np-brief-generate')?.addEventListener('click',async ()=>{
+        const brief = document.getElementById('np-brief')?.value.trim();
+        const msg = document.getElementById('np-brief-msg');
+        if(!brief){ if(msg) msg.textContent='Décrivez le projet en quelques mots avant de générer.'; return; }
+        const groqKey = db.aiConfig?.groqKey;
+        if(!groqKey){ if(msg) msg.textContent='Clé Groq non configurée (onglet Assistant IA).'; return; }
+        const btn = document.getElementById('np-brief-generate');
+        btn.disabled = true; btn.textContent = '⚙️…';
+        try{
+          const prompt = 'À partir de ce brief de projet web : "'+brief.replace(/"/g,"'")+'", génère un JSON STRICT (rien d\'autre, pas de markdown) avec les clés : "nom" (court, 3-6 mots), "description" (2-3 phrases en français), "etapes" (tableau de 5-7 noms d\'étapes de timeline courtes, en français, dans l\'ordre logique). Exemple de format : {"nom":"...","description":"...","etapes":["...","..."]}';
+          const json = await groqPost(groqKey, [{role:'user',content:prompt}], 500);
+          const raw = json.choices?.[0]?.message?.content || '';
+          const cleaned = raw.replace(/```json|```/g,'').trim();
+          const parsed = JSON.parse(cleaned);
+          if(parsed.nom && !document.getElementById('np-name').value.trim()) document.getElementById('np-name').value = parsed.nom;
+          if(parsed.description) document.getElementById('np-desc').value = parsed.description;
+          if(Array.isArray(parsed.etapes) && parsed.etapes.length){
+            fillSteps(parsed.etapes);
+            if(tplSelect) tplSelect.value = '';
+          }
+          if(advSection && advSection.style.display!=='block'){ advSection.style.display='block'; advBtn.textContent='🔼 Masquer les options'; }
+          const estimate = parsed.etapes?.length ? estimateProjectDuration(parsed.etapes.length) : null;
+          const estimateTxt = estimate ? ` Basé sur ${estimate.sampleSize} projet(s) ${estimate.basedOnSimilar?'similaires':'passés'}, ce type de projet prend en moyenne ~${estimate.avgDays} jours.` : '';
+          if(msg) msg.textContent = '✓ Généré — relisez et ajustez avant de créer le projet.'+estimateTxt;
+        }catch(e){
+          if(msg) msg.textContent = 'Erreur de génération : '+e.message+'. Réessayez ou remplissez manuellement.';
+        }
+        btn.disabled = false; btn.textContent = '✨ Générer';
+      });
+
       // F10 — Template selector (+ modèles personnalisés sauvegardés par l'admin)
       const tplSelect = document.getElementById('np-template');
       const NP_TEMPLATES = {
@@ -2619,6 +2741,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         const tags=document.getElementById('np-tags')?.value.split(',').map(t=>t.trim()).filter(Boolean)||[];
         const msg=document.getElementById('np-msg');
         if(!name){ showMsg(msg,'Le nom du projet est requis.','error'); return; }
+        if(url && !safeUrl(url)){ showMsg(msg,'L\'URL du site doit commencer par http:// ou https://.','error'); return; }
         const steps=[];
         document.querySelectorAll('#np-steps .np-step-label').forEach(inp=>{ const label=inp.value.trim(); if(label) steps.push({id:uid(),label,status:'pending',date:null,note:''}); });
         if(steps.length===0){ showMsg(msg,'Ajoutez au moins une étape.','error'); return; }
@@ -2818,6 +2941,13 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
               <span style="color:${over?'var(--peach)':'var(--ink-4)'};">${pct}%${over?' ⚠️':''}</span>
             </div>`;
           })():''}
+          ${project&&project.toneScores&&project.toneScores.length>=2?(()=>{
+            const recent = project.toneScores.slice(-10);
+            const avg = recent.reduce((s,t)=>s+t.score,0)/recent.length;
+            const color = avg>=4 ? 'var(--sage)' : avg>=2.5 ? 'var(--sky)' : 'var(--peach)';
+            const label = avg>=4 ? 'Climat positif' : avg>=2.5 ? 'Climat neutre' : 'Climat tendu';
+            return `<div style="margin-top:6px;font-size:.72rem;color:${color};" title="Basé sur le ton des ${recent.length} derniers commentaires analysés">🌡️ ${label} (${avg.toFixed(1)}/5)</div>`;
+          })():''}
         </div>
         ${canEdit&&project?`
           <button class="btn btn-ghost btn-sm btn-edit-timeline" data-pid="${project.id}" data-uid="${u.id}">⏱ Timeline</button>
@@ -2830,6 +2960,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
               <button class="kebab-item btn-share-present" data-pid="${project.id}">🔗 Lien de présentation</button>
               <button class="kebab-item btn-report" data-uid="${u.id}">📄 Rapport PDF</button>
               <button class="kebab-item btn-text-summary" data-pid="${project.id}" data-uid="${u.id}">📝 Résumé texte</button>
+              ${project.status==='done'?`<button class="kebab-item btn-ai-newsletter" data-pid="${project.id}" data-uid="${u.id}">✨ Newsletter de fin de projet</button>`:''}
               <button class="kebab-item btn-dup-project" data-pid="${project.id}">📋 Dupliquer</button>
               <button class="kebab-item btn-save-template" data-pid="${project.id}">💾 Sauver comme modèle</button>
               <button class="kebab-item btn-deliver-files" data-pid="${project.id}">${project.deliverable?'📦 Remplacer la livraison':'📦 Livrer les fichiers'}</button>
@@ -2882,6 +3013,14 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
           if(!cfiles.length) return '';
           return `<div style="margin-top:8px;">
             <button class="btn btn-ghost btn-sm btn-view-client-files" data-pid="${project.id}">📤 Fichiers client (${cfiles.length})</button>
+          </div>`;
+        })()}
+        ${(()=>{
+          if(!project || !project.clientId) return '';
+          const qaCount = (db.aiRequests||[]).filter(r=>r.clientId===project.clientId&&r.type==='qa'&&r.status==='answered').length;
+          if(qaCount<3) return '';
+          return `<div style="margin-top:8px;">
+            <button class="btn btn-ghost btn-sm btn-ai-summarize-qa" data-cid="${project.clientId}">✨ Résumer les échanges (${qaCount})</button>
           </div>`;
         })()}
         <div class="divider"></div>
@@ -3035,6 +3174,9 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     document.querySelectorAll('.btn-view-client-files').forEach(b=>{
       b.addEventListener('click',()=>openViewClientFilesModal(b.dataset.pid));
+    });
+    document.querySelectorAll('.btn-ai-summarize-qa').forEach(b=>{
+      b.addEventListener('click',()=>openSummarizeQAModal(b.dataset.cid));
     });
     document.querySelectorAll('.btn-extract-tasks').forEach(b=>{
       b.addEventListener('click',()=>{
@@ -3264,6 +3406,46 @@ DOCUMENTS
       });
     });
 
+    // Newsletter de fin de projet générée par IA, à partir de l'historique réel
+    document.querySelectorAll('.btn-ai-newsletter').forEach(b=>{
+      b.addEventListener('click',async ()=>{
+        const p = db.projects.find(x=>x.id===b.dataset.pid);
+        const u = db.users.find(x=>x.id===b.dataset.uid);
+        if(!p||!u) return;
+        const groqKey = db.aiConfig?.groqKey;
+        if(!groqKey){ toast('Configurez une clé Groq dans l\'onglet Assistant IA.','error'); return; }
+        const tl = p.timeline||[];
+        const etapes = tl.filter(s=>s.status==='done').map(s=>s.label);
+        showModal(`
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <h2 style="font-size:1rem;font-weight:700;">✨ Newsletter de fin de projet</h2>
+            <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+          </div>
+          <div id="ai-news-loading" style="text-align:center;padding:30px 0;color:var(--ink-4);font-size:.85rem;">⚙️ Génération en cours…</div>
+          <textarea id="ai-news-txt" style="display:none;width:100%;min-height:220px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;color:var(--ink);font-size:.85rem;line-height:1.6;resize:vertical;"></textarea>
+          <div id="ai-news-actions" style="display:none;gap:8px;margin-top:14px;">
+            <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;justify-content:center;">Fermer</button>
+            <button id="btn-copy-newsletter" class="btn btn-primary" style="flex:1;justify-content:center;">📋 Copier</button>
+          </div>`,
+        async ()=>{
+          try{
+            const prompt = 'Rédige un court message chaleureux et professionnel en français, destiné au client "'+(u.firstName||u.username)+'", annonçant la fin de son projet "'+p.name+'". Mentionne ces étapes accomplies : '+(etapes.join(', ')||'le projet')+'. 4-6 phrases, ton humain, pas de jargon technique, signé "L\'équipe Flow".';
+            const json = await groqPost(groqKey, [{role:'user',content:prompt}], 400);
+            const text = json.choices?.[0]?.message?.content || 'Erreur de génération.';
+            document.getElementById('ai-news-loading').style.display='none';
+            const txtEl = document.getElementById('ai-news-txt');
+            txtEl.style.display='block'; txtEl.value=text;
+            document.getElementById('ai-news-actions').style.display='flex';
+            document.getElementById('btn-copy-newsletter').addEventListener('click',()=>{
+              navigator.clipboard.writeText(txtEl.value).then(()=>{ toast('Newsletter copiée !','success'); closeModal(); }).catch(()=>toast('Copiez le texte manuellement.','info'));
+            });
+          }catch(e){
+            document.getElementById('ai-news-loading').textContent = '❌ Erreur : '+e.message;
+          }
+        });
+      });
+    });
+
     const DOC_PAGE_SIZE = 25;
     let docVisibleCount = DOC_PAGE_SIZE;
     function applyDocFilters(){
@@ -3395,7 +3577,7 @@ DOCUMENTS
         showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return;
       }
       if(np && np!==cp){ showMsg(msg,'Les mots de passe ne correspondent pas.','error'); return; }
-      if(np && np.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
+      if(np){ const pwErr = validatePasswordStrength(np); if(pwErr){ showMsg(msg,pwErr,'error'); return; } }
       if(discord && !/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//i.test(discord)){
         showMsg(msg,'L\'URL du webhook Discord ne semble pas valide.','error'); return;
       }
@@ -3679,9 +3861,9 @@ DOCUMENTS
         : `<div style="max-height:400px;overflow-y:auto;">
             ${notifs.map(n=>`
               <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);${n.read?'opacity:.6;':''}">
-                <span style="font-size:1.1rem;flex-shrink:0;">${n.read?'📭':'📬'}</span>
+                <span style="font-size:1.1rem;flex-shrink:0;">${n.type==='warning'?'⚠️':n.read?'📭':'📬'}</span>
                 <div style="flex:1;min-width:0;">
-                  <div style="font-size:.84rem;font-weight:600;">${esc(n.title)}</div>
+                  <div style="font-size:.84rem;font-weight:600;${n.type==='warning'?'color:var(--peach);':''}">${esc(n.title)}</div>
                   <div style="font-size:.78rem;color:var(--ink-3);margin-top:2px;line-height:1.5;">${esc(n.body)}</div>
                   <div style="font-size:.7rem;color:var(--ink-4);margin-top:4px;">${new Date(n.createdAt).toLocaleString('fr-FR')}</div>
                 </div>
@@ -3719,7 +3901,7 @@ DOCUMENTS
             </div>
             ${p.description?`<div style="font-size:.8rem;color:var(--ink-3);margin-top:2px;line-height:1.45;">${esc(p.description)}</div>`:''}
           </div>
-          ${p.websiteUrl?`<a href="${esc(p.websiteUrl)}" target="_blank" class="btn btn-primary btn-sm" style="flex-shrink:0;">🔗 Voir le site</a>`:''}
+          ${p.websiteUrl&&safeUrl(p.websiteUrl)?`<a href="${esc(safeUrl(p.websiteUrl))}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="flex-shrink:0;">🔗 Voir le site</a>`:''}
         </div>
         <!-- Progress bar -->
         <div style="margin-bottom:${p.dueDate?'10':'24'}px;">
@@ -4202,7 +4384,7 @@ DOCUMENTS
         showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return;
       }
       if(np&&np!==cp){ showMsg(msg,'Les mots de passe ne correspondent pas.','error'); return; }
-      if(np && np.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
+      if(np){ const pwErr = validatePasswordStrength(np); if(pwErr){ showMsg(msg,pwErr,'error'); return; } }
 
       const u=db.users.find(u=>u.id===me.id);
       u.firstName=fn; u.lastName=ln; u.username=un; u.photo=ph||null;
@@ -4286,7 +4468,7 @@ DOCUMENTS
         const phone=document.getElementById('nu-phone')?.value.trim()||'';
         const sector=document.getElementById('nu-sector')?.value.trim()||'';
         if(!un||!pw){ showMsg(msg,'Pseudo et mot de passe requis.','error'); return; }
-        if(pw.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
+        { const pwErr = validatePasswordStrength(pw); if(pwErr){ showMsg(msg,pwErr,'error'); return; } }
         if(!canCreateRole(me.role,role)){ showMsg(msg,'Vous n\'avez pas la permission de créer ce type de compte.','error'); return; }
         if(db.users.some(u=>u.username.toLowerCase()===un.toLowerCase())){ showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return; }
 
@@ -4370,7 +4552,8 @@ DOCUMENTS
         if(db.users.some(x=>x.username.toLowerCase()===un.toLowerCase()&&x.id!==u.id)){
           showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return;
         }
-        if(pw && pw.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
+        if(pw){ const pwErr = validatePasswordStrength(pw); if(pwErr){ showMsg(msg,pwErr,'error'); return; } }
+        if(url && !safeUrl(url)){ showMsg(msg,'L\'URL du site doit commencer par http:// ou https://.','error'); return; }
 
         u.firstName=fn; u.lastName=ln; u.username=un; u.email=em; u.role=role; u.phone=phone; u.sector=sector;
         u.internalNotes = document.getElementById('eu-notes')?.value.trim()||'';
@@ -5306,7 +5489,7 @@ DOCUMENTS
             <span style="font-size:.78rem;color:var(--ink-4);">· ${pct}% complété</span>
           </div>
         </div>
-        ${project.websiteUrl?`<a href="${esc(project.websiteUrl)}" target="_blank" class="btn btn-primary btn-sm">🔗 Voir le site</a>`:''}
+        ${project.websiteUrl&&safeUrl(project.websiteUrl)?`<a href="${esc(safeUrl(project.websiteUrl))}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">🔗 Voir le site</a>`:''}
       </div>
       ${project.description?`<p style="color:var(--ink-3);font-size:.875rem;margin-bottom:20px;">${esc(project.description)}</p>`:'<div style="margin-bottom:20px;"></div>'}
 
@@ -5374,9 +5557,9 @@ DOCUMENTS
           ? `<div style="font-size:.82rem;color:var(--ink-4);">Aucune notification pour l'instant. Le rapport hebdomadaire et les alertes apparaîtront ici.</div>`
           : notifs.slice(0,20).map(n=>`
             <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);${n.read?'opacity:.6;':''}">
-              <span style="font-size:1.1rem;flex-shrink:0;">${n.read?'📭':'📬'}</span>
+              <span style="font-size:1.1rem;flex-shrink:0;">${n.type==='warning'?'⚠️':n.read?'📭':'📬'}</span>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:.84rem;font-weight:600;">${esc(n.title)}</div>
+                <div style="font-size:.84rem;font-weight:600;${n.type==='warning'?'color:var(--peach);':''}">${esc(n.title)}</div>
                 <div style="font-size:.78rem;color:var(--ink-3);white-space:pre-line;margin-top:2px;line-height:1.5;">${esc(n.body)}</div>
                 <div style="font-size:.7rem;color:var(--ink-4);margin-top:4px;">${new Date(n.createdAt).toLocaleString('fr-FR')}</div>
               </div>
@@ -5743,14 +5926,21 @@ DOCUMENTS
           const invs = (db.invoices||[]).slice(0,15);
           if(!invs.length) return '';
           const today = new Date();
+          const pendingCount = invs.filter(i=>i.type==='Facture'&&i.paymentStatus==='pending').length;
           return `<div class="glass-card" style="padding:22px;margin-top:20px;">
-            <h2 style="font-size:.95rem;font-weight:700;margin-bottom:14px;">📄 Devis & factures générés</h2>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+              <h2 style="font-size:.95rem;font-weight:700;">📄 Devis & factures générés</h2>
+              ${pendingCount>0?`<button id="btn-ai-relance-priority" class="btn btn-ghost btn-sm">🧠 Analyser les priorités de relance</button>`:''}
+            </div>
+            <div id="ai-relance-result" style="display:none;font-size:.82rem;color:var(--ink-3);background:rgba(155,184,216,.06);border:1px solid rgba(155,184,216,.18);border-radius:10px;padding:12px 14px;margin-bottom:14px;line-height:1.55;white-space:pre-line;"></div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               ${invs.map(inv=>{
                 const cl=db.users.find(u=>u.id===inv.clientId);
                 const isFac = inv.type==='Facture';
                 const daysSince = Math.floor((today - new Date(inv.createdAt)) / 86400000);
-                const overdue = isFac && inv.paymentStatus==='pending' && daysSince>=30;
+                const priority = computeRelancePriority(inv);
+                const overdue = !!priority && priority.score>=35;
+                const urgent = !!priority && priority.score>=60;
                 const statusBadge = !isFac ? '' : `
                   <select class="inv-payment-status" data-id="${inv.id}" style="font-size:.68rem;padding:2px 6px;border-radius:999px;border:1px solid ${inv.paymentStatus==='paid'?'rgba(147,181,148,.3)':overdue?'rgba(240,138,138,.4)':'rgba(155,184,216,.3)'};background:${inv.paymentStatus==='paid'?'rgba(147,181,148,.15)':overdue?'rgba(240,138,138,.12)':'rgba(155,184,216,.12)'};color:${inv.paymentStatus==='paid'?'#b6d1b7':overdue?'#f08a8a':'var(--sky)'};cursor:pointer;">
                     <option value="pending" ${inv.paymentStatus==='pending'?'selected':''}>⏳ En attente</option>
@@ -5760,7 +5950,7 @@ DOCUMENTS
                   <span style="font-size:.68rem;padding:2px 8px;border-radius:999px;flex-shrink:0;${isFac?'background:rgba(217,119,87,.15);color:var(--coral);border:1px solid rgba(217,119,87,.3);':'background:rgba(155,184,216,.12);color:var(--sky);border:1px solid rgba(155,184,216,.3);'}">${esc(inv.type)}</span>
                   <div style="flex:1;min-width:140px;">
                     <div style="font-size:.82rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(inv.title)} — N° ${esc(inv.num)}</div>
-                    <div style="font-size:.7rem;color:var(--ink-4);">${cl?esc(cl.username):'Client libre'} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}${overdue?` · <span style="color:#f08a8a;font-weight:600;">⚠️ ${daysSince}j sans paiement</span>`:''}${inv.signedAt?` · <span style="color:var(--sage);font-weight:600;">✓ Accepté le ${new Date(inv.signedAt).toLocaleDateString('fr-FR')}</span>`:''}</div>
+                    <div style="font-size:.7rem;color:var(--ink-4);">${cl?esc(cl.username):'Client libre'} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}${overdue?` · <span style="color:#f08a8a;font-weight:600;">${urgent?'🔥 priorité haute':'⚠️'} · ${daysSince}j sans paiement</span>`:''}${inv.signedAt?` · <span style="color:var(--sage);font-weight:600;">✓ Accepté le ${new Date(inv.signedAt).toLocaleDateString('fr-FR')}</span>`:''}</div>
                   </div>
                   ${statusBadge}
                   ${overdue?`<button class="btn btn-ghost btn-sm inv-relance" data-id="${inv.id}" title="Générer un message de relance" style="border-color:rgba(240,138,138,.4);color:#f08a8a;">✉ Relancer</button>`:''}
@@ -5777,6 +5967,30 @@ DOCUMENTS
   }
 
   function wireAdminFinance(){
+    document.getElementById('btn-ai-relance-priority')?.addEventListener('click',async ()=>{
+      const groqKey = db.aiConfig?.groqKey;
+      const result = document.getElementById('ai-relance-result');
+      if(!groqKey){ toast('Configurez une clé Groq dans l\'onglet Assistant IA.','error'); return; }
+      const btn = document.getElementById('btn-ai-relance-priority');
+      btn.disabled = true; btn.textContent = '⚙️ Analyse en cours…';
+      try{
+        const pending = (db.invoices||[]).filter(i=>i.type==='Facture'&&i.paymentStatus==='pending')
+          .map(i=>{
+            const cl = db.users.find(u=>u.id===i.clientId);
+            const pr = computeRelancePriority(i);
+            return { num:i.num, client:cl?cl.username:'Client libre', montant:i.ttc, jours:pr?.daysSince||0, retardsPasses:pr?.latePaidCount||0 };
+          });
+        if(!pending.length){ toast('Aucune facture en attente.','info'); btn.disabled=false; btn.textContent='🧠 Analyser les priorités de relance'; return; }
+        const prompt = 'Voici des factures impayées (JSON) : '+JSON.stringify(pending)+'. Classe-les par priorité de relance (la plus urgente en premier) en tenant compte du montant, du nombre de jours sans paiement, et des retards passés du client. Réponds en français, en 3-5 lignes maximum, format liste avec le numéro de facture et une courte raison.';
+        const json = await groqPost(groqKey, [{role:'user',content:prompt}], 350);
+        const answer = json.choices?.[0]?.message?.content || 'Pas de réponse.';
+        result.style.display='block';
+        result.textContent = answer;
+      }catch(e){
+        toast('Erreur lors de l\'analyse : '+e.message,'error');
+      }
+      btn.disabled = false; btn.textContent = '🧠 Analyser les priorités de relance';
+    });
     document.getElementById('btn-export-finance-csv')?.addEventListener('click',()=>{
       const rows = [['Projet','Montant','Date','Statut paiement','Note','Ajouté par']];
       (db.finance||[]).forEach(e=>{
@@ -6038,12 +6252,35 @@ DOCUMENTS
         return `<div style="display:flex;${mine?'justify-content:flex-end;':'justify-content:flex-start;'}margin-bottom:8px;">
           <div style="max-width:80%;padding:8px 12px;border-radius:12px;font-size:.84rem;line-height:1.4;${mine?'background:rgba(217,119,87,.18);color:var(--ink);':'background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--ink-2);'}">
             <div style="font-size:.7rem;color:var(--ink-4);margin-bottom:2px;font-weight:600;">${esc(cm.authorName)}${cm.authorRole==='client'?'':' (équipe)'}</div>
-            ${esc(cm.text)}
-            <div style="font-size:.65rem;color:var(--ink-4);margin-top:3px;">${new Date(cm.createdAt).toLocaleString('fr-FR')}</div>
+            <span class="sc-comment-text" data-cid="${cm.id}">${esc(cm.text)}</span>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:3px;">
+              <span style="font-size:.65rem;color:var(--ink-4);">${new Date(cm.createdAt).toLocaleString('fr-FR')}</span>
+              ${!mine?`<button class="sc-translate-btn" data-cid="${cm.id}" style="font-size:.65rem;color:var(--sky);background:none;border:none;cursor:pointer;padding:0;">🌐 Traduire</button>`:''}
+            </div>
           </div>
         </div>`;
       }).join('') || `<div style="text-align:center;padding:20px 0;font-size:.82rem;color:var(--ink-4);">Aucun commentaire pour cette étape encore.</div>`;
       c.scrollTop = c.scrollHeight;
+      c.querySelectorAll('.sc-translate-btn').forEach(btn=>{
+        btn.addEventListener('click',async ()=>{
+          const cid = btn.dataset.cid;
+          const cm = step.comments.find(x=>x.id===cid);
+          if(!cm) return;
+          const groqKey = db.aiConfig?.groqKey;
+          if(!groqKey){ toast('Traduction indisponible (clé Groq non configurée).','error'); return; }
+          btn.textContent = '⚙️…';
+          try{
+            const prompt = 'Traduis ce texte en français s\'il n\'est pas déjà en français, sinon traduis-le en anglais. Réponds UNIQUEMENT avec la traduction, sans aucun commentaire ni guillemets : "'+cm.text.replace(/"/g,"'")+'"';
+            const json = await groqPost(groqKey, [{role:'user',content:prompt}], 200);
+            const translated = (json.choices?.[0]?.message?.content||'').trim();
+            const textEl = c.querySelector(`.sc-comment-text[data-cid="${cid}"]`);
+            if(textEl && translated) textEl.innerHTML = esc(translated) + ` <span style="font-size:.65rem;color:var(--ink-4);font-style:italic;">(traduit)</span>`;
+            btn.remove();
+          }catch(e){
+            btn.textContent = '❌ Erreur';
+          }
+        });
+      });
     };
 
     showModal(`
@@ -6070,6 +6307,7 @@ DOCUMENTS
         // admins/contrôleurs ; si c'est l'équipe, on notifie le client.
         if(isClientView){
           pushNotification('admins', '💬 Commentaire client', '@'+me.username+' a commenté l\'étape "'+step.label+'" du projet "'+p.name+'".', 'info');
+          analyzeCommentTone(txt, p, step);
         } else if(p.clientId){
           pushNotification(p.clientId, '💬 Nouveau commentaire', 'Votre équipe a répondu sur l\'étape "'+step.label+'" de votre projet.', 'info');
         }
@@ -6078,6 +6316,30 @@ DOCUMENTS
       document.getElementById('sc-send')?.addEventListener('click',send);
       document.getElementById('sc-input')?.addEventListener('keydown',e=>{ if(e.key==='Enter') send(); });
     });
+  }
+
+  // Détecte un ton frustré/inquiet dans un commentaire client et alerte
+  // l'équipe avant que la situation n'escalade. Best-effort : échoue
+  // silencieusement si pas de clé Groq configurée ou en cas d'erreur réseau.
+  async function analyzeCommentTone(text, project, step){
+    const groqKey = db.aiConfig?.groqKey;
+    if(!groqKey || text.length<8) return;
+    try{
+      const prompt = 'Analyse le ton de ce commentaire client et note-le de 1 (très négatif/frustré) à 5 (très positif/satisfait), 3 étant neutre. Réponds UNIQUEMENT au format "SCORE: X" où X est le chiffre, suivi sur une nouvelle ligne de "ALERTE: raison" si et seulement si le ton est frustré, inquiet, mécontent ou impatient (sinon ne mets pas de ligne ALERTE). Commentaire : "'+text.replace(/"/g,"'")+'"';
+      const json = await groqPost(groqKey, [{role:'user',content:prompt}], 80);
+      const answer = (json.choices?.[0]?.message?.content||'').trim();
+      const scoreMatch = /SCORE:\s*(\d)/i.exec(answer);
+      if(scoreMatch){
+        if(!Array.isArray(project.toneScores)) project.toneScores=[];
+        project.toneScores.push({ score:parseInt(scoreMatch[1],10), at:new Date().toISOString() });
+        if(project.toneScores.length>50) project.toneScores = project.toneScores.slice(-50);
+        saveDB();
+      }
+      if(/ALERTE/i.test(answer)){
+        const reason = answer.split(/ALERTE:?/i)[1]?.trim() || '';
+        pushNotification('admins', '⚠️ Ton préoccupant détecté', 'Sur "'+step.label+'" ('+project.name+') : '+(reason||'le client semble frustré ou inquiet.'), 'warning');
+      }
+    }catch(_){ /* silencieux — ne bloque jamais l'envoi du commentaire */ }
   }
 
   // Charge de travail par admin/contrôleur : nombre de projets actifs
@@ -6141,6 +6403,40 @@ DOCUMENTS
           </div>`).join('') || `<div style="padding:20px 0;text-align:center;font-size:.82rem;color:var(--ink-4);">Aucun fichier déposé pour le moment.</div>`}
       </div>`,
     ()=>{});
+  }
+
+  // Résumé IA des échanges Discussion d'un client, pour préparer une réunion
+  // sans tout relire — utilise l'historique réel stocké dans db.aiRequests.
+  function openSummarizeQAModal(clientId){
+    const cl = db.users.find(u=>u.id===clientId);
+    const history = (db.aiRequests||[]).filter(r=>r.clientId===clientId&&r.type==='qa'&&r.status==='answered')
+      .sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">✨ Résumé des échanges — ${esc(cl?.username||'Client')}</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:14px;">${history.length} question(s)/réponse(s) avec l'Assistant IA.</p>
+      <div id="qa-sum-loading" style="text-align:center;padding:30px 0;color:var(--ink-4);font-size:.85rem;">⚙️ Génération en cours…</div>
+      <div id="qa-sum-result" style="display:none;font-size:.85rem;color:var(--ink-2);line-height:1.6;white-space:pre-line;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px;"></div>`,
+    async ()=>{
+      const groqKey = db.aiConfig?.groqKey;
+      const loading = document.getElementById('qa-sum-loading');
+      const result = document.getElementById('qa-sum-result');
+      if(!groqKey){ loading.textContent='Clé Groq non configurée (onglet Assistant IA).'; return; }
+      if(!history.length){ loading.textContent='Aucun échange à résumer.'; return; }
+      try{
+        const transcript = history.slice(-30).map(r=>'Client: '+r.originalMessage+'\nAssistant: '+(r.groqAnswer||'').substring(0,300)).join('\n\n');
+        const prompt = 'Voici un historique de conversation entre un client et un assistant IA d\'agence web. Résume en français, en 5-8 lignes maximum, les points clés à retenir avant une réunion avec ce client : ses préoccupations principales, questions récurrentes, et tout signal d\'insatisfaction ou de demande importante.\n\n'+transcript;
+        const json = await groqPost(groqKey, [{role:'user',content:prompt}], 400);
+        const text = json.choices?.[0]?.message?.content || 'Pas de réponse.';
+        loading.style.display='none';
+        result.style.display='block';
+        result.textContent = text;
+      }catch(e){
+        loading.textContent = '❌ Erreur : '+e.message;
+      }
+    });
   }
 
   // Vue centralisée admin/contrôleur : tous les fichiers déposés par tous
@@ -6402,8 +6698,10 @@ DOCUMENTS
           Total TTC : <span id="dv-sum-ttc">0,00 €</span>
         </div>
       </div>
+      <div id="dv-check-result" style="display:none;font-size:.8rem;color:var(--ink-3);background:rgba(155,184,216,.06);border:1px solid rgba(155,184,216,.18);border-radius:10px;padding:10px 12px;margin-bottom:12px;line-height:1.5;white-space:pre-line;"></div>
       <div style="display:flex;gap:10px;">
         <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;justify-content:center;">Annuler</button>
+        <button id="dv-check" class="btn btn-ghost" style="flex:1;justify-content:center;">🔍 Vérifier</button>
         <button id="dv-gen" class="btn btn-primary" style="flex:1;justify-content:center;">Générer le PDF</button>
       </div>`,
     ()=>{
@@ -6441,6 +6739,29 @@ DOCUMENTS
       document.getElementById('dv-tva').addEventListener('input',recalc);
       recalc();
 
+      document.getElementById('dv-check')?.addEventListener('click',async ()=>{
+        const groqKey = db.aiConfig?.groqKey;
+        const result = document.getElementById('dv-check-result');
+        const title   = document.getElementById('dv-title').value||'';
+        const tvaRate = document.getElementById('dv-tva').value||'0';
+        const lines   = [...document.querySelectorAll('.dv-line')]
+          .map(l=>({desc:l.querySelector('.dv-desc')?.value||'',qty:l.querySelector('.dv-qty')?.value||'1',price:l.querySelector('.dv-price')?.value||'0'}))
+          .filter(l=>l.desc);
+        if(!groqKey){ result.style.display='block'; result.textContent='Clé Groq non configurée — vérification IA indisponible.'; return; }
+        if(!lines.length){ result.style.display='block'; result.textContent='Ajoutez au moins une ligne avant de vérifier.'; return; }
+        const btn = document.getElementById('dv-check');
+        btn.disabled = true; btn.textContent = '⚙️…';
+        try{
+          const prompt = 'Relis ce devis/facture avant envoi au client et signale UNIQUEMENT les incohérences réelles (pas de remarques générales) : objet="'+title+'", TVA='+tvaRate+'%, lignes='+JSON.stringify(lines)+'. Vérifie : prix à 0 ou vide, description vague ou incohérente avec un prix élevé, TVA inhabituelle (ni 0 ni 20 ni 5.5 ni 10), doublons de lignes, fautes évidentes. Si tout est cohérent réponds UNIQUEMENT "OK". Sinon liste les problèmes en français, 1 ligne par problème, sois bref.';
+          const json = await groqPost(groqKey, [{role:'user',content:prompt}], 250);
+          const answer = (json.choices?.[0]?.message?.content||'').trim();
+          result.style.display='block';
+          result.textContent = /^OK\.?$/i.test(answer) ? '✓ Aucune incohérence détectée.' : '⚠️ '+answer;
+        }catch(e){
+          result.style.display='block'; result.textContent = 'Erreur de vérification : '+e.message;
+        }
+        btn.disabled = false; btn.textContent = '🔍 Vérifier';
+      });
       document.getElementById('dv-gen').addEventListener('click',()=>{
         if(!window.jspdf){ toast('jsPDF non chargé','error'); return; }
         const { jsPDF } = window.jspdf;
