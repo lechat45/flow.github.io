@@ -834,6 +834,9 @@ select.glass-input option { background: #111; color: var(--ink); }
       if(!Array.isArray(p.tags)) p.tags=[];
       if(!Array.isArray(p.faq)) p.faq=[];
       if(!Array.isArray(p.siteHistory)) p.siteHistory=[];
+      if(!Array.isArray(p.versionGallery)) p.versionGallery=[];   // BÊTA teste1 — galerie de versions (images)
+      if(!Array.isArray(p.clientFiles)) p.clientFiles=[];          // BÊTA teste1 — fichiers partagés par le client
+      if(!Array.isArray(p.stepRatings)) p.stepRatings=[];          // BÊTA teste1 — notes de satisfaction par étape
     });
     db.documents.forEach(d=>{
       if(!Array.isArray(d.fields)) d.fields=[];
@@ -1631,6 +1634,12 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     base.splice(1,0,{ id:'discussion', icon:iconChat(), label:'Discussion' });
     // "À faire" — déployé à tous les clients.
     base.splice(2,0,{ id:'client-checklist', icon:iconRequests(), label:'À faire' });
+    // Fonctionnalités bêta — testées uniquement sur le compte teste1 avant
+    // un éventuel déploiement à tous les clients.
+    if(me && me.id==='u_teste1'){
+      base.splice(3,0,{ id:'client-gallery', icon:iconEye(),    label:'Évolution',    beta:true });
+      base.splice(4,0,{ id:'client-files',   icon:iconUpload(), label:'Mes fichiers', beta:true });
+    }
     return base;
   }
   function markAIRequestsSeen(){
@@ -2699,6 +2708,21 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
               </div>`).join('')}
             </div>`:`<div style="margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ À faire côté client</button></div>`;
         })()}
+        ${(()=>{
+          if(!(canEdit&&project&&u&&u.id==='u_teste1')) return '';
+          const gallery = project.versionGallery||[];
+          const cfiles  = project.clientFiles||[];
+          const ratings = project.stepRatings||[];
+          const avgStars = ratings.length ? (ratings.reduce((s,r)=>s+(r.stars||0),0)/ratings.length).toFixed(1) : null;
+          return `<div style="margin:10px 0 0;padding:10px 14px;background:rgba(155,184,216,.04);border-radius:10px;border:1px solid rgba(155,184,216,.15);">
+            <div style="font-size:.7rem;font-weight:700;color:var(--sky);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">🧪 Fonctionnalités test</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <button class="btn btn-ghost btn-sm btn-manage-gallery" data-pid="${project.id}">📸 Galerie (${gallery.length})</button>
+              <button class="btn btn-ghost btn-sm btn-view-client-files" data-pid="${project.id}">📤 Fichiers client (${cfiles.length})</button>
+              ${avgStars?`<span style="display:flex;align-items:center;gap:4px;font-size:.78rem;color:var(--ink-3);padding:0 4px;">⭐ ${avgStars}/5 (${ratings.length} avis)</span>`:''}
+            </div>
+          </div>`;
+        })()}
         <div class="divider"></div>
         <div style="font-size:.8rem;font-weight:600;color:rgba(244,238,229,.5);margin-bottom:8px;">DOCUMENTS (${docs.length})</div>
         ${docs.length===0
@@ -2827,6 +2851,12 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     document.querySelectorAll('.btn-manage-client-tasks').forEach(b=>{
       b.addEventListener('click',()=>openManageClientTasksModal(b.dataset.pid));
+    });
+    document.querySelectorAll('.btn-manage-gallery').forEach(b=>{
+      b.addEventListener('click',()=>openManageGalleryModal(b.dataset.pid));
+    });
+    document.querySelectorAll('.btn-view-client-files').forEach(b=>{
+      b.addEventListener('click',()=>openViewClientFilesModal(b.dataset.pid));
     });
     document.querySelectorAll('.btn-extract-tasks').forEach(b=>{
       b.addEventListener('click',()=>{
@@ -3283,6 +3313,8 @@ DOCUMENTS
     if(activeTab==='documents')         return renderClientDocuments();
     if(activeTab==='discussion')        return renderClientDiscussion();
     if(activeTab==='client-checklist')  return renderClientChecklist();
+    if(activeTab==='client-gallery')    return me.id==='u_teste1' ? renderClientGallery() : renderClientHome();
+    if(activeTab==='client-files')      return me.id==='u_teste1' ? renderClientFiles()   : renderClientHome();
     if(activeTab==='profile')           return renderClientProfile();
     return '';
   }
@@ -3319,6 +3351,8 @@ DOCUMENTS
     if(activeTab==='documents')    wireClientDocuments();
     if(activeTab==='discussion'){ wireClientDiscussionQA(); const m=document.getElementById('qa-messages'); if(m) m.scrollTop=m.scrollHeight; }
     if(activeTab==='client-checklist') wireClientChecklist();
+    if(activeTab==='client-gallery'&&me.id==='u_teste1') wireClientGallery();
+    if(activeTab==='client-files'&&me.id==='u_teste1')   wireClientFiles();
     if(activeTab==='profile')      wireClientProfile();
     renderMobileTabbar('client');
   }
@@ -3763,9 +3797,213 @@ DOCUMENTS
     });
   }
 
-  // ─── Client: Profile ────────────────────────────
+  // ─── Client: Évolution du projet (BÊTA — teste1) ──────────────────
+  // Regroupe la galerie de versions (images ajoutées par l'équipe) et la
+  // notation de satisfaction par étape franchie de la timeline.
+  function renderClientGallery(){
+    const project = getUserProject(me.id);
+    if(!project){
+      return `<div class="fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;padding:48px 24px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:16px;opacity:.6;">🖼️</div>
+        <div style="font-size:.95rem;font-weight:600;color:var(--ink-2);margin-bottom:8px;">Aucun projet associé</div>
+        <div style="font-size:.82rem;color:var(--ink-4);">L'évolution de votre projet apparaîtra ici dès qu'il sera créé.</div>
+      </div>`;
+    }
+    const gallery = [...(project.versionGallery||[])].sort((a,b)=>new Date(b.addedAt)-new Date(a.addedAt));
+    const ratings = project.stepRatings||[];
+    const doneSteps = (project.timeline||[]).filter(s=>s.status==='done');
+
+    return `<div class="fade-up">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <h1 style="font-size:1.4rem;font-weight:700;">Évolution</h1>
+        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;text-transform:uppercase;">TEST</span>
+      </div>
+      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:24px;">Les versions visuelles de votre projet, et votre avis sur chaque étape franchie.</p>
+
+      <h2 style="font-size:.85rem;font-weight:700;color:var(--ink-3);margin-bottom:12px;">📸 Galerie de versions</h2>
+      ${gallery.length===0?`
+        <div class="glass-card" style="padding:36px 24px;text-align:center;margin-bottom:28px;">
+          <div style="font-size:1.6rem;margin-bottom:10px;opacity:.6;">🖼️</div>
+          <div style="font-size:.85rem;color:var(--ink-4);">Aucune image pour le moment. Votre équipe ajoutera ici les aperçus visuels au fil de l'avancement.</div>
+        </div>` : `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:28px;">
+          ${gallery.map((g,i)=>`
+            <div class="glass-card cg-item" data-i="${i}" style="padding:0;overflow:hidden;cursor:pointer;">
+              <img src="${g.data}" style="width:100%;height:120px;object-fit:cover;display:block;" />
+              <div style="padding:8px 10px;">
+                <div style="font-size:.78rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(g.label||'Version')}</div>
+                <div style="font-size:.68rem;color:var(--ink-4);">${new Date(g.addedAt).toLocaleDateString('fr-FR')}</div>
+              </div>
+            </div>`).join('')}
+        </div>`}
+
+      <h2 style="font-size:.85rem;font-weight:700;color:var(--ink-3);margin-bottom:12px;">⭐ Votre avis sur chaque étape</h2>
+      ${doneSteps.length===0?`
+        <div class="glass-card" style="padding:36px 24px;text-align:center;">
+          <div style="font-size:.85rem;color:var(--ink-4);">Aucune étape terminée pour le moment.</div>
+        </div>`:`
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${doneSteps.map(s=>{
+            const r = ratings.find(x=>x.stepId===s.id);
+            return `<div class="glass-card" style="padding:14px 18px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${r?'8px':'0'};">
+                <span style="font-size:.85rem;font-weight:600;">${esc(s.label)}</span>
+                <div class="cg-stars" data-step="${s.id}">
+                  ${[1,2,3,4,5].map(n=>`<span class="cg-star" data-step="${s.id}" data-val="${n}" style="cursor:pointer;font-size:1.1rem;color:${r&&r.stars>=n?'var(--coral)':'rgba(255,255,255,.18)'};">★</span>`).join('')}
+                </div>
+              </div>
+              ${r&&r.comment?`<div style="font-size:.78rem;color:var(--ink-4);">${esc(r.comment)}</div>`:''}
+            </div>`;
+          }).join('')}
+        </div>`}
+    </div>`;
+  }
+
+  function wireClientGallery(){
+    const project = getUserProject(me.id);
+    if(!project) return;
+
+    // Aperçu plein écran d'une image de la galerie
+    document.querySelectorAll('.cg-item').forEach(el=>{
+      el.addEventListener('click',()=>{
+        const g = [...(project.versionGallery||[])].sort((a,b)=>new Date(b.addedAt)-new Date(a.addedAt))[Number(el.dataset.i)];
+        if(!g) return;
+        showModal(`
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <h2 style="font-size:1rem;font-weight:700;">${esc(g.label||'Version')}</h2>
+            <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+          </div>
+          <img src="${g.data}" style="width:100%;border-radius:10px;" />
+          ${g.note?`<p style="font-size:.82rem;color:var(--ink-3);margin-top:12px;">${esc(g.note)}</p>`:''}
+          <div style="font-size:.72rem;color:var(--ink-4);margin-top:8px;">${new Date(g.addedAt).toLocaleDateString('fr-FR')}</div>`,
+        ()=>{});
+      });
+    });
+
+    // Notation par étoiles
+    document.querySelectorAll('.cg-star').forEach(star=>{
+      star.addEventListener('click',()=>{
+        const stepId = star.dataset.step;
+        const val = Number(star.dataset.val);
+        if(!Array.isArray(project.stepRatings)) project.stepRatings=[];
+        let r = project.stepRatings.find(x=>x.stepId===stepId);
+        if(!r){ r = {stepId, stars:0, comment:''}; project.stepRatings.push(r); }
+        r.stars = val;
+        r.ratedAt = new Date().toISOString();
+        saveDB(); refreshClientTab(true);
+        toast('Merci pour votre avis ! ⭐','success');
+      });
+    });
+  }
+
+  // ─── Client: Mes fichiers (BÊTA — teste1) ──────────────────────────
+  // Permet au client de déposer ses propres fichiers (logo, textes, accès…)
+  // sans passer par le système de formulaires/documents existant.
+  function renderClientFiles(){
+    const project = getUserProject(me.id);
+    if(!project){
+      return `<div class="fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;padding:48px 24px;text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:16px;opacity:.6;">📤</div>
+        <div style="font-size:.95rem;font-weight:600;color:var(--ink-2);margin-bottom:8px;">Aucun projet associé</div>
+        <div style="font-size:.82rem;color:var(--ink-4);">Cet espace sera disponible dès que votre projet sera créé.</div>
+      </div>`;
+    }
+    const files = [...(project.clientFiles||[])].sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
+
+    return `<div class="fade-up">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <h1 style="font-size:1.4rem;font-weight:700;">Mes fichiers</h1>
+        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;text-transform:uppercase;">TEST</span>
+      </div>
+      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:20px;">Déposez ici les fichiers utiles à votre projet (logo, textes, visuels…). Taille maximale : 6 Mo par fichier.</p>
+
+      <div id="cf-drop" class="glass-card" style="padding:32px 20px;text-align:center;border:2px dashed rgba(255,255,255,.15);margin-bottom:20px;cursor:pointer;">
+        <div style="font-size:1.6rem;margin-bottom:8px;">📤</div>
+        <div style="font-size:.85rem;color:var(--ink-3);">Cliquez ou déposez un fichier ici</div>
+        <input id="cf-input" type="file" style="display:none;" />
+      </div>
+      <div id="cf-progress-wrap" style="display:none;margin-bottom:20px;">
+        <div style="height:6px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden;">
+          <div id="cf-progress-bar" style="height:100%;width:0%;background:var(--coral);border-radius:999px;transition:width .2s;"></div>
+        </div>
+        <div id="cf-progress-txt" style="font-size:.72rem;color:var(--ink-4);margin-top:4px;"></div>
+      </div>
+      <div id="cf-msg"></div>
+
+      ${files.length===0?`
+        <div class="glass-card" style="padding:36px 24px;text-align:center;">
+          <div style="font-size:.85rem;color:var(--ink-4);">Aucun fichier envoyé pour le moment.</div>
+        </div>`:`
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${files.map((f,i)=>`
+            <div class="glass-card" style="padding:13px 16px;display:flex;align-items:center;gap:12px;">
+              <span style="font-size:1.2rem;flex-shrink:0;">${f.type&&f.type.startsWith('image/')?'🖼️':'📄'}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.name)}</div>
+                <div style="font-size:.72rem;color:var(--ink-4);">${(f.size/1024).toFixed(0)} Ko · ${new Date(f.uploadedAt).toLocaleDateString('fr-FR')}</div>
+              </div>
+              <a href="${f.data}" download="${esc(f.name)}" class="btn btn-ghost btn-sm">⬇</a>
+              <button class="btn btn-danger btn-sm cf-delete" data-i="${i}">🗑</button>
+            </div>`).join('')}
+        </div>`}
+    </div>`;
+  }
+
+  function wireClientFiles(){
+    const project = getUserProject(me.id);
+    if(!project) return;
+    const MAX_SIZE = 6 * 1024 * 1024;
+    const dropZone = document.getElementById('cf-drop');
+    const input    = document.getElementById('cf-input');
+    const msg      = document.getElementById('cf-msg');
+    const progWrap = document.getElementById('cf-progress-wrap');
+    const progBar  = document.getElementById('cf-progress-bar');
+    const progTxt  = document.getElementById('cf-progress-txt');
+
+    function handleFile(file){
+      if(!file) return;
+      if(file.size > MAX_SIZE){
+        showMsg(msg, `Fichier trop volumineux (${(file.size/1024/1024).toFixed(1)} Mo). Limite : 6 Mo.`, 'error');
+        return;
+      }
+      progWrap.style.display = 'block';
+      const reader = new FileReader();
+      reader.onprogress = e=>{ if(e.lengthComputable){ const pct=Math.round(e.loaded/e.total*100); progBar.style.width=pct+'%'; progTxt.textContent=pct+'% envoyé…'; } };
+      reader.onload = e=>{
+        if(!Array.isArray(project.clientFiles)) project.clientFiles=[];
+        project.clientFiles.push({ id:uid(), name:file.name, size:file.size, type:file.type, data:e.target.result, uploadedAt:new Date().toISOString() });
+        saveDB();
+        progTxt.textContent='Envoyé ✓';
+        toast('Fichier envoyé !','success');
+        refreshClientTab(true);
+      };
+      reader.onerror = ()=>showMsg(msg,'Erreur de lecture du fichier.','error');
+      reader.readAsDataURL(file);
+    }
+
+    if(dropZone) dropZone.addEventListener('click',()=>input.click());
+    if(input) input.addEventListener('change',()=>handleFile(input.files[0]));
+    if(dropZone){
+      dropZone.addEventListener('dragover',e=>{ e.preventDefault(); dropZone.style.borderColor='var(--coral)'; });
+      dropZone.addEventListener('dragleave',()=>{ dropZone.style.borderColor=''; });
+      dropZone.addEventListener('drop',e=>{ e.preventDefault(); dropZone.style.borderColor=''; handleFile(e.dataTransfer.files[0]); });
+    }
+    document.querySelectorAll('.cf-delete').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const i = Number(b.dataset.i);
+        const files = [...(project.clientFiles||[])].sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
+        const target = files[i];
+        if(!target) return;
+        project.clientFiles = project.clientFiles.filter(f=>f.id!==target.id);
+        saveDB(); toast('Fichier supprimé.','info'); refreshClientTab(true);
+      });
+    });
+  }
+
+
   function renderClientProfile(){
     const project = getUserProject(me.id);
+
     return `<div class="fade-up">
       <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:24px;">Mon Profil</h1>
       <div class="profile-grid">
@@ -5520,6 +5758,95 @@ DOCUMENTS
     });
   }
 
+  // BÊTA teste1 — gestion de la galerie de versions (images)
+  function openManageGalleryModal(projectId){
+    const p = db.projects.find(x=>x.id===projectId);
+    if(!p) return;
+    if(!Array.isArray(p.versionGallery)) p.versionGallery=[];
+    const MAX_SIZE = 4 * 1024 * 1024;
+    const renderList=()=>{
+      const c=document.getElementById('gallery-list');
+      if(!c) return;
+      const sorted = [...p.versionGallery].sort((a,b)=>new Date(b.addedAt)-new Date(a.addedAt));
+      c.innerHTML = sorted.map(g=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+          <img src="${g.data}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;" />
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(g.label||'Version')}</div>
+            <div style="font-size:.7rem;color:var(--ink-4);">${new Date(g.addedAt).toLocaleDateString('fr-FR')}</div>
+          </div>
+          <button class="btn btn-danger btn-sm gal-dl" data-id="${g.id}">🗑</button>
+        </div>`).join('') || `<div style="padding:16px 0;text-align:center;font-size:.82rem;color:var(--ink-4);">Aucune image pour le moment.</div>`;
+      c.querySelectorAll('.gal-dl').forEach(b=>b.addEventListener('click',()=>{ p.versionGallery=p.versionGallery.filter(x=>x.id!==b.dataset.id); saveDB(); renderList(); refreshAdminTab(); }));
+    };
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">📸 Galerie de versions — ${esc(p.name)}</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">Ajoutez des aperçus visuels (maquettes, captures) que le client retrouvera dans son onglet "Évolution".</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input id="gal-label" class="glass-input" placeholder="Légende (ex: Maquette V2)" style="flex:1;" />
+      </div>
+      <div id="gal-drop" class="glass-card" style="padding:20px;text-align:center;border:2px dashed rgba(255,255,255,.15);margin-bottom:14px;cursor:pointer;">
+        <div style="font-size:.82rem;color:var(--ink-3);">Cliquez ou déposez une image ici (max 4 Mo)</div>
+        <input id="gal-input" type="file" accept="image/*" style="display:none;" />
+      </div>
+      <div id="gal-msg"></div>
+      <div id="gallery-list" style="margin-top:10px;"></div>`,
+    ()=>{
+      renderList();
+      const dropZone = document.getElementById('gal-drop');
+      const input    = document.getElementById('gal-input');
+      const msg      = document.getElementById('gal-msg');
+      function handleFile(file){
+        if(!file) return;
+        if(!file.type.startsWith('image/')){ showMsg(msg,'Seules les images sont acceptées.','error'); return; }
+        if(file.size > MAX_SIZE){ showMsg(msg,`Image trop volumineuse (${(file.size/1024/1024).toFixed(1)} Mo). Limite : 4 Mo.`,'error'); return; }
+        const reader = new FileReader();
+        reader.onload = e=>{
+          p.versionGallery.push({ id:uid(), label:document.getElementById('gal-label')?.value.trim()||'Version', data:e.target.result, addedAt:new Date().toISOString(), addedBy:me.username });
+          saveDB(); document.getElementById('gal-label').value=''; renderList(); refreshAdminTab();
+          toast('Image ajoutée à la galerie ✓','success');
+        };
+        reader.onerror = ()=>showMsg(msg,'Erreur de lecture du fichier.','error');
+        reader.readAsDataURL(file);
+      }
+      if(dropZone) dropZone.addEventListener('click',()=>input.click());
+      if(input) input.addEventListener('change',()=>handleFile(input.files[0]));
+      if(dropZone){
+        dropZone.addEventListener('dragover',e=>{ e.preventDefault(); dropZone.style.borderColor='var(--coral)'; });
+        dropZone.addEventListener('dragleave',()=>{ dropZone.style.borderColor=''; });
+        dropZone.addEventListener('drop',e=>{ e.preventDefault(); dropZone.style.borderColor=''; handleFile(e.dataTransfer.files[0]); });
+      }
+    });
+  }
+
+  // BÊTA teste1 — consultation des fichiers déposés par le client
+  function openViewClientFilesModal(projectId){
+    const p = db.projects.find(x=>x.id===projectId);
+    if(!p) return;
+    const files = [...(p.clientFiles||[])].sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">📤 Fichiers déposés — ${esc(p.name)}</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">Fichiers envoyés par le client depuis son onglet "Mes fichiers".</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${files.map(f=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+            <span style="font-size:1.1rem;flex-shrink:0;">${f.type&&f.type.startsWith('image/')?'🖼️':'📄'}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.name)}</div>
+              <div style="font-size:.72rem;color:var(--ink-4);">${(f.size/1024).toFixed(0)} Ko · ${new Date(f.uploadedAt).toLocaleDateString('fr-FR')}</div>
+            </div>
+            <a href="${f.data}" download="${esc(f.name)}" class="btn btn-ghost btn-sm">⬇ Télécharger</a>
+          </div>`).join('') || `<div style="padding:20px 0;text-align:center;font-size:.82rem;color:var(--ink-4);">Aucun fichier déposé pour le moment.</div>`}
+      </div>`,
+    ()=>{});
+  }
+
   function openCompanyInfoModal(){
     const c = db.companyInfo||{};
     showModal(`
@@ -5831,6 +6158,7 @@ DOCUMENTS
   function iconRubisPlain(size){ return `<svg viewBox="0 0 24 24" width="${size||18}" height="${size||18}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4-5h10l4 5-9 13z"/><path d="M3 8h18"/><path d="M9 3L7 8l5 13 5-13-2-5"/></svg>`; }
   function iconChat(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`; }
   function iconEye(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`; }
+  function iconUpload(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`; }
   function iconMsg(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`; }
   function iconSearch(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`; }
 
