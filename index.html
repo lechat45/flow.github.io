@@ -7498,6 +7498,10 @@ DOCUMENTS
           </select>
         </div>
 
+        <div id="pub-puter-status" style="margin-bottom:18px;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:.78rem;color:var(--ink-3);">Vérification de la connexion Puter…</span>
+        </div>
+
         <div style="margin-bottom:18px;display:flex;align-items:center;gap:10px;">
           <input type="checkbox" id="pub-gen-image" style="width:16px;height:16px;cursor:pointer;">
           <label for="pub-gen-image" style="font-size:.82rem;color:var(--ink-2);cursor:pointer;">🎨 Générer aussi une image IA pour chaque variante (gratuit — nécessite une connexion Puter, une seule fois)</label>
@@ -7625,7 +7629,49 @@ DOCUMENTS
     });
   }
 
+  // Met à jour la carte de statut Puter dans l'onglet Pub : affiche le nom
+  // d'utilisateur connecté + bouton de déconnexion, ou un bouton de connexion
+  // explicite si non connecté. Permet à l'admin de se connecter en amont,
+  // sans attendre de cliquer sur "Générer" pour découvrir la popup Puter.
+  function pubUpdatePuterStatus(){
+    const el = document.getElementById('pub-puter-status');
+    if(!el) return;
+    if(typeof puter === 'undefined' || !puter.auth){
+      el.innerHTML = `<span style="font-size:.78rem;color:#f08a8a;">⚠ Service Puter indisponible (vérifiez la connexion réseau).</span>`;
+      return;
+    }
+    if(puter.auth.isSignedIn()){
+      puter.auth.getUser().then(user=>{
+        el.innerHTML = `<span style="font-size:.78rem;color:var(--sage);">✓ Connecté à Puter en tant que <strong>${esc(user?.username||'utilisateur')}</strong> — génération d'images disponible.</span>
+          <button id="btn-puter-signout" class="btn btn-ghost btn-sm">Se déconnecter</button>`;
+        const btn = document.getElementById('btn-puter-signout');
+        if(btn) btn.addEventListener('click',()=>{
+          puter.auth.signOut();
+          pubUpdatePuterStatus();
+          toast('Déconnecté de Puter.','info');
+        });
+      }).catch(()=>{
+        el.innerHTML = `<span style="font-size:.78rem;color:var(--ink-3);">Statut Puter incertain.</span>`;
+      });
+    } else {
+      el.innerHTML = `<span style="font-size:.78rem;color:var(--ink-3);">Non connecté à Puter — requis pour générer des images IA gratuitement.</span>
+        <button id="btn-puter-signin" class="btn btn-primary btn-sm">🔗 Connecter mon compte Puter</button>`;
+      const btn = document.getElementById('btn-puter-signin');
+      if(btn) btn.addEventListener('click', async()=>{
+        btn.disabled = true; btn.textContent = 'Connexion…';
+        try{
+          await puter.auth.signIn();
+          toast('Connecté à Puter ✓','success');
+        }catch(e){
+          toast('Connexion annulée ou échouée.','error');
+        }
+        pubUpdatePuterStatus();
+      });
+    }
+  }
+
   function wireAdminPub(){
+    pubUpdatePuterStatus();
     const genBtn = document.getElementById('btn-pub-generate');
     if(genBtn) genBtn.addEventListener('click', async()=>{
       const groqKey = db.aiConfig?.groqKey;
