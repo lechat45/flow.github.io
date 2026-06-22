@@ -11,7 +11,8 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: blob: https:;
-    connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app https://*.googleapis.com https://api.groq.com https://discord.com https://*.discord.com https://www.gstatic.com https://cdnjs.cloudflare.com;
+    connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://*.googleapis.com https://api.groq.com https://discord.com https://*.discord.com https://www.gstatic.com https://cdnjs.cloudflare.com;
+    frame-src https://*.firebaseio.com https://*.firebasedatabase.app;
     base-uri 'self';
     form-action 'none';
     object-src 'none';
