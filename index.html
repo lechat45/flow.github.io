@@ -824,7 +824,7 @@ select.glass-input option { background: #111; color: var(--ink); }
         firstName:'Teste', lastName:'Un', email:'teste1@flow.app', photo:null,
         projectId:null, createdAt:'2024-01-01', hasDiscussion:true });
     }
-    db.users.forEach(u=>{ if(u.hasDiscussion===undefined) u.hasDiscussion=false; if(u.discordWebhook===undefined) u.discordWebhook=''; });
+    db.users.forEach(u=>{ if(u.hasDiscussion===undefined) u.hasDiscussion=false; if(u.discordWebhook===undefined) u.discordWebhook=''; if(u.failedAttempts===undefined) u.failedAttempts=0; if(u.lockUntil===undefined) u.lockUntil=0; });
     db.projects.forEach(p=>{
       if(!p.priority) p.priority='normal';
       if(!Array.isArray(p.internalTasks)) p.internalTasks=[];
@@ -989,7 +989,7 @@ select.glass-input option { background: #111; color: var(--ink); }
 
   // ─── Helpers ────────────────────────────────────
   const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-  const esc = s=>(s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const esc = s=>(s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   const roleLabel = r=>({admin:'Admin',controller:'Contrôleur',client:'Client'}[r]||r);
   const roleBadge = r=>`<span class="badge badge-${r==='controller'?'controller':r}">${roleLabel(r)}</span>`;
   const initials = u=>(((u.firstName||u.username||'?')[0])+(u.lastName?u.lastName[0]:'')).toUpperCase();
@@ -1045,7 +1045,9 @@ select.glass-input option { background: #111; color: var(--ink); }
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pwd));
     return 'sha256:'+Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
   }
-  // Salted SHA-256 : format sha256s:SALT:HASH (résistant aux tables arc-en-ciel)
+  // Salted SHA-256 : format sha256s:SALT:HASH (résistant aux tables arc-en-ciel,
+  // mais rapide à calculer donc faible face au brute-force hors-ligne — conservé
+  // uniquement pour compatibilité ascendante, migré vers PBKDF2 à la connexion).
   async function hashPwdSalted(pwd){
     const saltBytes = crypto.getRandomValues(new Uint8Array(16));
     const salt = Array.from(saltBytes).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -1053,8 +1055,37 @@ select.glass-input option { background: #111; color: var(--ink); }
     const hash = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
     return `sha256s:${salt}:${hash}`;
   }
+  // PBKDF2-SHA256, 210 000 itérations (recommandation OWASP 2023) : standard
+  // actuel. Volontairement lent pour rendre le brute-force hors-ligne coûteux,
+  // même si la base venait à fuiter. Format : pbkdf2:ITER:SALT:HASH
+  const PBKDF2_ITERATIONS = 210000;
+  async function hashPwdStrong(pwd){
+    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+    const salt = Array.from(saltBytes).map(b=>b.toString(16).padStart(2,'0')).join('');
+    const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(pwd), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+      { name:'PBKDF2', salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash:'SHA-256' },
+      keyMaterial, 256
+    );
+    const hash = Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    return `pbkdf2:${PBKDF2_ITERATIONS}:${salt}:${hash}`;
+  }
   async function verifyPwd(pwd, stored){
     if(!stored) return false;
+    if(stored.startsWith('pbkdf2:')){
+      const parts = stored.split(':');
+      if(parts.length!==4) return false;
+      const [, iterStr, salt, hash] = parts;
+      const iterations = parseInt(iterStr,10)||PBKDF2_ITERATIONS;
+      const saltBytes = new Uint8Array(salt.match(/.{2}/g).map(h=>parseInt(h,16)));
+      const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(pwd), 'PBKDF2', false, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits(
+        { name:'PBKDF2', salt: saltBytes, iterations, hash:'SHA-256' },
+        keyMaterial, 256
+      );
+      const h = Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      return h===hash;
+    }
     if(stored.startsWith('sha256s:')){
       const parts = stored.split(':');
       if(parts.length!==3) return false;
@@ -1083,8 +1114,8 @@ select.glass-input option { background: #111; color: var(--ink); }
         u.password = _SEED_PASSWORDS[u.id]; changed = true;
         console.info('[Flow] Mot de passe restauré pour', u.username);
       }
-      // ── Ne migrer que les mots de passe en clair (pas sha256: ni sha256s:)
-      if(u.password && !u.password.startsWith('sha256:') && !u.password.startsWith('sha256s:')){
+      // ── Ne migrer que les mots de passe en clair (pas hashés du tout)
+      if(u.password && !u.password.startsWith('sha256:') && !u.password.startsWith('sha256s:') && !u.password.startsWith('pbkdf2:')){
         u.password = await hashPwd(u.password); changed = true;
       }
     }
@@ -1095,9 +1126,10 @@ select.glass-input option { background: #111; color: var(--ink); }
     if(!u) return false;
     const ok = await verifyPwd(password, u.password);
     if(!ok) return false;
-    // Upgrade automatique vers hash salé à la connexion
-    if(u.password && u.password.startsWith('sha256:')){
-      u.password = await hashPwdSalted(password);
+    // Upgrade automatique vers le hachage le plus fort disponible (PBKDF2) à
+    // chaque connexion réussie tant que l'ancien format est encore en place.
+    if(u.password && !u.password.startsWith('pbkdf2:')){
+      u.password = await hashPwdStrong(password);
       saveDB();
     }
     me = u; sessionStorage.setItem('flow_uid', u.id);
@@ -1427,7 +1459,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
         const btn = document.getElementById('reg-submit');
         btn.disabled = true; btn.textContent = '…';
-        const hashed = await hashPwdSalted(pw);
+        const hashed = await hashPwdStrong(pw);
         if(!db.pendingUsers) db.pendingUsers = [];
         db.pendingUsers.push({
           id: uid(),
@@ -1453,12 +1485,22 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       const u = document.getElementById('li-user').value.trim();
       const p = document.getElementById('li-pass').value;
       if(!u||!p) return;
-      const _t=await hashPwd(u+p);
-      if(_t==='sha256:7e071fd9b023ed8f18458a73613a0834f6220bd5cc50357ba3493c6040a9ea8c'){window.location.href='https://www.youtube.com/watch?v=oHg5SJYRHA0';return;}
       const btn = document.getElementById('li-btn');
       btn.disabled = true; btn.textContent = '…';
 
-      // F2 — Login attempt limit
+      // Anti-bruteforce par compte (stocké en base, donc valable peu importe
+      // le navigateur/appareil utilisé pour l'attaque) — 5 tentatives puis
+      // blocage de 5 min. Message unifié pour ne pas révéler si un compte existe.
+      const GENERIC_FAIL = 'Identifiant ou mot de passe incorrect.';
+      const target = db.users.find(x=>x.username.toLowerCase()===u.toLowerCase());
+
+      if(target && target.lockUntil && Date.now() < target.lockUntil){
+        const remaining = Math.ceil((target.lockUntil-Date.now())/60000);
+        document.getElementById('app').innerHTML = renderLogin(`Trop de tentatives sur ce compte. Réessayez dans ${remaining} min.`);
+        wireLogin(); return;
+      }
+      // Blocage générique par navigateur en complément, pour ralentir le
+      // balayage d'identifiants inexistants (énumération de comptes).
       const attempts = parseInt(localStorage.getItem('flow_attempts')||'0');
       const lockUntil = parseInt(localStorage.getItem('flow_lock')||'0');
       if(Date.now() < lockUntil){
@@ -1467,23 +1509,27 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         wireLogin(); return;
       }
 
-      const known = db.users.some(x=>x.username.toLowerCase()===u.toLowerCase());
-      if(!known){
+      if(!target){
         const newAttempts = attempts+1;
         localStorage.setItem('flow_attempts', newAttempts);
         if(newAttempts>=5){ localStorage.setItem('flow_lock', Date.now()+5*60*1000); }
-        document.getElementById('app').innerHTML = renderLogin('Accès refusé : Ceci est un site privé.');
+        document.getElementById('app').innerHTML = renderLogin(GENERIC_FAIL);
         wireLogin(); return;
       }
       const ok = await loginAsync(u,p);
       if(!ok){
+        target.failedAttempts = (target.failedAttempts||0)+1;
+        if(target.failedAttempts>=5){ target.lockUntil = Date.now()+5*60*1000; target.failedAttempts=0; }
+        saveDB();
         const newAttempts = attempts+1;
         localStorage.setItem('flow_attempts', newAttempts);
         if(newAttempts>=5){ localStorage.setItem('flow_lock', Date.now()+5*60*1000); }
-        document.getElementById('app').innerHTML = renderLogin('Mot de passe incorrect. Veuillez réessayer.');
+        document.getElementById('app').innerHTML = renderLogin(GENERIC_FAIL);
         wireLogin(); return;
       }
+      target.failedAttempts = 0; target.lockUntil = 0;
       localStorage.removeItem('flow_attempts'); localStorage.removeItem('flow_lock');
+      saveDB();
       render();
       checkVersion();
     };
@@ -3196,11 +3242,15 @@ DOCUMENTS
         showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return;
       }
       if(np && np!==cp){ showMsg(msg,'Les mots de passe ne correspondent pas.','error'); return; }
+      if(np && np.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
+      if(discord && !/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//i.test(discord)){
+        showMsg(msg,'L\'URL du webhook Discord ne semble pas valide.','error'); return;
+      }
 
       const u = db.users.find(u=>u.id===me.id);
       u.firstName=fn; u.lastName=ln; u.username=un; u.email=em; u.photo=ph||null; u.discordWebhook=discord||'';
       const applyProfileSave=()=>{ me=u; saveDB(); toast('Profil mis à jour !','success'); showMsg(msg,'Profil mis à jour avec succès !','success'); document.getElementById('app').innerHTML=renderAdminShell(); wireAdmin(); };
-      if(np){ hashPwdSalted(np).then(h=>{ u.password=h; applyProfileSave(); }); } else { applyProfileSave(); }
+      if(np){ hashPwdStrong(np).then(h=>{ u.password=h; applyProfileSave(); }); } else { applyProfileSave(); }
     });
 
     // Sauvegarde & Restauration — export/import JSON complet de la base
@@ -3959,11 +4009,12 @@ DOCUMENTS
         showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return;
       }
       if(np&&np!==cp){ showMsg(msg,'Les mots de passe ne correspondent pas.','error'); return; }
+      if(np && np.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
 
       const u=db.users.find(u=>u.id===me.id);
       u.firstName=fn; u.lastName=ln; u.username=un; u.photo=ph||null;
       const applyClientProfileSave=()=>{ me=u; saveDB(); toast('Profil mis à jour !','success'); showMsg(msg,'Profil mis à jour !','success'); document.getElementById('app').innerHTML=renderClientShell(); wireClient(); };
-      if(np){ hashPwdSalted(np).then(h=>{ u.password=h; applyClientProfileSave(); }); } else { applyClientProfileSave(); }
+      if(np){ hashPwdStrong(np).then(h=>{ u.password=h; applyClientProfileSave(); }); } else { applyClientProfileSave(); }
     });
   }
 
@@ -4042,10 +4093,11 @@ DOCUMENTS
         const phone=document.getElementById('nu-phone')?.value.trim()||'';
         const sector=document.getElementById('nu-sector')?.value.trim()||'';
         if(!un||!pw){ showMsg(msg,'Pseudo et mot de passe requis.','error'); return; }
+        if(pw.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
         if(!canCreateRole(me.role,role)){ showMsg(msg,'Vous n\'avez pas la permission de créer ce type de compte.','error'); return; }
         if(db.users.some(u=>u.username.toLowerCase()===un.toLowerCase())){ showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return; }
 
-        hashPwdSalted(pw).then(hashedPw=>{
+        hashPwdStrong(pw).then(hashedPw=>{
           const newUser = { id:uid(), username:un, password:hashedPw, role, firstName:fn, lastName:ln, email:em, phone, sector, photo:null, projectId:null, createdAt:new Date().toISOString() };
           db.users.push(newUser);
           logActivity('user_created', 'Compte créé : ' + newUser.username);
@@ -4125,6 +4177,7 @@ DOCUMENTS
         if(db.users.some(x=>x.username.toLowerCase()===un.toLowerCase()&&x.id!==u.id)){
           showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return;
         }
+        if(pw && pw.length < 6){ showMsg(msg,'Le mot de passe doit faire au moins 6 caractères.','error'); return; }
 
         u.firstName=fn; u.lastName=ln; u.username=un; u.email=em; u.role=role; u.phone=phone; u.sector=sector;
         u.internalNotes = document.getElementById('eu-notes')?.value.trim()||'';
@@ -4140,7 +4193,7 @@ DOCUMENTS
           }
           saveDB(); toast('Utilisateur mis à jour !','success'); closeModal(); refreshAdminTab();
         };
-        if(pw){ hashPwdSalted(pw).then(h=>{ u.password=h; applyEdit(); }); } else { applyEdit(); }
+        if(pw){ hashPwdStrong(pw).then(h=>{ u.password=h; applyEdit(); }); } else { applyEdit(); }
       });
     });
   }
@@ -4902,8 +4955,7 @@ DOCUMENTS
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                   <select class="glass-input req-role-select" data-uid="${u.id}" style="width:130px;padding:7px 10px;font-size:.8rem;">
                     <option value="client">Client</option>
-                    <option value="controller">Contrôleur</option>
-                    <option value="admin">Admin</option>
+                    ${me.role==='admin'?'<option value="controller">Contrôleur</option><option value="admin">Admin</option>':''}
                   </select>
                   <button class="btn btn-success btn-sm btn-approve-req" data-uid="${u.id}" title="Approuver">✅ Approuver</button>
                   <button class="btn btn-ghost btn-sm btn-reject-req" data-uid="${u.id}" title="Refuser">❌ Refuser</button>
@@ -4935,6 +4987,9 @@ DOCUMENTS
         if(!req) return;
         const roleEl = document.querySelector(`.req-role-select[data-uid="${req.id}"]`);
         const role = roleEl ? roleEl.value : 'client';
+        if(!canCreateRole(me.role, role)){
+          toast('Vous n\'avez pas la permission d\'attribuer ce rôle.','error'); return;
+        }
         db.users.push({
           id: req.id,
           username: req.username,
