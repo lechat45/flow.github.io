@@ -888,7 +888,16 @@ select.glass-input option { background: #111; color: var(--ink); }
     // Migrate geminiKey → groqKey
     if(db.aiConfig.geminiKey && !db.aiConfig.groqKey){ db.aiConfig.groqKey = db.aiConfig.geminiKey; }
     if('geminiKey' in db.aiConfig) delete db.aiConfig.geminiKey;
+    // Migrate groqKey (clé unique legacy) → groqKeys (pool de 3 clés max,
+    // partagées entre tous les utilisateurs de l'app pour répartir les
+    // requêtes IA et éviter de saturer le quota free tier d'une seule clé).
+    if(!Array.isArray(db.aiConfig.groqKeys)) db.aiConfig.groqKeys = [];
+    if(db.aiConfig.groqKey && !db.aiConfig.groqKeys.includes(db.aiConfig.groqKey)){
+      db.aiConfig.groqKeys.unshift(db.aiConfig.groqKey);
+    }
+    db.aiConfig.groqKeys = db.aiConfig.groqKeys.filter(k=>typeof k==='string' && k.trim()).slice(0,3);
     if(!Array.isArray(db.aiRequests)) db.aiRequests = [];
+    if(!Array.isArray(db.pubPosts)) db.pubPosts = [];
     if(!Array.isArray(db.messages)) db.messages = [];
     if(!db.users.find(u=>u.id==='u_teste1')){
       db.users.push({ id:'u_teste1', username:'teste1', password:'sha256:15bf532d22345576b4a51b96da4754c039ef3458494066d76828e893d69ebd1e', role:'client',
@@ -1794,6 +1803,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     { id:'ai-automation',  icon:iconAI(),        label:'Assistant IA' },
     { id:'rubis',          icon:iconRubis(),     label:'Rubis' },
     { id:'ai-visual',      icon:iconEye(),       label:'Sites liés' },
+    { id:'pub',            icon:iconPub(),       label:'Pub' },
     { id:'profile',        icon:iconProfile(),   label:'Profil'            }
   ];
   function canManageProjects(user=me){ return !!user && (user.role==='admin'||user.role==='controller'); }
@@ -1907,7 +1917,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       (t.id!=='requests'||canReviewRequests()) &&
       (t.id!=='ai-automation'||canAccessAI()) &&
       (t.id!=='rubis'||canAccessFinance()) &&
-      (t.id!=='ai-visual'||canAccessAI())
+      (t.id!=='ai-visual'||canAccessAI()) &&
+      (t.id!=='pub'||canAccessAI())
     );
   }
   function getClientVisibleTabs(){
@@ -1988,6 +1999,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(activeTab==='ai-automation')  return renderAdminAIAutomation();
     if(activeTab==='rubis')          return canAccessFinance() ? renderRubisChat() : renderAdminHome();
     if(activeTab==='ai-visual')      return renderAdminAIVisual();
+    if(activeTab==='pub')            return renderAdminPub();
     if(activeTab==='myproject')      return renderAdminMyProject();
     if(activeTab==='profile')        return renderAdminProfile();
     return '';
@@ -2036,6 +2048,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(activeTab==='ai-automation') wireAdminAIAutomation();
     if(activeTab==='rubis'&&canAccessFinance()) wireRubisChat();
     if(activeTab==='ai-visual')     wireAdminAIVisual();
+    if(activeTab==='pub')           wireAdminPub();
     if(activeTab==='myproject'){
       document.querySelectorAll('.btn-download-delivery').forEach(btn=>{ btn.addEventListener('click',()=>downloadDelivery(btn.dataset.pid)); });
       document.querySelectorAll('.btn-step-comments').forEach(btn=>{ btn.addEventListener('click',()=>openStepCommentsModal(btn.dataset.pid, btn.dataset.sid)); });
@@ -7047,12 +7060,13 @@ DOCUMENTS
   function iconUpload(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`; }
   function iconMsg(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`; }
   function iconSearch(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`; }
+  function iconPub(){ return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a2 2 0 1 1-3.2-2.4"/></svg>`; }
 
   // ════════════════════════════════════════════════
   //  AI AUTOMATION — Admin/Controller
   // ════════════════════════════════════════════════
   function renderAdminAIAutomation(){
-    const config = db.aiConfig || { groqKey:'' };
+    const config = db.aiConfig || { groqKey:'', groqKeys:[] };
     const allReqs = (db.aiRequests||[]).filter(r=>r.status==='answered').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
 
     // #5 — Alertes de frustration
@@ -7117,16 +7131,19 @@ DOCUMENTS
       <div class="glass-card" style="padding:22px;margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
           <h2 style="font-size:.95rem;font-weight:700;">Configuration Groq</h2>
-          <span style="font-size:.65rem;padding:2px 8px;border-radius:999px;background:rgba(147,181,148,.12);border:1px solid rgba(147,181,148,.28);color:var(--sage);">30 req/min gratuit</span>
+          <span style="font-size:.65rem;padding:2px 8px;border-radius:999px;background:rgba(147,181,148,.12);border:1px solid rgba(147,181,148,.28);color:var(--sage);">30 req/min gratuit par clé</span>
         </div>
-        <p style="font-size:.8rem;color:var(--ink-3);margin-bottom:6px;">Clé pour le Q&A clients, le brief auto, la réponse assistée et la FAQ.</p>
-        <p style="font-size:.75rem;color:var(--ink-4);margin-bottom:18px;">Obtenez une clé gratuite sur <strong>console.groq.com</strong> → API Keys.</p>
-        <div style="margin-bottom:16px;">
-          <label class="label">Clé API Groq</label>
-          <input id="ai-groq-key" class="glass-input" spellcheck="false" type="password" placeholder="${config.groqKey?'•••••••••••••••••••• (clé déjà configurée — laisser vide pour ne pas changer)':'gsk_...'}" value=""/>
-          <p style="font-size:.7rem;color:var(--ink-4);margin-top:6px;">⚠️ Pour des raisons de sécurité, la clé n'est jamais réaffichée ici. Elle reste néanmoins visible dans le code source de la page par toute personne y ayant accès — évitez de la partager.</p>
-        </div>
-        <button id="btn-save-ai-config" class="btn btn-primary">Enregistrer la clé</button>
+        <p style="font-size:.8rem;color:var(--ink-3);margin-bottom:6px;">Clés pour le Q&A clients, le brief auto, la réponse assistée et la FAQ.</p>
+        <p style="font-size:.75rem;color:var(--ink-4);margin-bottom:18px;">Jusqu'à 3 clés gratuites sur <strong>console.groq.com</strong> → API Keys. Les requêtes sont automatiquement réparties entre les clés renseignées (jusqu'à 3x plus de débit), avec bascule auto si une clé atteint son quota.</p>
+        ${[0,1,2].map(i=>{
+          const has = !!(config.groqKeys && config.groqKeys[i]);
+          return `<div style="margin-bottom:14px;">
+            <label class="label">Clé API Groq ${i+1}${i>0?' (optionnelle)':''}</label>
+            <input id="ai-groq-key-${i+1}" class="glass-input" spellcheck="false" type="password" placeholder="${has?'•••••••••••••••••••• (clé déjà configurée — laisser vide pour ne pas changer)':'gsk_...'}" value=""/>
+          </div>`;
+        }).join('')}
+        <p style="font-size:.7rem;color:var(--ink-4);margin-bottom:14px;">⚠️ Pour des raisons de sécurité, les clés ne sont jamais réaffichées ici. Elles restent néanmoins visibles dans le code source de la page par toute personne y ayant accès — évitez de les partager.</p>
+        <button id="btn-save-ai-config" class="btn btn-primary">Enregistrer les clés</button>
       </div>
 
       ${clientsWithConvs.length>0?`
@@ -7176,16 +7193,25 @@ DOCUMENTS
   function wireAdminAIAutomation(){
     const saveBtn = document.getElementById('btn-save-ai-config');
     if(saveBtn) saveBtn.addEventListener('click',()=>{
-      const g = document.getElementById('ai-groq-key').value.trim();
-      if(!g){
-        if(db.aiConfig && db.aiConfig.groqKey){ toast('Champ laissé vide — clé existante conservée.','info'); return; }
-        toast('Veuillez entrer une clé API Groq.','error'); return;
-      }
       if(!db.aiConfig) db.aiConfig={};
-      db.aiConfig.groqKey = g;
+      if(!Array.isArray(db.aiConfig.groqKeys)) db.aiConfig.groqKeys = [];
+      const existing = db.aiConfig.groqKeys.slice(0,3);
+      let changed = false;
+      const next = [0,1,2].map(i=>{
+        const input = document.getElementById('ai-groq-key-'+(i+1));
+        const val = input ? input.value.trim() : '';
+        if(val){ changed = true; return val; }
+        return existing[i] || '';
+      }).filter(k=>k);
+      if(next.length===0){
+        toast('Veuillez entrer au moins une clé API Groq.','error'); return;
+      }
+      db.aiConfig.groqKeys = next;
+      db.aiConfig.groqKey = next[0]; // compat. ascendante (anciens champs lisant groqKey seul)
       if('claudeKey' in db.aiConfig) delete db.aiConfig.claudeKey;
       if('geminiKey' in db.aiConfig) delete db.aiConfig.geminiKey;
-      saveDB(); toast('Clé Groq enregistrée ✓','success');
+      saveDB();
+      toast(changed?`${next.length} clé(s) Groq enregistrée(s) ✓`:'Aucune modification — clés existantes conservées.', changed?'success':'info');
     });
 
     // #6 — Rapport hebdomadaire IA
@@ -7397,6 +7423,185 @@ DOCUMENTS
     a.href = URL.createObjectURL(blob);
     a.download = (p.name||'site').replace(/\s+/g,'_')+'.html';
     a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  // ════════════════════════════════════════════════
+  //  PUB — Génération de posts réseaux sociaux par IA (admin/contrôleur)
+  // ════════════════════════════════════════════════
+  const PUB_PLATFORMS = {
+    instagram: { label:'Instagram', hint:'Ton visuel et inspirant, emojis avec parcimonie, 3 à 8 hashtags ciblés, légende courte à moyenne.' },
+    linkedin:  { label:'LinkedIn',  hint:'Ton professionnel et crédible, peu ou pas d\'emojis, accroche forte en première ligne, 3 à 5 hashtags sectoriels maximum.' },
+    facebook:  { label:'Facebook',  hint:'Ton chaleureux et conversationnel, phrases courtes, appel à l\'engagement (question, partage), 2 à 5 hashtags.' },
+    tiktok:    { label:'TikTok',    hint:'Ton direct, énergique, familier, légende très courte qui accroche en une phrase, 3 à 6 hashtags larges et tendance.' },
+    x:         { label:'X (Twitter)', hint:'Ton percutant et concis, 280 caractères maximum pour le texte du post, 1 à 3 hashtags seulement.' }
+  };
+  const PUB_TONES = {
+    pro:        'Ton professionnel et rassurant',
+    fun:        'Ton fun et décontracté',
+    urgent:     'Ton urgent, orienté offre limitée dans le temps',
+    inspirant:  'Ton inspirant et aspirationnel',
+    direct:     'Ton direct, orienté vente/conversion'
+  };
+
+  function renderAdminPub(){
+    const history = (db.pubPosts||[]).slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    return `<div class="fade-up">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:12px;">
+        <h1 style="font-size:1.4rem;font-weight:700;">Pub</h1>
+      </div>
+      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:24px;">Génération de posts publicitaires pour les réseaux sociaux, assistée par IA.</p>
+
+      <div class="glass-card" style="padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:.95rem;font-weight:700;margin-bottom:16px;">✨ Générer un post</h2>
+
+        <div style="margin-bottom:14px;">
+          <label class="label">Plateforme</label>
+          <select id="pub-platform" class="glass-input">
+            ${Object.entries(PUB_PLATFORMS).map(([k,v])=>`<option value="${k}">${esc(v.label)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label class="label">Ton</label>
+          <select id="pub-tone" class="glass-input">
+            ${Object.entries(PUB_TONES).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label class="label">Brief (produit/service, offre, public visé, infos clés…)</label>
+          <textarea id="pub-brief" class="glass-input" rows="4" placeholder="Ex : Lancement d'une nouvelle gamme de bijoux artisanaux en argent, public jeune actif 25-35 ans, offre -15% ce week-end seulement..."></textarea>
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <label class="label">Nombre de variantes</label>
+          <select id="pub-count" class="glass-input" style="max-width:160px;">
+            <option value="1">1 variante</option>
+            <option value="3" selected>3 variantes</option>
+            <option value="5">5 variantes</option>
+          </select>
+        </div>
+
+        <button id="btn-pub-generate" class="btn btn-primary">✨ Générer</button>
+        <div id="pub-result" style="margin-top:18px;"></div>
+      </div>
+
+      <div class="glass-card" style="padding:22px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
+          <h2 style="font-size:.95rem;font-weight:700;">Historique</h2>
+          <span style="font-size:.72rem;color:var(--ink-4);">${history.length} génération(s)</span>
+        </div>
+        <p style="font-size:.8rem;color:var(--ink-3);margin-bottom:16px;">Posts générés précédemment, classés du plus récent au plus ancien.</p>
+        ${history.length===0?`<div style="text-align:center;padding:36px 0;color:var(--ink-4);font-size:.875rem;">Aucune génération pour l'instant</div>`:`
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${history.slice(0,30).map(h=>{
+            const ts=(d=>isNaN(d)?'':d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))(new Date(h.createdAt));
+            const platLabel = PUB_PLATFORMS[h.platform]?.label || h.platform;
+            return `<div style="padding:12px 14px;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(255,255,255,.02);">
+              <div style="display:flex;align-items:center;justify-content:between;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+                <span style="font-size:.72rem;font-weight:600;color:var(--coral);">${esc(platLabel)}</span>
+                <span style="font-size:.68rem;color:var(--ink-4);">${ts}</span>
+              </div>
+              <div style="font-size:.78rem;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px;">${esc((h.brief||'').substring(0,90))}</div>
+              <button class="btn btn-ghost btn-sm btn-pub-history-view" data-id="${h.id}">👁 Revoir les variantes</button>
+            </div>`;
+          }).join('')}
+        </div>`}
+      </div>
+    </div>`;
+  }
+
+  function pubRenderVariants(variants, container){
+    container.innerHTML = variants.map((v,i)=>`
+      <div class="glass-card" style="padding:16px;margin-bottom:10px;background:rgba(255,255,255,.03);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:.72rem;font-weight:600;color:var(--ink-4);">Variante ${i+1}</span>
+          <button class="btn btn-ghost btn-sm btn-pub-copy" data-idx="${i}">📋 Copier</button>
+        </div>
+        <div class="pub-variant-text" data-idx="${i}" style="font-size:.85rem;color:var(--ink-2);line-height:1.6;white-space:pre-wrap;">${esc(v)}</div>
+      </div>`).join('');
+    container.querySelectorAll('.btn-pub-copy').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const txt = variants[+btn.dataset.idx]||'';
+        navigator.clipboard?.writeText(txt).then(()=>{
+          toast('Copié dans le presse-papiers ✓','success');
+        }).catch(()=>{ toast('Impossible de copier — copiez manuellement.','error'); });
+      });
+    });
+  }
+
+  function wireAdminPub(){
+    const genBtn = document.getElementById('btn-pub-generate');
+    if(genBtn) genBtn.addEventListener('click', async()=>{
+      const groqKey = db.aiConfig?.groqKey;
+      if(!groqKey){ toast('Configurez une clé Groq dans l\'onglet Assistant IA.','error'); return; }
+      const platform = document.getElementById('pub-platform').value;
+      const tone = document.getElementById('pub-tone').value;
+      const brief = document.getElementById('pub-brief').value.trim();
+      const count = +document.getElementById('pub-count').value || 3;
+      if(!brief){ toast('Décrivez le produit/service ou l\'offre dans le brief.','error'); return; }
+
+      const platInfo = PUB_PLATFORMS[platform];
+      const toneLabel = PUB_TONES[tone];
+      const resultDiv = document.getElementById('pub-result');
+      genBtn.disabled = true; genBtn.textContent = 'Génération…';
+      resultDiv.innerHTML = `<div style="text-align:center;padding:20px;color:var(--ink-4);font-size:.82rem;">Génération en cours…</div>`;
+
+      try{
+        const prompt = `Tu es un copywriter spécialisé en publicité sur les réseaux sociaux. Génère ${count} variante(s) de post pour ${platInfo.label}, en français.
+
+Contraintes de plateforme : ${platInfo.hint}
+${toneLabel}.
+
+Brief du client : ${brief}
+
+Règles :
+- Chaque variante doit être un post complet, prêt à publier (texte + hashtags si pertinent pour la plateforme).
+- Les variantes doivent être réellement différentes les unes des autres (angle, accroche, structure), pas de simples reformulations.
+- Réponds UNIQUEMENT avec un objet JSON de la forme {"variants":["...","...","..."]}, sans texte avant ni après, sans balises markdown.`;
+
+        const json = await groqPost(groqKey, [{role:'user', content:prompt}], 900);
+        let raw = json.choices?.[0]?.message?.content || '';
+        raw = raw.replace(/```json\n?/g,'').replace(/```/g,'').trim();
+        let parsed;
+        try{ parsed = JSON.parse(raw); }
+        catch(_){ throw new Error('Format de réponse IA invalide.'); }
+        const variants = Array.isArray(parsed.variants) ? parsed.variants.filter(v=>typeof v==='string'&&v.trim()) : [];
+        if(!variants.length) throw new Error('Aucune variante générée.');
+
+        pubRenderVariants(variants, resultDiv);
+
+        const entry = {
+          id: 'pub_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+          platform, tone, brief, variants,
+          createdAt: new Date().toISOString(),
+          createdBy: me?.id || null
+        };
+        db.pubPosts.unshift(entry);
+        db.pubPosts = db.pubPosts.slice(0,200); // limite l'historique pour ne pas alourdir la base
+        saveDB();
+      }catch(e){
+        resultDiv.innerHTML = `<div style="padding:14px;border:1px solid rgba(240,138,138,.25);background:rgba(240,138,138,.06);border-radius:10px;font-size:.82rem;color:#f08a8a;">Erreur lors de la génération : ${esc(e.message||'inconnue')}</div>`;
+      }
+      genBtn.disabled = false; genBtn.textContent = '✨ Générer';
+    });
+
+    document.querySelectorAll('.btn-pub-history-view').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const entry = (db.pubPosts||[]).find(h=>h.id===btn.dataset.id);
+        if(!entry) return;
+        const platLabel = PUB_PLATFORMS[entry.platform]?.label || entry.platform;
+        const ts = new Date(entry.createdAt).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        showModal(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <h2 style="font-size:1rem;font-weight:700;">${esc(platLabel)} · ${ts}</h2>
+          <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+        </div>
+        <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:14px;">${esc(entry.brief)}</p>
+        <div id="pub-modal-variants"></div>`);
+        const container = document.getElementById('pub-modal-variants');
+        if(container) pubRenderVariants(entry.variants||[], container);
+      });
+    });
   }
 
   // ════════════════════════════════════════════════
@@ -8345,15 +8550,80 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
     }
   }
 
-  // ─── Groq fetch : throttle global (free tier 30 RPM = 1 req/2s) ──
+  // ─── Groq fetch : throttle par clé (free tier 30 RPM = 1 req/2s/clé) ──
+  // Pool de 1 à 3 clés Groq partagées (db.aiConfig.groqKeys). Chaque clé a
+  // son propre quota Groq, donc son propre throttle indépendant : on choisit
+  // à chaque appel la clé la moins récemment utilisée et disponible
+  // immédiatement (ou la plus proche de l'être). En cas d'erreur quota/clé
+  // invalide sur la clé choisie, on bascule automatiquement sur la clé
+  // suivante du pool et on retente, jusqu'à épuisement du pool — l'appelant
+  // ne voit qu'un seul échec final si vraiment aucune clé ne fonctionne.
   const _groqDelay = ms => new Promise(r=>setTimeout(r,ms));
-  let _lastGroqCallTime = 0;
-  const GROQ_MIN_GAP = 2100; // ms entre appels (free tier 30 RPM)
+  const GROQ_MIN_GAP = 2100; // ms entre appels, par clé (free tier 30 RPM)
+  let _groqKeyLastCall = {}; // { [clé]: timestamp du dernier appel }
+  let _groqKeyCooldownUntil = {}; // { [clé]: timestamp jusqu'où la clé est en cooldown 429 }
+  let _groqRotationIdx = 0;
+
+  function getGroqKeyPool(){
+    const keys = (db.aiConfig && Array.isArray(db.aiConfig.groqKeys)) ? db.aiConfig.groqKeys : [];
+    return keys.filter(k=>typeof k==='string' && k.trim());
+  }
+
+  // Choisit l'ordre dans lequel essayer les clés du pool pour cet appel :
+  // on part de la clé suivante en rotation (round-robin), puis on part des
+  // clés les moins récemment utilisées en cas de besoin de fallback.
+  function _orderedGroqKeys(){
+    const pool = getGroqKeyPool();
+    if(pool.length===0) return [];
+    _groqRotationIdx = (_groqRotationIdx+1) % pool.length;
+    const rest = pool.filter((_,i)=>i!==_groqRotationIdx);
+    return [pool[_groqRotationIdx], ...rest];
+  }
+
+  async function _waitGroqSlot(key){
+    const now = Date.now();
+    const cooldown = _groqKeyCooldownUntil[key]||0;
+    const lastCall = _groqKeyLastCall[key]||0;
+    const readyAt = Math.max(cooldown, lastCall+GROQ_MIN_GAP);
+    if(readyAt > now) await _groqDelay(readyAt-now);
+    _groqKeyLastCall[key] = Date.now();
+  }
+
+  function _isGroqFailoverError(e){
+    return e && /^(RATE_LIMIT_429|RATE_LIMIT_503|INVALID_KEY|GROQ_AUTH_401)$/.test(e.message);
+  }
+
+  // Exécute `attempt(key)` sur chaque clé du pool jusqu'à succès. `fallbackKey`
+  // est utilisé si le pool est vide (compat. ascendante avec l'ancien champ
+  // db.aiConfig.groqKey unique, ou une clé passée explicitement par l'appelant).
+  async function _withGroqFailover(fallbackKey, attempt){
+    const keys = _orderedGroqKeys();
+    const tryList = keys.length ? keys : (fallbackKey ? [fallbackKey] : []);
+    if(tryList.length===0) throw new Error('NO_GROQ_KEY');
+    let lastErr;
+    for(const key of tryList){
+      await _waitGroqSlot(key);
+      try{
+        return await attempt(key);
+      }catch(e){
+        lastErr = e;
+        if(_isGroqFailoverError(e)){
+          if(e.message==='RATE_LIMIT_429' || e.message==='RATE_LIMIT_503'){
+            _groqKeyCooldownUntil[key] = Date.now()+10000; // évite de retaper la même clé tout de suite
+          }
+          continue; // essaie la clé suivante du pool
+        }
+        throw e; // erreur non liée au quota/clé : on ne retente pas
+      }
+    }
+    throw lastErr;
+  }
 
   async function groqPost(apiKey, messages, maxTokens=500){
-    const gap = GROQ_MIN_GAP - (Date.now() - _lastGroqCallTime);
-    if(gap > 0) await _groqDelay(gap);
-    _lastGroqCallTime = Date.now();
+    return _withGroqFailover(apiKey, key => _groqPostOnce(key, messages, maxTokens));
+  }
+
+  async function _groqPostOnce(apiKey, messages, maxTokens=500){
     const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey },
@@ -8364,11 +8634,7 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
         temperature: 0.65
       })
     });
-    if(resp.status===429){
-      const retryAfter = parseInt(resp.headers.get('Retry-After')||'0')*1000;
-      if(retryAfter>0) _lastGroqCallTime = Date.now()+retryAfter;
-      throw new Error('RATE_LIMIT_429');
-    }
+    if(resp.status===429) throw new Error('RATE_LIMIT_429');
     if(resp.status===401) throw new Error('INVALID_KEY');
     if(resp.status===503) throw new Error('RATE_LIMIT_503');
     if(!resp.ok) throw new Error('HTTP_'+resp.status);
@@ -8380,9 +8646,10 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
 
   // ── Groq streaming : reçoit les chunks via callback onChunk(partialText) ──
   async function groqPostStream(apiKey, messages, onChunk, maxTokens=700){
-    const gap = GROQ_MIN_GAP - (Date.now() - _lastGroqCallTime);
-    if(gap > 0) await _groqDelay(gap);
-    _lastGroqCallTime = Date.now();
+    return _withGroqFailover(apiKey, key => _groqPostStreamOnce(key, messages, onChunk, maxTokens));
+  }
+
+  async function _groqPostStreamOnce(apiKey, messages, onChunk, maxTokens=700){
     const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
@@ -8391,12 +8658,9 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
         messages, max_tokens:maxTokens, temperature:0.65, stream:true
       })
     });
-    if(resp.status===429){
-      const ra = parseInt(resp.headers.get('Retry-After')||'0')*1000;
-      if(ra>0) _lastGroqCallTime = Date.now()+ra;
-      throw new Error('RATE_LIMIT_429');
-    }
+    if(resp.status===429) throw new Error('RATE_LIMIT_429');
     if(resp.status===401) throw new Error('INVALID_KEY');
+    if(resp.status===503) throw new Error('RATE_LIMIT_503');
     if(!resp.ok) throw new Error('HTTP_'+resp.status);
 
     const reader  = resp.body.getReader();
@@ -8536,9 +8800,10 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
   }
 
   async function groqPostWithTools(apiKey, messages){
-    const gap=GROQ_MIN_GAP-(Date.now()-_lastGroqCallTime);
-    if(gap>0) await _groqDelay(gap);
-    _lastGroqCallTime=Date.now();
+    return _withGroqFailover(apiKey, key => _groqPostWithToolsOnce(key, messages));
+  }
+
+  async function _groqPostWithToolsOnce(apiKey, messages){
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
