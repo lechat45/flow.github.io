@@ -5,7 +5,7 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
   <meta http-equiv="x-dns-prefetch-control" content="off" />
-<meta http-equiv="Content-Security-Policy" content="
+  <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://*.firebasedatabase.app;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
@@ -37,6 +37,16 @@
     jsPDF quand les DevTools sont ouverts — ce sont les mêmes domaines déjà
     whitelistés pour les scripts eux-mêmes, donc aucune surface d'attaque
     supplémentaire n'est ouverte.
+
+    script-src inclut *.firebaseio.com et *.firebasedatabase.app en plus de
+    connect-src : quand le SDK Realtime Database ne peut pas ouvrir de
+    WebSocket (réseau/proxy restrictif), il bascule automatiquement sur un
+    fallback "long polling" qui charge les données via une balise <script>
+    injectée dynamiquement (endpoint /.lp?...), pas via fetch/XHR. Ce
+    mécanisme est donc soumis à script-src et non à connect-src — sans
+    cette entrée, l'app casse silencieusement dès que le WebSocket est
+    indisponible, ce qui peut arriver de façon intermittente selon le
+    réseau du client.
 
     frame-ancestors retirée : Chrome/Firefox ignorent explicitement cette
     directive quand elle est livrée via <meta> (seul un vrai en-tête HTTP
@@ -1475,7 +1485,26 @@ select.glass-input option { background: #111; color: var(--ink); }
       }
     });
 
+    // Affichage immédiat avec les données locales (localStorage/seed déjà
+    // chargées dans `db`), sans attendre la réponse Firebase. Avant ce
+    // correctif, tout le rendu initial était bloqué derrière
+    // fbdb.ref('flow').once('value') : si le WebSocket Firebase est lent à
+    // s'établir (réseau restrictif, proxy, latence) et que le SDK doit
+    // retomber sur son fallback long-polling, l'utilisateur pouvait rester
+    // plusieurs minutes devant un écran vide avant le premier rendu. La
+    // synchronisation Firebase se fait maintenant en arrière-plan : dès
+    // qu'elle se résout, les données distantes sont fusionnées et l'UI est
+    // re-rendue, mais l'app est utilisable en mode local dès le départ.
     setSyncState('syncing');
+    if(!renderPublicRouteIfAny()){
+      migratePasswords().then(()=>{
+        checkSession();
+        render();
+        if(me && (me.role==='admin'||me.role==='controller')) requestNotifPermission();
+        checkVersion();
+      });
+    }
+
     fbdb.ref('flow').once('value')
       .then(snap=>{
         const remote = snap.val();
@@ -1490,24 +1519,16 @@ select.glass-input option { background: #111; color: var(--ink); }
         } else { fbdb.ref('flow').set(db); }
         setSyncState('ok');
         startRealtimeSync();
-        if(renderPublicRouteIfAny()) return;
-        migratePasswords().then(()=>{
-          checkSession();
+        // Les données distantes ont pu différer du seed/cache local affiché
+        // au premier rendu : on rafraîchit l'UI avec l'état désormais à jour.
+        if(!renderPublicRouteIfAny()){
+          if(me){ me = db.users.find(u=>u.id===me.id)||me; }
           render();
-          if(me && (me.role==='admin'||me.role==='controller')) requestNotifPermission();
-          checkVersion();
-        });
+        }
       })
       .catch(()=>{
         setSyncState('error');
         toast('Firebase hors ligne — mode local activé','error');
-        if(renderPublicRouteIfAny()) return;
-        migratePasswords().then(()=>{
-          checkSession();
-          render();
-          if(me && (me.role==='admin'||me.role==='controller')) requestNotifPermission();
-          checkVersion();
-        });
       });
   }
   function startRealtimeSync(){
