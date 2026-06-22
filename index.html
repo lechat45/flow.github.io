@@ -945,25 +945,19 @@ select.glass-input option { background: #111; color: var(--ink); }
   // ─── "Quoi de neuf ?" version modal ─────────────
   function showWhatsNew(){
     const isAdminLike = me && (me.role==='admin'||me.role==='controller');
-    const isTeste1    = me && me.id==='u_teste1';
 
     const commonItems = [
       ['📄','Devis & factures entièrement repensés : mise en page propre, TVA modifiable, notes de paiement, et historique conservé'],
+      ['📋','Nouvel onglet « À faire » : une checklist où votre équipe peut vous demander des éléments (logo, textes, accès…) directement dans l\'app'],
     ];
     const adminItems = [
       ['💎','Nouvel onglet « Rubis » : un chat dédié finance & projets, séparé de l\'Assistant IA, avec accès volontairement restreint (noms d\'entreprises, statuts, montants agrégés — jamais d\'email, mot de passe ou clé API)'],
       ['🤖','L\'onglet « Assistant IA » se concentre maintenant sur la vue d\'ensemble, les alertes et la configuration'],
     ];
-    const testeItems = [
-      ['🧪','Deux nouveaux onglets bêta réservés à ce compte de test : « Mes factures » et « À faire »'],
-      ['📋','« À faire » : une checklist que votre équipe peut remplir pour vous demander des éléments (logo, textes, accès…)'],
-      ['🧾','« Mes factures » : retrouvez vos devis et factures avec leur statut, au même endroit'],
-    ];
 
     const items = [
       ...commonItems,
       ...(isAdminLike ? adminItems : []),
-      ...(isTeste1 ? testeItems : []),
     ];
 
     showModal(`
@@ -974,7 +968,6 @@ select.glass-input option { background: #111; color: var(--ink); }
         </div>
         <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
       </div>
-      ${isTeste1?`<div style="font-size:.72rem;color:var(--sky);background:rgba(155,184,216,.08);border:1px solid rgba(155,184,216,.2);border-radius:10px;padding:8px 12px;margin-bottom:16px;">🧪 Ce compte a accès à des fonctionnalités bêta en avant-première, avant un éventuel déploiement à tous les clients.</div>`:''}
       <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
         ${items.map(([icon,text])=>`
           <li style="display:flex;align-items:flex-start;gap:12px;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.07);">
@@ -983,15 +976,11 @@ select.glass-input option { background: #111; color: var(--ink); }
           </li>`).join('')}
       </ul>
       <button onclick="closeModal()" class="btn btn-primary" style="width:100%;justify-content:center;">Super, c'est noté !</button>`,
-    ()=>{ localStorage.setItem(isTeste1?'flow_seen_version_teste1':'flow_seen_version', APP_VERSION); });
+    ()=>{ localStorage.setItem('flow_seen_version', APP_VERSION); });
   }
 
   function checkVersion(){
-    // Le compte de test (teste1) a son propre suivi de version, pour garantir
-    // qu'il voit toujours le récap des nouveautés bêta même si la popup
-    // générale a déjà été vue sur ce navigateur sous un autre compte.
-    const key = (me && me.id==='u_teste1') ? 'flow_seen_version_teste1' : 'flow_seen_version';
-    if(localStorage.getItem(key) !== APP_VERSION){
+    if(localStorage.getItem('flow_seen_version') !== APP_VERSION){
       showWhatsNew();
     }
   }
@@ -1640,12 +1629,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     // Discussion (assistant IA fusionné) — disponible pour tous les clients,
     // qu'un site soit lié à leur projet ou non (contenu adapté dans la vue elle-même).
     base.splice(1,0,{ id:'discussion', icon:iconChat(), label:'Discussion' });
-    // Fonctionnalités bêta — testées uniquement sur le compte teste1 avant
-    // un éventuel déploiement à tous les clients.
-    if(me && me.id==='u_teste1'){
-      base.splice(2,0,{ id:'client-invoices', icon:iconFinance(), label:'Mes factures', beta:true });
-      base.splice(3,0,{ id:'client-checklist', icon:iconRequests(), label:'À faire', beta:true });
-    }
+    // "À faire" — déployé à tous les clients.
+    base.splice(2,0,{ id:'client-checklist', icon:iconRequests(), label:'À faire' });
     return base;
   }
   function markAIRequestsSeen(){
@@ -2699,20 +2684,20 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             </div>`:canEdit&&tasks.length===0?`<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ Tâches internes</button><button class="btn btn-ghost btn-sm btn-extract-tasks" data-pid="${project.id}" title="Extraire des tâches depuis la description" style="font-size:.75rem;">✨ Extraire</button></div>`:'';
         })()}
         ${(()=>{
-          if(!(canEdit&&u&&u.id==='u_teste1')) return '';
+          if(!(canEdit&&project)) return '';
           const ctasks = project.clientTasks||[];
           const cDoneCount = ctasks.filter(t=>t.done).length;
           return ctasks.length>0?`
             <div style="margin:10px 0 0;padding:10px 14px;background:rgba(155,184,216,.04);border-radius:10px;border:1px solid rgba(155,184,216,.15);">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:.78rem;font-weight:600;color:var(--sky);">📋 À FAIRE CÔTÉ CLIENT — TEST (${cDoneCount}/${ctasks.length})</span>
+                <span style="font-size:.78rem;font-weight:600;color:var(--sky);">📋 À FAIRE CÔTÉ CLIENT (${cDoneCount}/${ctasks.length})</span>
                 <button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}">Gérer</button>
               </div>
               ${ctasks.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
                 <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${t.done?'var(--sage)':'rgba(255,255,255,.2)'};background:${t.done?'rgba(147,181,148,.2)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--sage);flex-shrink:0;">${t.done?'✓':''}</div>
                 <span style="font-size:.78rem;color:${t.done?'var(--ink-4)':'var(--ink-2)'};text-decoration:${t.done?'line-through':'none'};">${esc(t.label)}</span>
               </div>`).join('')}
-            </div>`:`<div style="margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ À faire côté client (test)</button></div>`;
+            </div>`:`<div style="margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ À faire côté client</button></div>`;
         })()}
         <div class="divider"></div>
         <div style="font-size:.8rem;font-weight:600;color:rgba(244,238,229,.5);margin-bottom:8px;">DOCUMENTS (${docs.length})</div>
@@ -3297,8 +3282,7 @@ DOCUMENTS
     if(activeTab==='home')              return renderClientHome();
     if(activeTab==='documents')         return renderClientDocuments();
     if(activeTab==='discussion')        return renderClientDiscussion();
-    if(activeTab==='client-invoices')   return me.id==='u_teste1' ? renderClientInvoices() : renderClientHome();
-    if(activeTab==='client-checklist')  return me.id==='u_teste1' ? renderClientChecklist() : renderClientHome();
+    if(activeTab==='client-checklist')  return renderClientChecklist();
     if(activeTab==='profile')           return renderClientProfile();
     return '';
   }
@@ -3334,8 +3318,7 @@ DOCUMENTS
     if(activeTab==='home')         wireClientHome();
     if(activeTab==='documents')    wireClientDocuments();
     if(activeTab==='discussion'){ wireClientDiscussionQA(); const m=document.getElementById('qa-messages'); if(m) m.scrollTop=m.scrollHeight; }
-    if(activeTab==='client-invoices'&&me.id==='u_teste1')  wireClientInvoices();
-    if(activeTab==='client-checklist'&&me.id==='u_teste1') wireClientChecklist();
+    if(activeTab==='client-checklist') wireClientChecklist();
     if(activeTab==='profile')      wireClientProfile();
     renderMobileTabbar('client');
   }
@@ -3716,47 +3699,7 @@ DOCUMENTS
     });
   }
 
-  // ─── Client: Mes factures (BÊTA — teste1 uniquement) ────────────
-  function renderClientInvoices(){
-    const myProjects = getUserProjects(me.id);
-    const myProjectIds = myProjects.map(p=>p.id);
-    const invs = (db.invoices||[]).filter(inv=>inv.clientId===me.id || (inv.projectId&&myProjectIds.includes(inv.projectId)));
-    const fmtAmt = n => (n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
-    const totalTTC = invs.reduce((s,i)=>s+(i.ttc||0),0);
-
-    return `<div class="fade-up">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-        <h1 style="font-size:1.4rem;font-weight:700;">Mes factures</h1>
-        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;text-transform:uppercase;">TEST</span>
-      </div>
-      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:24px;">Retrouvez ici vos devis et factures émis par votre équipe Flow.</p>
-
-      ${invs.length===0 ? `
-        <div class="glass-card" style="padding:48px 24px;text-align:center;">
-          <div style="font-size:2rem;margin-bottom:12px;opacity:.6;">📄</div>
-          <div style="font-size:.9rem;font-weight:600;color:var(--ink-2);margin-bottom:6px;">Aucun document pour le moment</div>
-          <div style="font-size:.8rem;color:var(--ink-4);">Vos devis et factures apparaîtront ici dès qu'ils seront émis.</div>
-        </div>` : `
-        <div class="glass-card" style="padding:18px 22px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:.85rem;color:var(--ink-3);">${invs.length} document(s)</span>
-          <span style="font-size:1rem;font-weight:700;color:var(--coral);">Total : ${fmtAmt(totalTTC)}</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          ${invs.map(inv=>`
-            <div class="glass-card" style="padding:16px 18px;display:flex;align-items:center;gap:12px;">
-              <span style="font-size:.68rem;padding:3px 9px;border-radius:999px;flex-shrink:0;${inv.type==='Facture'?'background:rgba(217,119,87,.15);color:var(--coral);border:1px solid rgba(217,119,87,.3);':'background:rgba(155,184,216,.12);color:var(--sky);border:1px solid rgba(155,184,216,.3);'}">${esc(inv.type)}</span>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:.88rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(inv.title)}</div>
-                <div style="font-size:.72rem;color:var(--ink-4);">N° ${esc(inv.num)} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}</div>
-              </div>
-              <div style="font-size:.95rem;font-weight:700;color:var(--sage);flex-shrink:0;">${fmtAmt(inv.ttc)}</div>
-            </div>`).join('')}
-        </div>`}
-    </div>`;
-  }
-  function wireClientInvoices(){ /* lecture seule — rien à câbler */ }
-
-  // ─── Client: À faire / checklist partagée (BÊTA — teste1 uniquement) ──
+  // ─── Client: À faire / checklist partagée ────────────────────────
   function renderClientChecklist(){
     const project = getUserProject(me.id);
     if(!project){
@@ -3774,7 +3717,6 @@ DOCUMENTS
     return `<div class="fade-up">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
         <h1 style="font-size:1.4rem;font-weight:700;">À faire</h1>
-        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;text-transform:uppercase;">TEST</span>
       </div>
       <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:20px;">Les actions à réaliser de votre côté pour avancer sur votre projet.</p>
 
@@ -5542,7 +5484,7 @@ DOCUMENTS
     });
   }
 
-  // BÊTA — gestion de la checklist client (testée uniquement sur teste1)
+  // Gestion de la checklist "À faire" côté client (déployée à tous les projets)
   function openManageClientTasksModal(projectId){
     const p = db.projects.find(x=>x.id===projectId);
     if(!p) return;
@@ -5564,7 +5506,7 @@ DOCUMENTS
         <h2 style="font-size:1.05rem;font-weight:700;">📋 À faire côté client — ${esc(p.name)}</h2>
         <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
       </div>
-      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">Fonctionnalité bêta : ces actions seront visibles par le client dans son onglet "À faire".</p>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">Ces actions seront visibles par le client dans son onglet "À faire".</p>
       <div id="ctasks-list"></div>
       <div style="display:flex;gap:8px;margin-top:14px;">
         <input id="new-ctask-inp" class="glass-input" placeholder="Ex: Envoyer le logo en haute résolution" style="flex:1;" />
