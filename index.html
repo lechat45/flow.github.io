@@ -778,20 +778,26 @@ select.glass-input option { background: #111; color: var(--ink); }
         .catch(()=>setSyncState('error'));
     }, 650);
   }
-  // Rejouer la file en ligne
-  window.addEventListener('online', ()=>{
+  // Rejoue toute modification mise en file pendant une période hors-ligne.
+  // Appelée à la fois sur l'événement "online" ET au démarrage de l'app :
+  // si la page a été fermée/rechargée hors-ligne puis rouverte alors que la
+  // connexion était déjà rétablie, l'événement "online" ne se déclenche
+  // jamais — sans cet appel au boot, les changements resteraient bloqués
+  // indéfiniment dans localStorage sans jamais remonter vers Firebase.
+  function flushPendingSync(silent){
     const pending = localStorage.getItem('flow_pending_sync');
-    if(!pending) return;
+    if(!pending || !navigator.onLine) return;
     try{
       const payload = JSON.parse(pending);
       fbdb.ref('flow').set(payload).then(()=>{
         _lastSavedJSON = pending;
         setSyncState('ok');
         localStorage.removeItem('flow_pending_sync');
-        toast('✅ Données synchronisées après reconnexion.','success');
+        if(!silent) toast('✅ Données synchronisées après reconnexion.','success');
       }).catch(()=>setSyncState('error'));
     }catch(_){}
-  });
+  }
+  window.addEventListener('online', ()=>flushPendingSync(false));
 
   let db = loadLocalDB() || JSON.parse(JSON.stringify(SEED));
   function normalizeDB(){
@@ -827,11 +833,16 @@ select.glass-input option { background: #111; color: var(--ink); }
     db.users.forEach(u=>{ if(u.hasDiscussion===undefined) u.hasDiscussion=false; if(u.discordWebhook===undefined) u.discordWebhook=''; if(u.failedAttempts===undefined) u.failedAttempts=0; if(u.lockUntil===undefined) u.lockUntil=0; });
     db.projects.forEach(p=>{
       if(!p.priority) p.priority='normal';
+      if(p.budgetEstimated===undefined) p.budgetEstimated=0;
+      if(p.assignedTo===undefined) p.assignedTo=null;
+      if(p.portfolioPublic===undefined) p.portfolioPublic=false;
+      if(p.portfolioDescription===undefined) p.portfolioDescription='';
       if(!Array.isArray(p.internalTasks)) p.internalTasks=[];
       if(!Array.isArray(p.clientTasks)) p.clientTasks=[];
       if(p.paused===undefined) p.paused=false;
       if(p.pinned===undefined) p.pinned=false;
       if(!Array.isArray(p.timeline)) p.timeline=[];
+      p.timeline.forEach(s=>{ if(!Array.isArray(s.comments)) s.comments=[]; });
       if(!Array.isArray(p.tags)) p.tags=[];
       if(!Array.isArray(p.faq)) p.faq=[];
       if(!Array.isArray(p.siteHistory)) p.siteHistory=[];
@@ -1039,6 +1050,16 @@ select.glass-input option { background: #111; color: var(--ink); }
   function getProjectDocs(projectId){
     return db.documents.filter(d=>d.projectId===projectId);
   }
+  // Revenu réel d'un projet : entrées financières manuelles liées au projet
+  // + factures (type "Facture") payées du client associé à ce projet.
+  function getProjectRealRevenue(projectId){
+    const proj = db.projects.find(p=>p.id===projectId);
+    const fromFinance = (db.finance||[]).filter(e=>e.projectId===projectId).reduce((s,e)=>s+Number(e.amount||0),0);
+    const fromInvoices = proj && proj.clientId
+      ? (db.invoices||[]).filter(i=>i.clientId===proj.clientId&&i.type==='Facture'&&i.paymentStatus==='paid').reduce((s,i)=>s+Number(i.ttc||0),0)
+      : 0;
+    return fromFinance + fromInvoices;
+  }
 
   // ─── Auth & crypto ──────────────────────────────
   async function hashPwd(pwd){
@@ -1237,7 +1258,83 @@ select.glass-input option { background: #111; color: var(--ink); }
     });
   }
 
+  // ─── Routes publiques (sans authentification) ───────────────────
+  // ?portfolio=1        → portfolio public des projets terminés publiables
+  // ?present=PROJECT_ID → mode présentation lecture seule d'un projet
+  // Ces vues n'exposent jamais d'email, mot de passe, clé API ou donnée
+  // financière — uniquement nom de projet, description et timeline.
+  function renderPublicRouteIfAny(){
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('portfolio')==='1'){
+      renderPublicPortfolio();
+      return true;
+    }
+    const presentId = params.get('present');
+    if(presentId){
+      renderPublicPresentation(presentId);
+      return true;
+    }
+    return false;
+  }
+
+  function renderPublicPortfolio(){
+    const projects = db.projects.filter(p=>p.portfolioPublic && !p.archived);
+    document.getElementById('app').innerHTML = `
+      <div style="min-height:100vh;padding:48px 20px;max-width:900px;margin:0 auto;">
+        <div style="text-align:center;margin-bottom:48px;">
+          <div style="font-family:'Instrument Serif',serif;font-size:2.4rem;color:var(--coral);font-style:italic;">flow</div>
+          <p style="color:var(--ink-4);font-size:.9rem;margin-top:6px;">Quelques projets réalisés par notre équipe.</p>
+        </div>
+        ${projects.length===0?`<div style="text-align:center;padding:60px 0;color:var(--ink-4);">Aucun projet publié pour le moment.</div>`:`
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
+          ${projects.map(p=>`
+            <div class="glass-card" style="padding:22px;">
+              <div style="font-size:1.05rem;font-weight:700;margin-bottom:8px;">${esc(p.name)}</div>
+              ${p.portfolioDescription?`<p style="font-size:.85rem;color:var(--ink-3);line-height:1.5;">${esc(p.portfolioDescription)}</p>`:''}
+              ${p.status==='done'?`<span style="display:inline-block;margin-top:10px;font-size:.7rem;padding:2px 8px;border-radius:999px;background:rgba(147,181,148,.15);color:var(--sage);border:1px solid rgba(147,181,148,.3);">✓ Terminé</span>`:''}
+            </div>`).join('')}
+        </div>`}
+        <div style="text-align:center;margin-top:48px;font-size:.75rem;color:var(--ink-4);">Propulsé par Flow</div>
+      </div>`;
+  }
+
+  function renderPublicPresentation(projectId){
+    const p = db.projects.find(x=>x.id===projectId);
+    const app = document.getElementById('app');
+    if(!p){
+      app.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--ink-4);">Projet introuvable ou lien expiré.</div>`;
+      return;
+    }
+    const tl = p.timeline||[];
+    const doneCount = tl.filter(s=>s.status==='done').length;
+    const pct = tl.length>0 ? Math.round(doneCount/tl.length*100) : 0;
+    app.innerHTML = `
+      <div style="min-height:100vh;padding:48px 20px;max-width:680px;margin:0 auto;">
+        <div style="text-align:center;margin-bottom:36px;">
+          <div style="font-family:'Instrument Serif',serif;font-size:1.6rem;color:var(--coral);font-style:italic;">flow</div>
+          <div style="font-size:.7rem;color:var(--ink-4);letter-spacing:.06em;text-transform:uppercase;margin-top:4px;">Mode présentation — lecture seule</div>
+        </div>
+        <div class="glass-card" style="padding:28px;">
+          <h1 style="font-size:1.3rem;font-weight:700;margin-bottom:6px;">${esc(p.name)}</h1>
+          ${p.description?`<p style="font-size:.85rem;color:var(--ink-3);margin-bottom:18px;">${esc(p.description)}</p>`:''}
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:.8rem;color:var(--ink-3);">Avancement</span>
+            <span style="font-size:.85rem;font-weight:700;color:var(--coral);">${pct}%</span>
+          </div>
+          <div style="height:8px;background:rgba(255,255,255,.08);border-radius:6px;margin-bottom:24px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#d97757,#93b594);border-radius:6px;"></div>
+          </div>
+          ${renderFullTimeline(tl, null)}
+        </div>
+        <div style="text-align:center;margin-top:32px;font-size:.72rem;color:var(--ink-4);">Lien généré par votre équipe Flow — partagez-le uniquement avec des personnes de confiance.</div>
+      </div>`;
+  }
+
   function bootApp(){
+    // Rejoue immédiatement toute modification restée en file d'attente
+    // d'une session précédente fermée hors-ligne (voir flushPendingSync).
+    flushPendingSync(true);
+
     // F1 — Idle timer setup
     ['mousemove','keydown','click','touchstart'].forEach(ev=>document.addEventListener(ev,resetIdleTimer,{passive:true}));
     setInterval(()=>{ if(me && Date.now()-lastActivity > 30*60*1000){ toast('Déconnexion automatique (inactivité).','info',4000); logout(); } }, 60000);
@@ -1271,6 +1368,7 @@ select.glass-input option { background: #111; color: var(--ink); }
         } else { fbdb.ref('flow').set(db); }
         setSyncState('ok');
         startRealtimeSync();
+        if(renderPublicRouteIfAny()) return;
         migratePasswords().then(()=>{
           checkSession();
           render();
@@ -1281,6 +1379,7 @@ select.glass-input option { background: #111; color: var(--ink); }
       .catch(()=>{
         setSyncState('error');
         toast('Firebase hors ligne — mode local activé','error');
+        if(renderPublicRouteIfAny()) return;
         migratePasswords().then(()=>{
           checkSession();
           render();
@@ -1794,7 +1893,10 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(activeTab==='ai-automation') wireAdminAIAutomation();
     if(activeTab==='rubis'&&canAccessFinance()) wireRubisChat();
     if(activeTab==='ai-visual')     wireAdminAIVisual();
-    if(activeTab==='myproject'){ document.querySelectorAll('.btn-download-delivery').forEach(btn=>{ btn.addEventListener('click',()=>downloadDelivery(btn.dataset.pid)); }); }
+    if(activeTab==='myproject'){
+      document.querySelectorAll('.btn-download-delivery').forEach(btn=>{ btn.addEventListener('click',()=>downloadDelivery(btn.dataset.pid)); });
+      document.querySelectorAll('.btn-step-comments').forEach(btn=>{ btn.addEventListener('click',()=>openStepCommentsModal(btn.dataset.pid, btn.dataset.sid)); });
+    }
     if(activeTab==='profile')       wireAdminProfile();
     renderMobileTabbar('admin');
   }
@@ -1882,6 +1984,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         <div style="display:flex;gap:8px;">
           <button id="btn-view-toggle" class="btn btn-ghost btn-sm" title="Vue Kanban">${window._adminView==='kanban'?'☰ Liste':'⬛ Kanban'}</button>
           <button id="btn-weekly-report" class="btn btn-ghost btn-sm" title="Envoyer le rapport hebdomadaire maintenant">📊 Rapport hebdo</button>
+          ${me.role==='admin'?`<button id="btn-workload" class="btn btn-ghost btn-sm" title="Charge de travail par membre de l'équipe">👥 Charge de travail</button>`:''}
           ${canManageProjects(me)?`<button id="btn-new-project" class="btn btn-primary">${iconPlus()} Nouveau projet</button>`:''}
         </div>
       </div>
@@ -2259,12 +2362,17 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     const revenueWeek = (db.finance||[]).filter(e=>e.date&&new Date(e.date).getTime()>=since).reduce((s,e)=>s+Number(e.amount||0),0);
     const activeNow = db.projects.filter(p=>!p.archived&&p.status!=='done').length;
     const overdueNow = db.projects.filter(p=>p.dueDate&&p.status!=='done'&&new Date(p.dueDate)<new Date()).length;
+    const pendingInvoices = (db.invoices||[]).filter(i=>i.type==='Facture'&&i.paymentStatus==='pending');
+    const pendingInvoicesTotal = pendingInvoices.reduce((s,i)=>s+(i.ttc||0),0);
+    const newRequests = (db.pendingUsers||[]).length;
     const lines = [
       `📁 ${newProjects} nouveau(x) projet(s) · ✅ ${completedProjects} terminé(s) cette semaine`,
       `📋 ${docsFilled} document(s) rempli(s) · ⚠️ ${docsPendingOld} en attente depuis 7j+`,
       `💰 ${revenueWeek.toLocaleString('fr-FR')}€ encaissés cette semaine`,
-      `⚙️ ${activeNow} projet(s) actif(s) au total${overdueNow>0?` · 🚨 ${overdueNow} en retard`:''}`
+      `⚙️ ${activeNow} projet(s) actif(s) au total${overdueNow>0?` · 🚨 ${overdueNow} en retard`:''}`,
     ];
+    if(pendingInvoices.length>0) lines.push(`🧾 ${pendingInvoices.length} facture(s) en attente de paiement, soit ${pendingInvoicesTotal.toLocaleString('fr-FR')}€`);
+    if(newRequests>0) lines.push(`📝 ${newRequests} nouvelle(s) demande(s) d'inscription en attente`);
     return lines.join('\n');
   }
   function maybeRunWeeklyReport(){
@@ -2290,6 +2398,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       saveDB();
       toast('Rapport envoyé (centre de notifications + Discord).','success');
     });
+    const btnWorkload = document.getElementById('btn-workload');
+    if(btnWorkload) btnWorkload.addEventListener('click', openWorkloadModal);
     // Kanban drag & drop
     function moveProjectToStatus(p, newStatus){
       if(!p || p.status===newStatus) return;
@@ -2680,6 +2790,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             if(projs.length===0) return `<div class="client-doc-panel-wrap" data-uid="${u.id}">${renderClientDocPanel(u,isAdmin,null)}</div>`;
             return projs.map((proj,idx)=>`<div class="client-doc-panel-wrap" data-uid="${u.id}">${renderClientDocPanel(u,isAdmin,proj,idx===0)}</div>`).join('');
           }).join('')}
+      <div id="doc-pagination" style="text-align:center;margin-top:8px;"></div>
     </div>`;
   }
 
@@ -2695,6 +2806,18 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
           <div style="font-size:.78rem;color:rgba(244,238,229,.4);">${project?esc(project.name):'Aucun projet'}${project&&project.siteHtml?` <span style="font-size:.62rem;background:rgba(147,181,148,.15);border:1px solid rgba(147,181,148,.3);color:var(--sage);border-radius:999px;padding:1px 6px;vertical-align:middle;">🌐 Site lié</span>`:''}${project&&project.paused?` <span style="font-size:.62rem;background:rgba(240,169,136,.15);border:1px solid rgba(240,169,136,.35);color:var(--peach);border-radius:999px;padding:1px 6px;vertical-align:middle;font-weight:600;">⏸ EN PAUSE</span>`:''}</div>
           ${project&&project.description?`<div style="font-size:.8rem;color:var(--ink-3);margin-top:2px;">${esc(project.description)}</div>`:''}
           ${project&&project.tags&&project.tags.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">${project.tags.map(tag=>`<span style="font-size:.68rem;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--ink-3);">${esc(tag)}</span>`).join('')}</div>`:''}
+          ${project&&project.budgetEstimated>0?(()=>{
+            const real = getProjectRealRevenue(project.id);
+            const pct = Math.min(100, Math.round(real/project.budgetEstimated*100));
+            const over = real > project.budgetEstimated;
+            return `<div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--ink-4);">
+              <span>💰 ${real.toLocaleString('fr-FR')}€ / ${project.budgetEstimated.toLocaleString('fr-FR')}€</span>
+              <div style="flex:1;max-width:100px;height:5px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:${over?'var(--peach)':'var(--sage)'};border-radius:999px;"></div>
+              </div>
+              <span style="color:${over?'var(--peach)':'var(--ink-4)'};">${pct}%${over?' ⚠️':''}</span>
+            </div>`;
+          })():''}
         </div>
         ${canEdit&&project?`
           <button class="btn btn-ghost btn-sm btn-edit-timeline" data-pid="${project.id}" data-uid="${u.id}">⏱ Timeline</button>
@@ -2704,6 +2827,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             <div class="kebab-menu" id="kebab-${project.id}">
               <button class="kebab-item btn-pin-project" data-pid="${project.id}">${project.pinned?'📌 Désépingler':'📍 Épingler'}</button>
               <button class="kebab-item btn-pause-project" data-pid="${project.id}">${project.paused?'▶️ Reprendre le projet':'⏸ Mettre en pause'}</button>
+              <button class="kebab-item btn-share-present" data-pid="${project.id}">🔗 Lien de présentation</button>
               <button class="kebab-item btn-report" data-uid="${u.id}">📄 Rapport PDF</button>
               <button class="kebab-item btn-text-summary" data-pid="${project.id}" data-uid="${u.id}">📝 Résumé texte</button>
               <button class="kebab-item btn-dup-project" data-pid="${project.id}">📋 Dupliquer</button>
@@ -2893,6 +3017,14 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         toast(p.paused?'Projet mis en pause ⏸':'Projet repris ▶️', p.paused?'info':'success');
         if(p.paused) pushNotification(p.clientId, '⏸ Projet en pause', 'Votre projet "'+p.name+'" est temporairement mis en pause par votre équipe.', 'info');
         refreshAdminTab();
+      });
+    });
+    document.querySelectorAll('.btn-share-present').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const url = window.location.origin + window.location.pathname + '?present=' + encodeURIComponent(b.dataset.pid);
+        navigator.clipboard?.writeText(url).then(()=>toast('Lien de présentation copié ✓ (lecture seule, sans connexion)','success')).catch(()=>{
+          showModal(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><h2 style="font-size:1rem;font-weight:700;">🔗 Lien de présentation</h2><button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button></div><input class="glass-input" value="${esc(url)}" readonly onclick="this.select()" />`,()=>{});
+        });
       });
     });
     document.querySelectorAll('.btn-manage-tasks').forEach(b=>{
@@ -3132,14 +3264,17 @@ DOCUMENTS
       });
     });
 
+    const DOC_PAGE_SIZE = 25;
+    let docVisibleCount = DOC_PAGE_SIZE;
     function applyDocFilters(){
       const q = (document.getElementById('doc-search')?.value||'').toLowerCase();
       const statusF = document.getElementById('doc-filter-status')?.value||'';
       const prioF   = document.getElementById('doc-filter-prio')?.value||'';
-      document.querySelectorAll('.client-doc-panel-wrap').forEach(wrap=>{
+      const allWraps = Array.from(document.querySelectorAll('.client-doc-panel-wrap'));
+      const matching = allWraps.filter(wrap=>{
         const uid = wrap.dataset.uid;
         const u = db.users.find(x=>x.id===uid);
-        if(!u){ wrap.style.display='none'; return; }
+        if(!u) return false;
         const project = getUserProject(u.id);
         const hay = `${u.username} ${u.firstName||''} ${u.lastName||''} ${project?project.name:''}`.toLowerCase();
         const matchQ = !q || hay.includes(q);
@@ -3150,12 +3285,24 @@ DOCUMENTS
           else matchStatus = docs.some(d=>d.status===statusF);
         } else if(statusF) { matchStatus = false; }
         let matchPrio = !prioF || (project&&(project.priority||'normal')===prioF);
-        wrap.style.display = (matchQ&&matchStatus&&matchPrio) ? '' : 'none';
+        return matchQ && matchStatus && matchPrio;
       });
+      allWraps.forEach(wrap=>wrap.style.display='none');
+      matching.slice(0,docVisibleCount).forEach(wrap=>wrap.style.display='');
+      const pag = document.getElementById('doc-pagination');
+      if(pag){
+        const remaining = matching.length - docVisibleCount;
+        pag.innerHTML = remaining>0
+          ? `<button id="btn-docs-more" class="btn btn-ghost btn-sm">Voir ${Math.min(remaining,DOC_PAGE_SIZE)} de plus (${remaining} restant${remaining>1?'s':''})</button>`
+          : matching.length>DOC_PAGE_SIZE ? `<span style="font-size:.75rem;color:var(--ink-4);">${matching.length} résultat(s) affiché(s)</span>` : '';
+        const moreBtn = document.getElementById('btn-docs-more');
+        if(moreBtn) moreBtn.addEventListener('click',()=>{ docVisibleCount+=DOC_PAGE_SIZE; applyDocFilters(); });
+      }
     }
-    document.getElementById('doc-search')?.addEventListener('input', applyDocFilters);
-    document.getElementById('doc-filter-status')?.addEventListener('change', applyDocFilters);
-    document.getElementById('doc-filter-prio')?.addEventListener('change', applyDocFilters);
+    document.getElementById('doc-search')?.addEventListener('input', ()=>{ docVisibleCount=DOC_PAGE_SIZE; applyDocFilters(); });
+    document.getElementById('doc-filter-status')?.addEventListener('change', ()=>{ docVisibleCount=DOC_PAGE_SIZE; applyDocFilters(); });
+    document.getElementById('doc-filter-prio')?.addEventListener('change', ()=>{ docVisibleCount=DOC_PAGE_SIZE; applyDocFilters(); });
+    applyDocFilters();
   }
 
   // ─── Tab: Admin Profile ─────────────────────────
@@ -3212,6 +3359,12 @@ DOCUMENTS
             </div>
             <div id="import-msg" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:.85rem;"></div>
           </div>
+          <div class="divider"></div>
+          <div style="margin-top:4px;">
+            <div style="font-size:.9rem;font-weight:600;margin-bottom:6px;">Portfolio public</div>
+            <div style="font-size:.75rem;color:var(--ink-4);margin-bottom:12px;">Page publique présentant les projets marqués "à publier" (activable depuis la timeline de chaque projet, avec l'accord du client).</div>
+            <button id="btn-copy-portfolio" class="btn btn-ghost" style="width:100%;justify-content:center;">🌐 Copier le lien du portfolio</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -3255,6 +3408,13 @@ DOCUMENTS
 
     // Sauvegarde & Restauration — export/import JSON complet de la base
     const btnExportJson = document.getElementById('btn-export-json');
+    const btnCopyPortfolio = document.getElementById('btn-copy-portfolio');
+    if(btnCopyPortfolio) btnCopyPortfolio.addEventListener('click',()=>{
+      const url = window.location.origin + window.location.pathname + '?portfolio=1';
+      navigator.clipboard?.writeText(url).then(()=>toast('Lien du portfolio copié ✓','success')).catch(()=>{
+        showModal(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><h2 style="font-size:1rem;font-weight:700;">🌐 Lien du portfolio</h2><button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button></div><input class="glass-input" value="${esc(url)}" readonly onclick="this.select()" />`,()=>{});
+      });
+    });
     if(btnExportJson) btnExportJson.addEventListener('click',()=>{
       try{
         const payload = { exportedAt:new Date().toISOString(), appVersion:APP_VERSION, db };
@@ -3445,6 +3605,19 @@ DOCUMENTS
       <div><div style="font-size:.9rem;font-weight:600;color:var(--peach);">Projet en pause</div><div style="font-size:.75rem;color:rgba(244,238,229,.5);">Votre équipe a temporairement suspendu l'avancement. N'hésitez pas à la contacter pour plus de détails.</div></div>
     </div>` : '';
 
+    // Devis en attente de l'accord du client (signature électronique simple)
+    const unsignedQuotes = (db.invoices||[]).filter(i=>i.clientId===me.id && i.type==='Devis' && !i.signedAt);
+    const quotesBanner = unsignedQuotes.length ? unsignedQuotes.map(q=>`
+      <div class="glass-card" style="padding:16px 20px;margin-bottom:14px;border-color:rgba(217,119,87,.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:.9rem;font-weight:600;color:var(--coral);">📄 Devis en attente de votre accord</div>
+            <div style="font-size:.8rem;color:var(--ink-3);margin-top:2px;">${esc(q.title)} — N° ${esc(q.num)} — <strong>${(q.ttc||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})} €</strong></div>
+          </div>
+          <button class="btn btn-primary btn-sm btn-sign-quote" data-id="${q.id}">✓ J'accepte ce devis</button>
+        </div>
+      </div>`).join('') : '';
+
     return `<div class="fade-up">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px;flex-wrap:wrap;">
         <h1 style="font-size:1.4rem;font-weight:700;">Bonjour, ${esc(me.firstName||me.username)} 👋</h1>
@@ -3457,6 +3630,7 @@ DOCUMENTS
       ${projectSelector}
       ${welcomeBanner}
       ${pausedBanner}
+      ${quotesBanner}
       ${ctrDue}
       ${projects.length===0 ? renderNoProject() : renderProjectCard(project||projects[0])}
       ${(()=>{
@@ -3572,14 +3746,14 @@ DOCUMENTS
           </div>
           <button class="btn btn-success btn-sm btn-download-delivery" data-pid="${p.id}">⬇️ Télécharger</button>
         </div>`:''}
-        ${renderFullTimeline(p.timeline)}
+        ${renderFullTimeline(p.timeline, p.id)}
       </div>`;
   }
 
   const _tlCheckSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="3,8 7,12 13,4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const _tlPlaySvg  = `<svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M1 1.5L11 7L1 12.5V1.5Z"/></svg>`;
 
-  function renderFullTimeline(tl){
+  function renderFullTimeline(tl, projectId){
     if(!tl || tl.length === 0) return `<div style="text-align:center;padding:24px 0;color:var(--ink-4);font-size:.85rem;">Aucune étape définie.</div>`;
     return `<div style="padding:4px 0;">
       ${tl.map((s,i)=>{
@@ -3588,6 +3762,7 @@ DOCUMENTS
         const isPending = !isDone && !isCurrent;
         const labelColor = isDone ? 'rgba(244,238,229,.92)' : isCurrent ? 'var(--coral-soft)' : 'rgba(244,238,229,.28)';
         const numLabel   = isPending ? `<span style="font-size:.72rem;font-weight:700;font-family:'Geist',sans-serif;">${i+1}</span>` : '';
+        const commentCount = (s.comments||[]).length;
         return `
         <div class="tl-step ${s.status}">
           <div class="tl-line-wrap">
@@ -3605,6 +3780,7 @@ DOCUMENTS
             </div>
             ${isCurrent ? `<div style="margin-top:5px;font-size:.72rem;font-weight:600;color:rgba(217,119,87,.75);letter-spacing:.04em;text-transform:uppercase;">En cours</div>` : ''}
             ${s.note ? `<div style="font-size:.76rem;color:var(--ink-4);font-style:italic;margin-top:4px;line-height:1.45;">${esc(s.note)}</div>` : ''}
+            ${projectId?`<button class="btn btn-ghost btn-sm btn-step-comments" data-pid="${projectId}" data-sid="${s.id}" style="margin-top:6px;font-size:.72rem;padding:3px 9px;">💬 ${commentCount>0?commentCount+' commentaire'+(commentCount>1?'s':''):'Commenter'}</button>`:''}
           </div>
         </div>`}).join('')}
     </div>`;
@@ -3621,6 +3797,23 @@ DOCUMENTS
   function wireClientHome(){
     document.querySelectorAll('.btn-download-delivery').forEach(btn=>{
       btn.addEventListener('click',()=>downloadDelivery(btn.dataset.pid));
+    });
+    document.querySelectorAll('.btn-sign-quote').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const inv = (db.invoices||[]).find(i=>i.id===btn.dataset.id);
+        if(!inv) return;
+        confirmAction('Confirmer votre accord pour ce devis ? Cette action vaut acceptation et sera horodatée.', ()=>{
+          inv.signedAt = new Date().toISOString();
+          inv.signedBy = me.username;
+          saveDB();
+          toast('Devis accepté ✓','success');
+          pushNotification('admins', '✅ Devis accepté', '@'+me.username+' a accepté le devis "'+inv.title+'" (N° '+inv.num+').', 'success');
+          refreshClientTab(true);
+        }, {label:'J\'accepte', danger:false});
+      });
+    });
+    document.querySelectorAll('.btn-step-comments').forEach(btn=>{
+      btn.addEventListener('click',()=>openStepCommentsModal(btn.dataset.pid, btn.dataset.sid));
     });
     // Multi-projets : changer de projet actif
     document.querySelectorAll('.btn-switch-project').forEach(btn=>{
@@ -4514,6 +4707,28 @@ DOCUMENTS
         </select>
       </div>
       <div style="margin-bottom:14px;">
+        <label class="label">Budget estimé (€)</label>
+        <input id="tl-budget" class="glass-input" type="number" min="0" placeholder="Ex : 2500" value="${p.budgetEstimated||''}" />
+        <div style="font-size:.72rem;color:var(--ink-4);margin-top:5px;">Comparé automatiquement aux montants encaissés liés à ce projet.</div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="label">Géré par</label>
+        <select id="tl-assigned" class="glass-input">
+          <option value="">— Non assigné —</option>
+          ${db.users.filter(u=>u.role==='admin'||u.role==='controller').map(u=>`<option value="${u.id}" ${p.assignedTo===u.id?'selected':''}>${esc(u.username)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:14px;padding:12px 14px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.07);">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:${p.portfolioPublic?'10px':'0'};">
+          <input type="checkbox" id="tl-portfolio" ${p.portfolioPublic?'checked':''} style="width:16px;height:16px;accent-color:var(--coral);cursor:pointer;" />
+          <span class="label" style="margin:0;">🌐 Afficher dans le portfolio public</span>
+        </label>
+        <div id="tl-portfolio-desc-wrap" style="display:${p.portfolioPublic?'block':'none'};">
+          <textarea id="tl-portfolio-desc" class="glass-input" placeholder="Description courte pour le portfolio (visible publiquement)" style="width:100%;min-height:60px;">${esc(p.portfolioDescription||'')}</textarea>
+          <div style="font-size:.7rem;color:var(--ink-4);margin-top:4px;">⚠️ Activez ceci uniquement avec l'accord du client — le nom du projet et cette description seront visibles publiquement, sans connexion.</div>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
         <label class="label">FAQ client (questions / réponses)</label>
         <div id="tl-faq-list">
           ${(p.faq||[]).map((f,i)=>`
@@ -4584,6 +4799,11 @@ DOCUMENTS
         b.addEventListener('click',()=>b.closest('[data-sid]').remove());
       });
 
+      document.getElementById('tl-portfolio')?.addEventListener('change',e=>{
+        const wrap = document.getElementById('tl-portfolio-desc-wrap');
+        if(wrap) wrap.style.display = e.target.checked ? 'block' : 'none';
+      });
+
       document.getElementById('tl-add-faq')?.addEventListener('click',()=>{
         const list=document.getElementById('tl-faq-list');
         const idx=list.querySelectorAll('[data-fidx]').length;
@@ -4607,6 +4827,8 @@ DOCUMENTS
 
       document.getElementById('tl-save').addEventListener('click',()=>{
         const steps=[];
+        const prevById = {};
+        (p.timeline||[]).forEach(s=>{ prevById[s.id]=s.status; });
         document.querySelectorAll('#tl-steps [data-sid]').forEach(row=>{
           const sid=row.dataset.sid;
           const labelEl=row.querySelector('.tl-label-input');
@@ -4618,11 +4840,22 @@ DOCUMENTS
           const note=row.querySelector('.tl-note-input')?.value||'';
           if(label) steps.push({id:sid,label,status,dueDate,date:null,note});
         });
+        // Notifie le client pour chaque étape qui vient de passer à "terminée"
+        // (il n'aurait sinon découvert l'avancement qu'en se reconnectant).
+        steps.forEach(s=>{
+          if(s.status==='done' && prevById[s.id] && prevById[s.id]!=='done'){
+            pushNotification(p.clientId, '✅ Étape terminée', 'L\'étape "'+s.label+'" de votre projet "'+p.name+'" vient d\'être marquée comme terminée.', 'success');
+          }
+        });
         p.timeline=steps;
         p.description=document.getElementById('tl-desc').value.trim();
         p.dueDate=document.getElementById('tl-due').value||'';
         p.status=document.getElementById('tl-proj-status').value;
         p.priority=document.getElementById('tl-priority')?.value||'normal';
+        p.budgetEstimated=parseFloat(document.getElementById('tl-budget')?.value)||0;
+        p.assignedTo=document.getElementById('tl-assigned')?.value||null;
+        p.portfolioPublic=document.getElementById('tl-portfolio')?.checked||false;
+        p.portfolioDescription=document.getElementById('tl-portfolio-desc')?.value.trim()||'';
         p.welcomeMessage=document.getElementById('tl-welcome')?.value.trim()||'';
         p.color=document.getElementById('tl-color')?.value||'';
         p.tags=document.getElementById('tl-tags')?.value.split(',').map(t=>t.trim()).filter(Boolean)||[];
@@ -5092,7 +5325,7 @@ DOCUMENTS
         <div style="height:8px;background:rgba(255,255,255,.08);border-radius:6px;margin-bottom:24px;overflow:hidden;">
           <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#d97757,#93b594);border-radius:6px;transition:width .5s;"></div>
         </div>
-        ${renderFullTimeline(project.timeline)}
+        ${renderFullTimeline(project.timeline, project.id)}
       </div>
 
       ${project.deliverable?`
@@ -5482,6 +5715,31 @@ DOCUMENTS
           </div>`}
 
         ${(()=>{
+          const clients = db.users.filter(u=>u.role==='client');
+          const rows = clients.map(c=>{
+            const projects = db.projects.filter(p=>p.clientId===c.id);
+            if(!projects.length) return null;
+            const revenue = projects.reduce((s,p)=>s+getProjectRealRevenue(p.id),0);
+            const activeCount = projects.filter(p=>!p.archived).length;
+            return { client:c, projectCount:projects.length, activeCount, revenue };
+          }).filter(Boolean).sort((a,b)=>b.revenue-a.revenue);
+          if(!rows.length) return '';
+          return `<div class="glass-card" style="padding:22px;margin-top:20px;">
+            <h2 style="font-size:.95rem;font-weight:700;margin-bottom:14px;">📈 Rentabilité par client</h2>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${rows.map(r=>`
+                <div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(255,255,255,.02);">
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:.84rem;font-weight:500;">${esc(r.client.username)}</div>
+                    <div style="font-size:.7rem;color:var(--ink-4);">${r.projectCount} projet(s)${r.activeCount>0?` · ${r.activeCount} actif(s)`:''}</div>
+                  </div>
+                  <div style="font-size:.88rem;font-weight:700;color:var(--sage);">${r.revenue.toLocaleString('fr-FR')}€</div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        })()}
+
+        ${(()=>{
           const invs = (db.invoices||[]).slice(0,15);
           if(!invs.length) return '';
           const today = new Date();
@@ -5502,10 +5760,12 @@ DOCUMENTS
                   <span style="font-size:.68rem;padding:2px 8px;border-radius:999px;flex-shrink:0;${isFac?'background:rgba(217,119,87,.15);color:var(--coral);border:1px solid rgba(217,119,87,.3);':'background:rgba(155,184,216,.12);color:var(--sky);border:1px solid rgba(155,184,216,.3);'}">${esc(inv.type)}</span>
                   <div style="flex:1;min-width:140px;">
                     <div style="font-size:.82rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(inv.title)} — N° ${esc(inv.num)}</div>
-                    <div style="font-size:.7rem;color:var(--ink-4);">${cl?esc(cl.username):'Client libre'} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}${overdue?` · <span style="color:#f08a8a;font-weight:600;">⚠️ ${daysSince}j sans paiement</span>`:''}</div>
+                    <div style="font-size:.7rem;color:var(--ink-4);">${cl?esc(cl.username):'Client libre'} · ${new Date(inv.createdAt).toLocaleDateString('fr-FR')}${overdue?` · <span style="color:#f08a8a;font-weight:600;">⚠️ ${daysSince}j sans paiement</span>`:''}${inv.signedAt?` · <span style="color:var(--sage);font-weight:600;">✓ Accepté le ${new Date(inv.signedAt).toLocaleDateString('fr-FR')}</span>`:''}</div>
                   </div>
                   ${statusBadge}
                   ${overdue?`<button class="btn btn-ghost btn-sm inv-relance" data-id="${inv.id}" title="Générer un message de relance" style="border-color:rgba(240,138,138,.4);color:#f08a8a;">✉ Relancer</button>`:''}
+                  <button class="btn btn-ghost btn-sm inv-correct" data-id="${inv.id}" title="Corriger ce document (garde un historique)">✏️</button>
+                  ${inv.versionHistory&&inv.versionHistory.length?`<button class="btn btn-ghost btn-sm inv-history" data-id="${inv.id}" title="Voir l'historique des versions">📝 ${inv.versionHistory.length}</button>`:''}
                   <div style="font-size:.85rem;font-weight:700;color:var(--sage);flex-shrink:0;">${fmtAmt(inv.ttc)}</div>
                 </div>`;
               }).join('')}
@@ -5557,6 +5817,12 @@ DOCUMENTS
           showModal(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><h2 style="font-size:1rem;font-weight:700;">✉ Message de relance</h2><button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button></div><textarea class="glass-input" style="width:100%;min-height:200px;" readonly>${esc(msg)}</textarea>`,()=>{});
         });
       });
+    });
+    document.querySelectorAll('.inv-correct').forEach(b=>{
+      b.addEventListener('click',()=>openCorrectInvoiceModal(b.dataset.id));
+    });
+    document.querySelectorAll('.inv-history').forEach(b=>{
+      b.addEventListener('click',()=>openInvoiceHistoryModal(b.dataset.id));
     });
 
     const btnGoals=document.getElementById('btn-edit-goals');
@@ -5754,6 +6020,104 @@ DOCUMENTS
     });
   }
 
+  // Commentaires threadés par étape de timeline, partagés admin/client.
+  // authorRole permet de distinguer visuellement qui écrit quoi.
+  function openStepCommentsModal(projectId, stepId){
+    const p = db.projects.find(x=>x.id===projectId);
+    if(!p) return;
+    const step = (p.timeline||[]).find(s=>s.id===stepId);
+    if(!step) return;
+    if(!Array.isArray(step.comments)) step.comments=[];
+    const isClientView = me.role==='client';
+
+    const renderThread=()=>{
+      const c=document.getElementById('sc-thread');
+      if(!c) return;
+      c.innerHTML = step.comments.map(cm=>{
+        const mine = cm.authorId===me.id;
+        return `<div style="display:flex;${mine?'justify-content:flex-end;':'justify-content:flex-start;'}margin-bottom:8px;">
+          <div style="max-width:80%;padding:8px 12px;border-radius:12px;font-size:.84rem;line-height:1.4;${mine?'background:rgba(217,119,87,.18);color:var(--ink);':'background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--ink-2);'}">
+            <div style="font-size:.7rem;color:var(--ink-4);margin-bottom:2px;font-weight:600;">${esc(cm.authorName)}${cm.authorRole==='client'?'':' (équipe)'}</div>
+            ${esc(cm.text)}
+            <div style="font-size:.65rem;color:var(--ink-4);margin-top:3px;">${new Date(cm.createdAt).toLocaleString('fr-FR')}</div>
+          </div>
+        </div>`;
+      }).join('') || `<div style="text-align:center;padding:20px 0;font-size:.82rem;color:var(--ink-4);">Aucun commentaire pour cette étape encore.</div>`;
+      c.scrollTop = c.scrollHeight;
+    };
+
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">💬 ${esc(step.label)}</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:14px;">${esc(p.name)} — échange visible par le client et votre équipe.</p>
+      <div id="sc-thread" style="max-height:320px;overflow-y:auto;margin-bottom:12px;padding:4px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input id="sc-input" class="glass-input" placeholder="Écrire un commentaire…" style="flex:1;" />
+        <button id="sc-send" class="btn btn-primary btn-sm">Envoyer</button>
+      </div>`,
+    ()=>{
+      renderThread();
+      const send=()=>{
+        const txt=document.getElementById('sc-input')?.value.trim();
+        if(!txt) return;
+        step.comments.push({ id:uid(), text:txt, authorId:me.id, authorName:me.username, authorRole:me.role, createdAt:new Date().toISOString() });
+        saveDB();
+        document.getElementById('sc-input').value='';
+        renderThread();
+        // Notifie l'autre partie : si c'est le client qui écrit, on notifie les
+        // admins/contrôleurs ; si c'est l'équipe, on notifie le client.
+        if(isClientView){
+          pushNotification('admins', '💬 Commentaire client', '@'+me.username+' a commenté l\'étape "'+step.label+'" du projet "'+p.name+'".', 'info');
+        } else if(p.clientId){
+          pushNotification(p.clientId, '💬 Nouveau commentaire', 'Votre équipe a répondu sur l\'étape "'+step.label+'" de votre projet.', 'info');
+        }
+        if(!isClientView) refreshAdminTab(); else refreshClientTab(true);
+      };
+      document.getElementById('sc-send')?.addEventListener('click',send);
+      document.getElementById('sc-input')?.addEventListener('keydown',e=>{ if(e.key==='Enter') send(); });
+    });
+  }
+
+  // Charge de travail par admin/contrôleur : nombre de projets actifs
+  // assignés, en retard, et revenu réel généré par leurs projets.
+  function openWorkloadModal(){
+    const team = db.users.filter(u=>u.role==='admin'||u.role==='controller');
+    const today = new Date();
+    const rows = team.map(u=>{
+      const projects = db.projects.filter(p=>!p.archived && p.assignedTo===u.id);
+      const active = projects.filter(p=>p.status!=='done');
+      const overdue = projects.filter(p=>p.dueDate && p.status!=='done' && new Date(p.dueDate)<today);
+      const revenue = projects.reduce((s,p)=>s+getProjectRealRevenue(p.id),0);
+      return { user:u, total:projects.length, active:active.length, overdue:overdue.length, revenue };
+    });
+    const unassigned = db.projects.filter(p=>!p.archived && !p.assignedTo).length;
+
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">👥 Charge de travail</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">Répartition des projets actifs par membre de l'équipe. L'assignation se fait depuis la timeline d'un projet ("Géré par").</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${rows.length?rows.sort((a,b)=>b.active-a.active).map(r=>`
+          <div class="glass-card" style="padding:14px 18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-weight:600;font-size:.9rem;">${esc(r.user.username)}</span>
+              <span style="font-size:.68rem;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--ink-3);">${r.user.role==='admin'?'Admin':'Contrôleur'}</span>
+            </div>
+            <div style="display:flex;gap:16px;font-size:.8rem;color:var(--ink-3);flex-wrap:wrap;">
+              <span>📁 ${r.active} actif(s) / ${r.total} total</span>
+              ${r.overdue>0?`<span style="color:#f08a8a;font-weight:600;">🚨 ${r.overdue} en retard</span>`:''}
+              <span>💰 ${r.revenue.toLocaleString('fr-FR')}€ générés</span>
+            </div>
+          </div>`).join(''):`<div style="text-align:center;padding:20px 0;font-size:.85rem;color:var(--ink-4);">Aucun admin/contrôleur enregistré.</div>`}
+        ${unassigned>0?`<div style="text-align:center;padding:10px 0;font-size:.78rem;color:var(--ink-4);">⚠️ ${unassigned} projet(s) non assigné(s)</div>`:''}
+      </div>`,
+    ()=>{});
+  }
+
   // Consultation par projet des fichiers déposés par le client (déployé à tous)
   function openViewClientFilesModal(projectId){
     const p = db.projects.find(x=>x.id===projectId);
@@ -5903,6 +6267,64 @@ DOCUMENTS
     });
   }
 
+  // Corrige une facture/devis existant : modifie objet/lignes/montants en
+  // conservant l'ancienne version dans un historique (versionHistory), pour
+  // garder une trace en cas d'erreur corrigée après envoi au client.
+  function openCorrectInvoiceModal(invId){
+    const inv = (db.invoices||[]).find(x=>x.id===invId);
+    if(!inv) return;
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">✏️ Corriger — N° ${esc(inv.num)}</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">L'ancienne version sera conservée dans l'historique. Le nouveau PDF n'est pas régénéré automatiquement — pensez à le redonner au client si besoin.</p>
+      <div style="margin-bottom:12px;"><label class="label">Objet</label><input id="ci-title" class="glass-input" value="${esc(inv.title)}" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div><label class="label">Montant HT (€)</label><input id="ci-ht" class="glass-input" type="number" step="0.01" value="${inv.ht||0}" /></div>
+        <div><label class="label">TVA (€)</label><input id="ci-tva" class="glass-input" type="number" step="0.01" value="${inv.tva||0}" /></div>
+        <div><label class="label">Total TTC (€)</label><input id="ci-ttc" class="glass-input" type="number" step="0.01" value="${inv.ttc||0}" /></div>
+      </div>
+      <button id="ci-save" class="btn btn-primary" style="width:100%;justify-content:center;">Enregistrer la correction</button>`,
+    ()=>{
+      document.getElementById('ci-save').addEventListener('click',()=>{
+        const newTitle = document.getElementById('ci-title').value.trim()||inv.title;
+        const newHt  = parseFloat(document.getElementById('ci-ht').value)||0;
+        const newTva = parseFloat(document.getElementById('ci-tva').value)||0;
+        const newTtc = parseFloat(document.getElementById('ci-ttc').value)||0;
+        if(!Array.isArray(inv.versionHistory)) inv.versionHistory=[];
+        inv.versionHistory.push({
+          title: inv.title, ht: inv.ht, tva: inv.tva, ttc: inv.ttc,
+          correctedAt: new Date().toISOString(), correctedBy: me.username
+        });
+        inv.title = newTitle; inv.ht = newHt; inv.tva = newTva; inv.ttc = newTtc;
+        saveDB(); toast('Document corrigé — ancienne version archivée ✓','success'); closeModal(); refreshAdminTab();
+      });
+    });
+  }
+
+  function openInvoiceHistoryModal(invId){
+    const inv = (db.invoices||[]).find(x=>x.id===invId);
+    if(!inv) return;
+    const fmtAmt3 = n => (n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+    const history = [...(inv.versionHistory||[])].reverse();
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">📝 Historique — N° ${esc(inv.num)}</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:14px;">Versions précédentes avant correction. La version actuelle : <strong>${esc(inv.title)}</strong> — ${fmtAmt3(inv.ttc)}.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${history.map(h=>`
+          <div style="padding:10px 14px;border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(255,255,255,.02);">
+            <div style="font-size:.85rem;font-weight:600;">${esc(h.title)}</div>
+            <div style="font-size:.76rem;color:var(--ink-4);">HT ${fmtAmt3(h.ht)} · TVA ${fmtAmt3(h.tva)} · TTC ${fmtAmt3(h.ttc)}</div>
+            <div style="font-size:.7rem;color:var(--ink-4);margin-top:3px;">Remplacée le ${new Date(h.correctedAt).toLocaleString('fr-FR')} par ${esc(h.correctedBy||'?')}</div>
+          </div>`).join('')}
+      </div>`,
+    ()=>{});
+  }
+
   function openCompanyInfoModal(){
     const c = db.companyInfo||{};
     showModal(`
@@ -6049,8 +6471,18 @@ DOCUMENTS
           return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + decPart + ' €';
         };
 
-        const CORAL=[217,119,87], CORAL_DEEP=[162,75,48], INK=[26,19,14],
-              INK_3=[120,103,90], INK_4=[165,150,138], PAPER=[250,247,243], LINE=[228,217,206];
+        // Couleur du PDF : reprend la couleur du projet du client si définie,
+        // sinon le corail Flow par défaut. Variante "deep" assombrie de 25%
+        // pour les titres, afin de garder un bon contraste sur fond blanc.
+        function hexToRgb(hex){
+          const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'');
+          return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : null;
+        }
+        const clientProject = client ? db.projects.find(p=>p.clientId===client.id && p.color) : null;
+        const baseRgb = (clientProject && hexToRgb(clientProject.color)) || [217,119,87];
+        const CORAL = baseRgb;
+        const CORAL_DEEP = baseRgb.map(c=>Math.round(c*0.7));
+        const INK=[26,19,14], INK_3=[120,103,90], INK_4=[165,150,138], PAPER=[250,247,243], LINE=[228,217,206];
 
         // ── En-tête : logo Flow (serif, fidèle à l'identité du site) ──────
         pdf.setTextColor(...CORAL);
@@ -6187,7 +6619,7 @@ DOCUMENTS
 
         // ── Sauvegarde dans l'historique Flow ───────────────────
         if(!Array.isArray(db.invoices)) db.invoices=[];
-        db.invoices.unshift({ id:uid(), type:docType, num, title, clientId:cid||null, ht, tva, ttc, createdAt:new Date().toISOString(), createdBy:me.username, paymentStatus: isFacture?'pending':null });
+        db.invoices.unshift({ id:uid(), type:docType, num, title, clientId:cid||null, ht, tva, ttc, createdAt:new Date().toISOString(), createdBy:me.username, paymentStatus: isFacture?'pending':null, signedAt: null });
         saveDB();
 
         pdf.save((isFacture?'facture_':'devis_')+num+'_'+(client?.username||'client')+'.pdf');
