@@ -7,12 +7,12 @@
   <meta http-equiv="x-dns-prefetch-control" content="off" />
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://*.firebasedatabase.app;
+    script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com https://*.firebaseio.com https://*.firebasedatabase.app https://*.puter.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: blob: https:;
-    connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://*.googleapis.com https://api.groq.com https://discord.com https://*.discord.com https://www.gstatic.com https://cdnjs.cloudflare.com;
-    frame-src https://*.firebaseio.com https://*.firebasedatabase.app;
+    connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebaseio.com wss://*.firebasedatabase.app https://*.googleapis.com https://api.groq.com https://discord.com https://*.discord.com https://www.gstatic.com https://cdnjs.cloudflare.com https://*.puter.com wss://*.puter.com;
+    frame-src https://*.firebaseio.com https://*.firebasedatabase.app https://*.puter.com;
     base-uri 'self';
     form-action 'none';
     object-src 'none';
@@ -84,6 +84,10 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <!-- Puter.js : génération d'images IA gratuite côté client (modèle "user-pays" —
+       chaque utilisateur admin se connecte une fois avec un compte Puter gratuit,
+       aucune clé API à gérer, aucun coût pour l'app). Utilisé dans l'onglet Pub. -->
+  <script src="https://js.puter.com/v2/"></script>
     <style>
 /* ═══════════════════════════════════════════════
    FLOW v4 — Ultra Modern
@@ -7445,6 +7449,7 @@ DOCUMENTS
 
   function renderAdminPub(){
     const history = (db.pubPosts||[]).slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    const activeProjects = (db.projects||[]).filter(p=>!p.archived);
     return `<div class="fade-up">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:12px;">
         <h1 style="font-size:1.4rem;font-weight:700;">Pub</h1>
@@ -7453,6 +7458,17 @@ DOCUMENTS
 
       <div class="glass-card" style="padding:22px;margin-bottom:20px;">
         <h2 style="font-size:.95rem;font-weight:700;margin-bottom:16px;">✨ Générer un post</h2>
+
+        <div style="margin-bottom:14px;">
+          <label class="label">Projet associé (optionnel)</label>
+          <select id="pub-project" class="glass-input">
+            <option value="">Aucun projet — génération libre</option>
+            ${activeProjects.map(p=>{
+              const cl = p.clientId ? db.users.find(u=>u.id===p.clientId) : null;
+              return `<option value="${p.id}">${esc(p.name)}${cl?' — '+esc(cl.username):''}</option>`;
+            }).join('')}
+          </select>
+        </div>
 
         <div style="margin-bottom:14px;">
           <label class="label">Plateforme</label>
@@ -7473,13 +7489,18 @@ DOCUMENTS
           <textarea id="pub-brief" class="glass-input" rows="4" placeholder="Ex : Lancement d'une nouvelle gamme de bijoux artisanaux en argent, public jeune actif 25-35 ans, offre -15% ce week-end seulement..."></textarea>
         </div>
 
-        <div style="margin-bottom:18px;">
+        <div style="margin-bottom:14px;">
           <label class="label">Nombre de variantes</label>
           <select id="pub-count" class="glass-input" style="max-width:160px;">
             <option value="1">1 variante</option>
             <option value="3" selected>3 variantes</option>
             <option value="5">5 variantes</option>
           </select>
+        </div>
+
+        <div style="margin-bottom:18px;display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="pub-gen-image" style="width:16px;height:16px;cursor:pointer;">
+          <label for="pub-gen-image" style="font-size:.82rem;color:var(--ink-2);cursor:pointer;">🎨 Générer aussi une image IA pour chaque variante (gratuit — nécessite une connexion Puter, une seule fois)</label>
         </div>
 
         <button id="btn-pub-generate" class="btn btn-primary">✨ Générer</button>
@@ -7497,9 +7518,13 @@ DOCUMENTS
           ${history.slice(0,30).map(h=>{
             const ts=(d=>isNaN(d)?'':d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))(new Date(h.createdAt));
             const platLabel = PUB_PLATFORMS[h.platform]?.label || h.platform;
+            const proj = h.projectId ? db.projects.find(p=>p.id===h.projectId) : null;
             return `<div style="padding:12px 14px;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(255,255,255,.02);">
-              <div style="display:flex;align-items:center;justify-content:between;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
-                <span style="font-size:.72rem;font-weight:600;color:var(--coral);">${esc(platLabel)}</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span style="font-size:.72rem;font-weight:600;color:var(--coral);">${esc(platLabel)}</span>
+                  ${proj?`<span style="font-size:.68rem;color:var(--sky);">· ${esc(proj.name)}</span>`:''}
+                </div>
                 <span style="font-size:.68rem;color:var(--ink-4);">${ts}</span>
               </div>
               <div style="font-size:.78rem;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px;">${esc((h.brief||'').substring(0,90))}</div>
@@ -7511,13 +7536,16 @@ DOCUMENTS
     </div>`;
   }
 
-  function pubRenderVariants(variants, container){
+  function pubRenderVariants(variants, container, images){
+    images = images || [];
     container.innerHTML = variants.map((v,i)=>`
       <div class="glass-card" style="padding:16px;margin-bottom:10px;background:rgba(255,255,255,.03);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span style="font-size:.72rem;font-weight:600;color:var(--ink-4);">Variante ${i+1}</span>
           <button class="btn btn-ghost btn-sm btn-pub-copy" data-idx="${i}">📋 Copier</button>
         </div>
+        ${images[i]?`<img src="${images[i]}" alt="Image générée variante ${i+1}" style="width:100%;max-width:360px;border-radius:10px;margin-bottom:10px;display:block;">
+        <button class="btn btn-ghost btn-sm btn-pub-download-img" data-idx="${i}" style="margin-bottom:10px;">⬇ Télécharger l'image</button>`:''}
         <div class="pub-variant-text" data-idx="${i}" style="font-size:.85rem;color:var(--ink-2);line-height:1.6;white-space:pre-wrap;">${esc(v)}</div>
       </div>`).join('');
     container.querySelectorAll('.btn-pub-copy').forEach(btn=>{
@@ -7528,6 +7556,73 @@ DOCUMENTS
         }).catch(()=>{ toast('Impossible de copier — copiez manuellement.','error'); });
       });
     });
+    container.querySelectorAll('.btn-pub-download-img').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const idx = +btn.dataset.idx;
+        const dataUrl = images[idx];
+        if(!dataUrl) return;
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'pub_image_'+(idx+1)+'.png';
+        a.click();
+      });
+    });
+  }
+
+  // Convertit l'élément <img> renvoyé par puter.ai.txt2img() en dataURL base64
+  // via un canvas, afin de stocker l'image directement dans db (Firebase/
+  // localStorage) comme le reste de l'app, plutôt que de garder une référence
+  // à une URL distante potentiellement temporaire ou soumise à CORS au rechargement.
+  function pubImageToDataURL(imgEl){
+    return new Promise((resolve,reject)=>{
+      try{
+        if(imgEl.complete && imgEl.naturalWidth>0){ doConvert(); }
+        else {
+          imgEl.addEventListener('load', doConvert, {once:true});
+          imgEl.addEventListener('error', ()=>reject(new Error('Image non chargée')), {once:true});
+        }
+        function doConvert(){
+          const canvas = document.createElement('canvas');
+          canvas.width = imgEl.naturalWidth || 512;
+          canvas.height = imgEl.naturalHeight || 512;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(imgEl, 0, 0);
+          try{ resolve(canvas.toDataURL('image/png')); }
+          catch(e){ reject(e); } // ex: erreur "tainted canvas" si l'image distante n'autorise pas l'export
+        }
+      }catch(e){ reject(e); }
+    });
+  }
+
+  // Génère une image IA via Puter.js (gratuit, "user-pays" — l'utilisateur se
+  // connecte une fois avec un compte Puter gratuit). Retourne une dataURL ou
+  // null en cas d'échec (l'appelant doit traiter l'absence d'image comme non
+  // bloquante : le post texte reste valable sans illustration).
+  async function pubGenerateImage(prompt){
+    if(typeof puter === 'undefined' || !puter.ai || !puter.ai.txt2img){
+      throw new Error('Puter.js indisponible (vérifiez la connexion réseau).');
+    }
+    const imgEl = await puter.ai.txt2img(prompt, { model:'black-forest-labs/flux-schnell' });
+    return await pubImageToDataURL(imgEl);
+  }
+
+  // Purge les images (pas le texte) des entrées db.pubPosts au-delà des 20
+  // générations avec image les plus récentes. Les images base64 sont
+  // lourdes (200 Ko-1 Mo chacune) et Firebase Realtime Database n'est pas
+  // conçu pour stocker beaucoup de gros blobs — on borne donc strictement
+  // le volume d'images conservées, indépendamment de la limite globale de
+  // 200 entrées texte de l'historique.
+  const PUB_MAX_IMAGE_ENTRIES = 20;
+  function pubPruneImages(){
+    let withImageCount = 0;
+    (db.pubPosts||[]).forEach(entry=>{
+      const hasImg = Array.isArray(entry.images) && entry.images.some(im=>im);
+      if(!hasImg) return;
+      withImageCount++;
+      if(withImageCount > PUB_MAX_IMAGE_ENTRIES){
+        entry.images = (entry.images||[]).map(()=>null);
+      }
+    });
   }
 
   function wireAdminPub(){
@@ -7535,10 +7630,12 @@ DOCUMENTS
     if(genBtn) genBtn.addEventListener('click', async()=>{
       const groqKey = db.aiConfig?.groqKey;
       if(!groqKey){ toast('Configurez une clé Groq dans l\'onglet Assistant IA.','error'); return; }
+      const projectId = document.getElementById('pub-project').value || null;
       const platform = document.getElementById('pub-platform').value;
       const tone = document.getElementById('pub-tone').value;
       const brief = document.getElementById('pub-brief').value.trim();
       const count = +document.getElementById('pub-count').value || 3;
+      const wantImages = document.getElementById('pub-gen-image').checked;
       if(!brief){ toast('Décrivez le produit/service ou l\'offre dans le brief.','error'); return; }
 
       const platInfo = PUB_PLATFORMS[platform];
@@ -7547,6 +7644,7 @@ DOCUMENTS
       genBtn.disabled = true; genBtn.textContent = 'Génération…';
       resultDiv.innerHTML = `<div style="text-align:center;padding:20px;color:var(--ink-4);font-size:.82rem;">Génération en cours…</div>`;
 
+      let variants = [];
       try{
         const prompt = `Tu es un copywriter spécialisé en publicité sur les réseaux sociaux. Génère ${count} variante(s) de post pour ${platInfo.label}, en français.
 
@@ -7566,24 +7664,62 @@ Règles :
         let parsed;
         try{ parsed = JSON.parse(raw); }
         catch(_){ throw new Error('Format de réponse IA invalide.'); }
-        const variants = Array.isArray(parsed.variants) ? parsed.variants.filter(v=>typeof v==='string'&&v.trim()) : [];
+        variants = Array.isArray(parsed.variants) ? parsed.variants.filter(v=>typeof v==='string'&&v.trim()) : [];
         if(!variants.length) throw new Error('Aucune variante générée.');
-
-        pubRenderVariants(variants, resultDiv);
-
-        const entry = {
-          id: 'pub_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
-          platform, tone, brief, variants,
-          createdAt: new Date().toISOString(),
-          createdBy: me?.id || null
-        };
-        db.pubPosts.unshift(entry);
-        db.pubPosts = db.pubPosts.slice(0,200); // limite l'historique pour ne pas alourdir la base
-        saveDB();
       }catch(e){
-        resultDiv.innerHTML = `<div style="padding:14px;border:1px solid rgba(240,138,138,.25);background:rgba(240,138,138,.06);border-radius:10px;font-size:.82rem;color:#f08a8a;">Erreur lors de la génération : ${esc(e.message||'inconnue')}</div>`;
+        resultDiv.innerHTML = `<div style="padding:14px;border:1px solid rgba(240,138,138,.25);background:rgba(240,138,138,.06);border-radius:10px;font-size:.82rem;color:#f08a8a;">Erreur lors de la génération du texte : ${esc(e.message||'inconnue')}</div>`;
+        genBtn.disabled = false; genBtn.textContent = '✨ Générer';
+        return;
       }
+
+      // Le texte est prêt : on l'affiche immédiatement (sans image pour
+      // l'instant), puis on génère les images en arrière-plan si demandé,
+      // sans faire attendre l'utilisateur devant un écran vide.
+      const images = new Array(variants.length).fill(null);
+      pubRenderVariants(variants, resultDiv, images);
+
+      const entry = {
+        id: 'pub_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+        platform, tone, brief, variants, images, projectId,
+        createdAt: new Date().toISOString(),
+        createdBy: me?.id || null
+      };
+      db.pubPosts.unshift(entry);
+      db.pubPosts = db.pubPosts.slice(0,200); // limite l'historique pour ne pas alourdir la base
+      pubPruneImages();
+      saveDB();
       genBtn.disabled = false; genBtn.textContent = '✨ Générer';
+
+      if(wantImages){
+        // Conteneur de statut séparé de resultDiv, qui lui sera réécrit en
+        // entier à chaque appel de pubRenderVariants (re-rendu progressif
+        // des images) — s'il était inséré dans resultDiv, il serait effacé
+        // à chaque itération.
+        const statusDiv = document.createElement('div');
+        statusDiv.style.marginBottom = '12px';
+        statusDiv.style.fontSize = '.78rem';
+        statusDiv.style.color = 'var(--ink-4)';
+        resultDiv.parentNode.insertBefore(statusDiv, resultDiv);
+        statusDiv.textContent = `🎨 Génération des images (0/${variants.length})… La première utilisation peut demander une connexion Puter (gratuite).`;
+
+        for(let i=0;i<variants.length;i++){
+          try{
+            const imgPrompt = `Photographie publicitaire professionnelle, style ${platInfo.label}, illustrant : ${brief}. Pas de texte ni de logo dans l'image, composition épurée, éclairage soigné.`;
+            const dataUrl = await pubGenerateImage(imgPrompt);
+            images[i] = dataUrl;
+          }catch(e){
+            console.warn('Génération image échouée pour variante '+i, e);
+          }
+          statusDiv.textContent = `🎨 Génération des images (${i+1}/${variants.length})…`;
+          // Re-rendu progressif : l'image apparaît dès qu'elle est prête,
+          // sans attendre que toutes les variantes soient traitées.
+          pubRenderVariants(variants, resultDiv, images);
+        }
+        statusDiv.remove();
+        entry.images = images;
+        pubPruneImages();
+        saveDB();
+      }
     });
 
     document.querySelectorAll('.btn-pub-history-view').forEach(btn=>{
@@ -7592,14 +7728,16 @@ Règles :
         if(!entry) return;
         const platLabel = PUB_PLATFORMS[entry.platform]?.label || entry.platform;
         const ts = new Date(entry.createdAt).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        const proj = entry.projectId ? db.projects.find(p=>p.id===entry.projectId) : null;
         showModal(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <h2 style="font-size:1rem;font-weight:700;">${esc(platLabel)} · ${ts}</h2>
           <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
         </div>
+        ${proj?`<p style="font-size:.72rem;color:var(--sky);margin-bottom:6px;">Projet : ${esc(proj.name)}</p>`:''}
         <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:14px;">${esc(entry.brief)}</p>
         <div id="pub-modal-variants"></div>`);
         const container = document.getElementById('pub-modal-variants');
-        if(container) pubRenderVariants(entry.variants||[], container);
+        if(container) pubRenderVariants(entry.variants||[], container, entry.images||[]);
       });
     });
   }
