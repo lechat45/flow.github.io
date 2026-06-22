@@ -834,9 +834,7 @@ select.glass-input option { background: #111; color: var(--ink); }
       if(!Array.isArray(p.tags)) p.tags=[];
       if(!Array.isArray(p.faq)) p.faq=[];
       if(!Array.isArray(p.siteHistory)) p.siteHistory=[];
-      if(!Array.isArray(p.versionGallery)) p.versionGallery=[];   // BÊTA teste1 — galerie de versions (images)
-      if(!Array.isArray(p.clientFiles)) p.clientFiles=[];          // BÊTA teste1 — fichiers partagés par le client
-      if(!Array.isArray(p.stepRatings)) p.stepRatings=[];          // BÊTA teste1 — notes de satisfaction par étape
+      if(!Array.isArray(p.clientFiles)) p.clientFiles=[];          // fichiers partagés par le client
     });
     db.documents.forEach(d=>{
       if(!Array.isArray(d.fields)) d.fields=[];
@@ -1634,12 +1632,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     base.splice(1,0,{ id:'discussion', icon:iconChat(), label:'Discussion' });
     // "À faire" — déployé à tous les clients.
     base.splice(2,0,{ id:'client-checklist', icon:iconRequests(), label:'À faire' });
-    // Fonctionnalités bêta — testées uniquement sur le compte teste1 avant
-    // un éventuel déploiement à tous les clients.
-    if(me && me.id==='u_teste1'){
-      base.splice(3,0,{ id:'client-gallery', icon:iconEye(),    label:'Évolution',    beta:true });
-      base.splice(4,0,{ id:'client-files',   icon:iconUpload(), label:'Mes fichiers', beta:true });
-    }
+    // "Mes fichiers" — déployé à tous les clients.
+    base.splice(3,0,{ id:'client-files', icon:iconUpload(), label:'Mes fichiers' });
     return base;
   }
   function markAIRequestsSeen(){
@@ -2609,6 +2603,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   function renderAdminDocuments(){
     const clients = db.users.filter(u=>u.role==='client'||u.role==='controller');
     const isAdmin = me.role==='admin';
+    const totalClientFiles = db.projects.reduce((s,p)=>s+((p.clientFiles||[]).length),0);
     return `<div class="fade-up">
       <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:6px;">Suivi & Documents</h1>
       <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:16px;">
@@ -2629,6 +2624,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
           <option value="normal">🔵 Normal</option>
           <option value="low">⚪ Basse</option>
         </select>
+        <button id="btn-all-client-files" class="btn btn-ghost" style="margin-left:auto;">📤 Tous les fichiers clients${totalClientFiles>0?` (${totalClientFiles})`:''}</button>
       </div>
       ${clients.length===0
         ? `<div class="glass-card" style="padding:40px;text-align:center;color:rgba(244,238,229,.4);">Aucun client enregistré.</div>`
@@ -2709,18 +2705,11 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             </div>`:`<div style="margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ À faire côté client</button></div>`;
         })()}
         ${(()=>{
-          if(!(canEdit&&project&&u&&u.id==='u_teste1')) return '';
-          const gallery = project.versionGallery||[];
-          const cfiles  = project.clientFiles||[];
-          const ratings = project.stepRatings||[];
-          const avgStars = ratings.length ? (ratings.reduce((s,r)=>s+(r.stars||0),0)/ratings.length).toFixed(1) : null;
-          return `<div style="margin:10px 0 0;padding:10px 14px;background:rgba(155,184,216,.04);border-radius:10px;border:1px solid rgba(155,184,216,.15);">
-            <div style="font-size:.7rem;font-weight:700;color:var(--sky);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">🧪 Fonctionnalités test</div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;">
-              <button class="btn btn-ghost btn-sm btn-manage-gallery" data-pid="${project.id}">📸 Galerie (${gallery.length})</button>
-              <button class="btn btn-ghost btn-sm btn-view-client-files" data-pid="${project.id}">📤 Fichiers client (${cfiles.length})</button>
-              ${avgStars?`<span style="display:flex;align-items:center;gap:4px;font-size:.78rem;color:var(--ink-3);padding:0 4px;">⭐ ${avgStars}/5 (${ratings.length} avis)</span>`:''}
-            </div>
+          if(!project) return '';
+          const cfiles = project.clientFiles||[];
+          if(!cfiles.length) return '';
+          return `<div style="margin-top:8px;">
+            <button class="btn btn-ghost btn-sm btn-view-client-files" data-pid="${project.id}">📤 Fichiers client (${cfiles.length})</button>
           </div>`;
         })()}
         <div class="divider"></div>
@@ -2777,6 +2766,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   }
 
   function wireAdminDocuments(){
+    document.getElementById('btn-all-client-files')?.addEventListener('click',openAllClientFilesModal);
     // Kebab menu toggle — portail body pour échapper à tous les containing blocks
     document.querySelectorAll('.kebab-btn').forEach(btn=>{
       btn.addEventListener('click',(e)=>{
@@ -2851,9 +2841,6 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     document.querySelectorAll('.btn-manage-client-tasks').forEach(b=>{
       b.addEventListener('click',()=>openManageClientTasksModal(b.dataset.pid));
-    });
-    document.querySelectorAll('.btn-manage-gallery').forEach(b=>{
-      b.addEventListener('click',()=>openManageGalleryModal(b.dataset.pid));
     });
     document.querySelectorAll('.btn-view-client-files').forEach(b=>{
       b.addEventListener('click',()=>openViewClientFilesModal(b.dataset.pid));
@@ -3313,8 +3300,7 @@ DOCUMENTS
     if(activeTab==='documents')         return renderClientDocuments();
     if(activeTab==='discussion')        return renderClientDiscussion();
     if(activeTab==='client-checklist')  return renderClientChecklist();
-    if(activeTab==='client-gallery')    return me.id==='u_teste1' ? renderClientGallery() : renderClientHome();
-    if(activeTab==='client-files')      return me.id==='u_teste1' ? renderClientFiles()   : renderClientHome();
+    if(activeTab==='client-files')      return renderClientFiles();
     if(activeTab==='profile')           return renderClientProfile();
     return '';
   }
@@ -3351,8 +3337,7 @@ DOCUMENTS
     if(activeTab==='documents')    wireClientDocuments();
     if(activeTab==='discussion'){ wireClientDiscussionQA(); const m=document.getElementById('qa-messages'); if(m) m.scrollTop=m.scrollHeight; }
     if(activeTab==='client-checklist') wireClientChecklist();
-    if(activeTab==='client-gallery'&&me.id==='u_teste1') wireClientGallery();
-    if(activeTab==='client-files'&&me.id==='u_teste1')   wireClientFiles();
+    if(activeTab==='client-files')      wireClientFiles();
     if(activeTab==='profile')      wireClientProfile();
     renderMobileTabbar('client');
   }
@@ -3797,106 +3782,7 @@ DOCUMENTS
     });
   }
 
-  // ─── Client: Évolution du projet (BÊTA — teste1) ──────────────────
-  // Regroupe la galerie de versions (images ajoutées par l'équipe) et la
-  // notation de satisfaction par étape franchie de la timeline.
-  function renderClientGallery(){
-    const project = getUserProject(me.id);
-    if(!project){
-      return `<div class="fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;padding:48px 24px;text-align:center;">
-        <div style="font-size:2.5rem;margin-bottom:16px;opacity:.6;">🖼️</div>
-        <div style="font-size:.95rem;font-weight:600;color:var(--ink-2);margin-bottom:8px;">Aucun projet associé</div>
-        <div style="font-size:.82rem;color:var(--ink-4);">L'évolution de votre projet apparaîtra ici dès qu'il sera créé.</div>
-      </div>`;
-    }
-    const gallery = [...(project.versionGallery||[])].sort((a,b)=>new Date(b.addedAt)-new Date(a.addedAt));
-    const ratings = project.stepRatings||[];
-    const doneSteps = (project.timeline||[]).filter(s=>s.status==='done');
-
-    return `<div class="fade-up">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-        <h1 style="font-size:1.4rem;font-weight:700;">Évolution</h1>
-        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;text-transform:uppercase;">TEST</span>
-      </div>
-      <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:24px;">Les versions visuelles de votre projet, et votre avis sur chaque étape franchie.</p>
-
-      <h2 style="font-size:.85rem;font-weight:700;color:var(--ink-3);margin-bottom:12px;">📸 Galerie de versions</h2>
-      ${gallery.length===0?`
-        <div class="glass-card" style="padding:36px 24px;text-align:center;margin-bottom:28px;">
-          <div style="font-size:1.6rem;margin-bottom:10px;opacity:.6;">🖼️</div>
-          <div style="font-size:.85rem;color:var(--ink-4);">Aucune image pour le moment. Votre équipe ajoutera ici les aperçus visuels au fil de l'avancement.</div>
-        </div>` : `
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:28px;">
-          ${gallery.map((g,i)=>`
-            <div class="glass-card cg-item" data-i="${i}" style="padding:0;overflow:hidden;cursor:pointer;">
-              <img src="${g.data}" style="width:100%;height:120px;object-fit:cover;display:block;" />
-              <div style="padding:8px 10px;">
-                <div style="font-size:.78rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(g.label||'Version')}</div>
-                <div style="font-size:.68rem;color:var(--ink-4);">${new Date(g.addedAt).toLocaleDateString('fr-FR')}</div>
-              </div>
-            </div>`).join('')}
-        </div>`}
-
-      <h2 style="font-size:.85rem;font-weight:700;color:var(--ink-3);margin-bottom:12px;">⭐ Votre avis sur chaque étape</h2>
-      ${doneSteps.length===0?`
-        <div class="glass-card" style="padding:36px 24px;text-align:center;">
-          <div style="font-size:.85rem;color:var(--ink-4);">Aucune étape terminée pour le moment.</div>
-        </div>`:`
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          ${doneSteps.map(s=>{
-            const r = ratings.find(x=>x.stepId===s.id);
-            return `<div class="glass-card" style="padding:14px 18px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${r?'8px':'0'};">
-                <span style="font-size:.85rem;font-weight:600;">${esc(s.label)}</span>
-                <div class="cg-stars" data-step="${s.id}">
-                  ${[1,2,3,4,5].map(n=>`<span class="cg-star" data-step="${s.id}" data-val="${n}" style="cursor:pointer;font-size:1.1rem;color:${r&&r.stars>=n?'var(--coral)':'rgba(255,255,255,.18)'};">★</span>`).join('')}
-                </div>
-              </div>
-              ${r&&r.comment?`<div style="font-size:.78rem;color:var(--ink-4);">${esc(r.comment)}</div>`:''}
-            </div>`;
-          }).join('')}
-        </div>`}
-    </div>`;
-  }
-
-  function wireClientGallery(){
-    const project = getUserProject(me.id);
-    if(!project) return;
-
-    // Aperçu plein écran d'une image de la galerie
-    document.querySelectorAll('.cg-item').forEach(el=>{
-      el.addEventListener('click',()=>{
-        const g = [...(project.versionGallery||[])].sort((a,b)=>new Date(b.addedAt)-new Date(a.addedAt))[Number(el.dataset.i)];
-        if(!g) return;
-        showModal(`
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-            <h2 style="font-size:1rem;font-weight:700;">${esc(g.label||'Version')}</h2>
-            <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
-          </div>
-          <img src="${g.data}" style="width:100%;border-radius:10px;" />
-          ${g.note?`<p style="font-size:.82rem;color:var(--ink-3);margin-top:12px;">${esc(g.note)}</p>`:''}
-          <div style="font-size:.72rem;color:var(--ink-4);margin-top:8px;">${new Date(g.addedAt).toLocaleDateString('fr-FR')}</div>`,
-        ()=>{});
-      });
-    });
-
-    // Notation par étoiles
-    document.querySelectorAll('.cg-star').forEach(star=>{
-      star.addEventListener('click',()=>{
-        const stepId = star.dataset.step;
-        const val = Number(star.dataset.val);
-        if(!Array.isArray(project.stepRatings)) project.stepRatings=[];
-        let r = project.stepRatings.find(x=>x.stepId===stepId);
-        if(!r){ r = {stepId, stars:0, comment:''}; project.stepRatings.push(r); }
-        r.stars = val;
-        r.ratedAt = new Date().toISOString();
-        saveDB(); refreshClientTab(true);
-        toast('Merci pour votre avis ! ⭐','success');
-      });
-    });
-  }
-
-  // ─── Client: Mes fichiers (BÊTA — teste1) ──────────────────────────
+  // ─── Client: Mes fichiers ───────────────────────────────────────────
   // Permet au client de déposer ses propres fichiers (logo, textes, accès…)
   // sans passer par le système de formulaires/documents existant.
   function renderClientFiles(){
@@ -3913,7 +3799,6 @@ DOCUMENTS
     return `<div class="fade-up">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
         <h1 style="font-size:1.4rem;font-weight:700;">Mes fichiers</h1>
-        <span style="background:rgba(155,184,216,.15);color:var(--sky);border:1px solid rgba(155,184,216,.25);border-radius:999px;font-size:.6rem;font-weight:700;letter-spacing:.08em;padding:2px 7px;text-transform:uppercase;">TEST</span>
       </div>
       <p style="color:rgba(244,238,229,.45);font-size:.875rem;margin-bottom:20px;">Déposez ici les fichiers utiles à votre projet (logo, textes, visuels…). Taille maximale : 6 Mo par fichier.</p>
 
@@ -5758,71 +5643,7 @@ DOCUMENTS
     });
   }
 
-  // BÊTA teste1 — gestion de la galerie de versions (images)
-  function openManageGalleryModal(projectId){
-    const p = db.projects.find(x=>x.id===projectId);
-    if(!p) return;
-    if(!Array.isArray(p.versionGallery)) p.versionGallery=[];
-    const MAX_SIZE = 4 * 1024 * 1024;
-    const renderList=()=>{
-      const c=document.getElementById('gallery-list');
-      if(!c) return;
-      const sorted = [...p.versionGallery].sort((a,b)=>new Date(b.addedAt)-new Date(a.addedAt));
-      c.innerHTML = sorted.map(g=>`
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);">
-          <img src="${g.data}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;" />
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(g.label||'Version')}</div>
-            <div style="font-size:.7rem;color:var(--ink-4);">${new Date(g.addedAt).toLocaleDateString('fr-FR')}</div>
-          </div>
-          <button class="btn btn-danger btn-sm gal-dl" data-id="${g.id}">🗑</button>
-        </div>`).join('') || `<div style="padding:16px 0;text-align:center;font-size:.82rem;color:var(--ink-4);">Aucune image pour le moment.</div>`;
-      c.querySelectorAll('.gal-dl').forEach(b=>b.addEventListener('click',()=>{ p.versionGallery=p.versionGallery.filter(x=>x.id!==b.dataset.id); saveDB(); renderList(); refreshAdminTab(); }));
-    };
-    showModal(`
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <h2 style="font-size:1.05rem;font-weight:700;">📸 Galerie de versions — ${esc(p.name)}</h2>
-        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
-      </div>
-      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:16px;">Ajoutez des aperçus visuels (maquettes, captures) que le client retrouvera dans son onglet "Évolution".</p>
-      <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <input id="gal-label" class="glass-input" placeholder="Légende (ex: Maquette V2)" style="flex:1;" />
-      </div>
-      <div id="gal-drop" class="glass-card" style="padding:20px;text-align:center;border:2px dashed rgba(255,255,255,.15);margin-bottom:14px;cursor:pointer;">
-        <div style="font-size:.82rem;color:var(--ink-3);">Cliquez ou déposez une image ici (max 4 Mo)</div>
-        <input id="gal-input" type="file" accept="image/*" style="display:none;" />
-      </div>
-      <div id="gal-msg"></div>
-      <div id="gallery-list" style="margin-top:10px;"></div>`,
-    ()=>{
-      renderList();
-      const dropZone = document.getElementById('gal-drop');
-      const input    = document.getElementById('gal-input');
-      const msg      = document.getElementById('gal-msg');
-      function handleFile(file){
-        if(!file) return;
-        if(!file.type.startsWith('image/')){ showMsg(msg,'Seules les images sont acceptées.','error'); return; }
-        if(file.size > MAX_SIZE){ showMsg(msg,`Image trop volumineuse (${(file.size/1024/1024).toFixed(1)} Mo). Limite : 4 Mo.`,'error'); return; }
-        const reader = new FileReader();
-        reader.onload = e=>{
-          p.versionGallery.push({ id:uid(), label:document.getElementById('gal-label')?.value.trim()||'Version', data:e.target.result, addedAt:new Date().toISOString(), addedBy:me.username });
-          saveDB(); document.getElementById('gal-label').value=''; renderList(); refreshAdminTab();
-          toast('Image ajoutée à la galerie ✓','success');
-        };
-        reader.onerror = ()=>showMsg(msg,'Erreur de lecture du fichier.','error');
-        reader.readAsDataURL(file);
-      }
-      if(dropZone) dropZone.addEventListener('click',()=>input.click());
-      if(input) input.addEventListener('change',()=>handleFile(input.files[0]));
-      if(dropZone){
-        dropZone.addEventListener('dragover',e=>{ e.preventDefault(); dropZone.style.borderColor='var(--coral)'; });
-        dropZone.addEventListener('dragleave',()=>{ dropZone.style.borderColor=''; });
-        dropZone.addEventListener('drop',e=>{ e.preventDefault(); dropZone.style.borderColor=''; handleFile(e.dataTransfer.files[0]); });
-      }
-    });
-  }
-
-  // BÊTA teste1 — consultation des fichiers déposés par le client
+  // Consultation par projet des fichiers déposés par le client (déployé à tous)
   function openViewClientFilesModal(projectId){
     const p = db.projects.find(x=>x.id===projectId);
     if(!p) return;
@@ -5845,6 +5666,49 @@ DOCUMENTS
           </div>`).join('') || `<div style="padding:20px 0;text-align:center;font-size:.82rem;color:var(--ink-4);">Aucun fichier déposé pour le moment.</div>`}
       </div>`,
     ()=>{});
+  }
+
+  // Vue centralisée admin/contrôleur : tous les fichiers déposés par tous
+  // les clients, tous projets confondus.
+  function openAllClientFilesModal(){
+    const entries = [];
+    db.projects.forEach(p=>{
+      const cl = db.users.find(u=>u.id===p.clientId);
+      (p.clientFiles||[]).forEach(f=>{
+        entries.push({ ...f, projectId:p.id, projectName:p.name, clientName: cl?cl.username:'Client inconnu' });
+      });
+    });
+    entries.sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
+
+    const renderRows = (list)=> list.map(f=>`
+      <div class="glass-card acf-row" data-name="${esc((f.clientName+' '+f.projectName+' '+f.name).toLowerCase())}" style="padding:13px 16px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:1.2rem;flex-shrink:0;">${f.type&&f.type.startsWith('image/')?'🖼️':'📄'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.name)}</div>
+          <div style="font-size:.72rem;color:var(--ink-4);">${esc(f.clientName)} · ${esc(f.projectName)} · ${(f.size/1024).toFixed(0)} Ko · ${new Date(f.uploadedAt).toLocaleDateString('fr-FR')}</div>
+        </div>
+        <a href="${f.data}" download="${esc(f.name)}" class="btn btn-ghost btn-sm">⬇</a>
+      </div>`).join('');
+
+    showModal(`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <h2 style="font-size:1.05rem;font-weight:700;">📤 Tous les fichiers clients (${entries.length})</h2>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--ink-4);margin-bottom:14px;">Fichiers déposés par tous les clients depuis leur onglet "Mes fichiers", tous projets confondus.</p>
+      <input id="acf-search" class="glass-input" placeholder="🔍 Chercher par client, projet ou nom de fichier…" style="margin-bottom:14px;" />
+      <div id="acf-list" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;">
+        ${entries.length? renderRows(entries) : `<div style="padding:30px 0;text-align:center;font-size:.85rem;color:var(--ink-4);">Aucun fichier déposé par un client pour le moment.</div>`}
+      </div>`,
+    ()=>{
+      const search = document.getElementById('acf-search');
+      if(search) search.addEventListener('input',()=>{
+        const t = search.value.trim().toLowerCase();
+        document.querySelectorAll('.acf-row').forEach(row=>{
+          row.style.display = row.dataset.name.includes(t) ? 'flex' : 'none';
+        });
+      });
+    });
   }
 
   function openCompanyInfoModal(){
