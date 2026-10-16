@@ -838,7 +838,13 @@ h3 { font-size: .9375rem !important; }
 .nav-badge.alt { background: var(--sky); color: #fff; }
 .nav-tag { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px; background: rgba(var(--fg-rgb),.07); color: var(--ink-3); }
 .nav-spacer { flex: 1; min-height: 24px; }
-.nav-logout { border-top: 1px solid var(--border); border-radius: 0 0 6px 6px; margin-top: 8px; }
+.nav-logout, .nav-logout.nav-item {
+  margin-top: 8px; color: #fff; font-weight: 600; justify-content: flex-start;
+  background: #d9480f; border: 1px solid rgba(0,0,0,.08); box-shadow: inset 0 -1px 0 rgba(0,0,0,.15);
+}
+.nav-logout:hover, .nav-logout.nav-item:hover { background: #b93c0b; color: #fff; }
+.nav-logout .nav-icon { color: #fff; }
+.mob-logout-btn, .mob-logout-btn:active { color: #e8590c; }
 
 /* ── Zone de contenu (couche Mica) ── */
 #main {
@@ -1005,6 +1011,126 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .faq-item[open] summary svg { transform: rotate(180deg); }
 .faq-item .a { padding: 0 0 12px; color: var(--ink-3); line-height: 1.5; }
 
+/* ── Suivi et documents ── */
+.doc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.doc-tile {
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; text-align: left;
+  padding: 14px 16px; border-radius: 12px; background: var(--surface-1); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  color: var(--ink); font: inherit; cursor: pointer; transition: border-color .12s, box-shadow .12s;
+}
+.doc-tile:hover { border-color: var(--border-hi); box-shadow: var(--shadow-md); }
+.doc-tile.active { border-color: var(--coral); box-shadow: 0 0 0 1px var(--coral); }
+.doc-tile-ic { grid-row: 1 / 3; width: 36px; height: 36px; border-radius: 10px; background: rgba(var(--fg-rgb),.05); display: flex; align-items: center; justify-content: center; }
+.doc-tile-v { font-family: var(--font-display); font-size: 22px; font-weight: 600; line-height: 1.1; }
+.doc-tile-l { font-size: 12px; color: var(--ink-3); }
+.doc-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+.doc-toolbar .tb-search { flex: 1 1 260px; }
+.doc-nodoc.active { text-decoration: underline; font-weight: 600; }
+.trk-card {
+  background: var(--surface-1); border: 1px solid var(--border); border-left: 4px solid var(--proj, var(--coral));
+  border-radius: 12px; box-shadow: var(--shadow-sm); padding: 20px 22px; margin-bottom: 16px;
+}
+.trk-empty { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-left-color: var(--border-hi); }
+.trk-head { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.trk-head > .avatar { width: 40px; height: 40px; font-size: .85rem; }
+.trk-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px; }
+.trk-title h2 { margin: 0; font-size: 17px !important; }
+.trk-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 12px; font-weight: 600; background: rgba(var(--fg-rgb),.06); color: var(--ink-3); white-space: nowrap; }
+.trk-progress { margin: 18px 0 16px; }
+.trk-progress-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; font-size: 13px; }
+.stepper { list-style: none; display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.step { flex: 1 1 0; min-width: 84px; display: flex; flex-direction: column; gap: 6px; }
+.step-bar { height: 6px; border-radius: 3px; background: rgba(var(--fg-rgb),.09); }
+.step-done .step-bar { background: var(--sage); }
+.step-cur .step-bar { background: var(--coral); }
+.step-l { font-size: 12px; line-height: 1.3; color: var(--ink-3); display: flex; align-items: center; gap: 4px; }
+.step-done .step-l { color: var(--ink-2); }
+.step-done .step-l svg { color: var(--sage); }
+.step-cur .step-l { color: var(--coral-soft); font-weight: 600; }
+.step-d { font-size: 11px; color: var(--ink-4); }
+.trk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.trk-panel { background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+:root[data-theme="dark"] .trk-panel { background: rgba(255,255,255,.03); }
+.trk-panel-h { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 8px; }
+.trk-panel-h .fl-meta { margin-left: auto; }
+.doc-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.trk-panel-h + .doc-row { border-top: 0; }
+.doc-row-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.trk-line { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); }
+.trk-panel-h + .trk-line { border-top: 0; }
+.trk-line-ic { width: 30px; height: 30px; flex: none; border-radius: 8px; background: var(--surface-1); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--ink-2); }
+.trk-line-t { font-weight: 600; font-size: 13.5px; }
+.trk-line-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.trk-task { font-size: 12.5px; color: var(--ink-3); padding-left: 12px; position: relative; margin-top: 3px; }
+.trk-task::before { content: ''; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: rgba(var(--fg-rgb),.25); }
+.mini-bar { height: 4px; border-radius: 2px; background: rgba(var(--fg-rgb),.08); overflow: hidden; margin: 6px 0 2px; max-width: 220px; }
+.mini-bar > i { display: block; height: 100%; border-radius: 2px; }
+
+/* ── Accueil client (organisation en 2 colonnes) ── */
+.client-layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+.client-side { display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 1100px) { .client-layout { grid-template-columns: minmax(0, 1fr); } }
+.client-hero .hero-step { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 16px; background: rgba(255,255,255,.1); font-size: 13px; }
+.client-hero .hero-tiles { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; flex: 1 1 320px; max-width: 520px; }
+.client-hero .btn-primary { box-shadow: none; }
+
+/* ── Discussion avec l'assistant ── */
+.qa-window {
+  display: flex; flex-direction: column; height: calc(100vh - 52px - 32px - 40px); min-height: 460px;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.qa-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.qa-head-ic { width: 40px; height: 40px; border-radius: 12px; background: var(--coral); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+.qa-head-t { font-family: var(--font-display); font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.qa-online { width: 8px; height: 8px; border-radius: 50%; background: #2f9e5b; box-shadow: 0 0 0 3px rgba(47,158,91,.18); }
+.qa-banner { margin: 12px 18px 0; padding: 10px 12px; border-radius: 10px; background: rgba(43,108,176,.07); border: 1px solid rgba(43,108,176,.18); }
+.qa-banner-btn { width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: 0; color: var(--sky); font: inherit; font-weight: 600; cursor: pointer; text-align: left; padding: 0; }
+.qa-msgs { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px 18px; background: var(--surface-3); }
+:root[data-theme="dark"] .qa-msgs { background: rgba(0,0,0,.12); }
+.qa-day { display: flex; align-items: center; gap: 12px; color: var(--ink-4); font-size: 12px; }
+.qa-day::before, .qa-day::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.qa-row { display: flex; gap: 10px; max-width: 100%; }
+.qa-row-user { flex-direction: column; align-items: flex-end; gap: 3px; }
+.qa-row-bot { align-items: flex-start; }
+.qa-bubble { padding: 11px 15px; font-size: 14px; line-height: 1.6; word-break: break-word; }
+.qa-user { max-width: min(78%, 620px); background: var(--coral); color: #fff; border-radius: 16px 16px 4px 16px; }
+.qa-bot { background: var(--surface-1); color: var(--ink); border: 1px solid var(--border); border-radius: 4px 16px 16px 16px; box-shadow: var(--shadow-sm); }
+.qa-bot-col { flex: 1; min-width: 0; max-width: min(86%, 720px); }
+.qa-label { font-size: 12px; color: var(--ink-3); margin-bottom: 4px; font-weight: 600; }
+.qa-avatar { width: 30px; height: 30px; flex: none; border-radius: 10px; background: var(--coral-tint); color: var(--coral); display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+.qa-time { font-size: 11px; color: var(--ink-4); padding-right: 4px; }
+.qa-typing { display: inline-flex; gap: 4px; align-items: center; padding: 4px 0; }
+.qa-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-4); animation: qa-dot 1.2s infinite; }
+.qa-typing i:nth-child(2) { animation-delay: .2s; }
+.qa-typing i:nth-child(3) { animation-delay: .4s; }
+.qa-empty { margin: auto; max-width: 560px; text-align: center; padding: 24px 8px; display: flex; flex-direction: column; align-items: center; }
+.qa-empty-ic { width: 60px; height: 60px; border-radius: 18px; background: var(--coral-tint); color: var(--coral); display: flex; align-items: center; justify-content: center; }
+.qa-empty h2 { margin: 16px 0 6px; font-size: 20px !important; }
+.qa-empty p { color: var(--ink-3); margin-bottom: 20px; }
+.qa-sugs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; width: 100%; transition: opacity .2s; }
+.qa-suggestion, .qa-suggestion:hover {
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 10px; text-align: left; white-space: normal;
+  background: var(--surface-1); border: 1px solid var(--border); color: var(--ink); font-size: 13.5px; line-height: 1.4; cursor: pointer;
+}
+.qa-suggestion:hover { border-color: var(--coral); box-shadow: var(--shadow-md); }
+.qa-suggestion svg { color: var(--coral); margin-top: 1px; }
+.qa-composer { padding: 12px 18px 14px; border-top: 1px solid var(--border); background: var(--surface-1); }
+.qa-inputbox { display: flex; align-items: flex-end; gap: 6px; padding: 6px 6px 6px 14px; border-radius: 12px; background: var(--surface-1); border: 1px solid var(--border); border-bottom: 2px solid rgba(var(--fg-rgb),.35); position: relative; }
+.qa-inputbox:focus-within { border-bottom-color: var(--coral); }
+#qa-input { flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 14px; line-height: 1.5; padding: 7px 0; min-height: 36px; max-height: 120px; overflow-y: auto; }
+.qa-count { position: absolute; top: -18px; right: 6px; font-size: 11px; color: var(--ink-4); pointer-events: none; }
+.qa-icon-btn { width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.qa-icon-btn:hover { background: rgba(var(--fg-rgb),.06); }
+.qa-send { width: 38px; height: 38px; border: 0; border-radius: 10px; background: var(--coral); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
+.qa-send:hover { background: var(--coral-deep); }
+.qa-send:disabled { opacity: .45; cursor: default; }
+.qa-hint { font-size: 11.5px; color: var(--ink-4); margin-top: 6px; padding-left: 4px; }
+@media (max-width: 768px) {
+  .qa-window { height: calc(100vh - 52px - 16px - 120px); border-radius: 10px; }
+  .qa-hint { display: none; }
+}
+
 /* ── Connexion ── */
 #login-page { background: #f4ede9; color: #1a1a1a; padding: 0; flex-direction: column; align-items: stretch; justify-content: flex-start; overflow: auto; }
 :root[data-theme="dark"] #login-page { background: #1f1916; color: #f5f2f0; }
@@ -1090,7 +1216,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.0';
+  const APP_VERSION = '3.1';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1584,14 +1710,17 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   function showWhatsNew(){
     const isAdminLike = me && (me.role==='admin'||me.role==='controller');
 
-    const commonItems = [
-      ['🎨','Nouveau design façon Windows 11 : fond Mica, police Segoe, icônes dessinées à la place des emojis, et une page de connexion entièrement refaite'],
-      ['🏠','Accueil réorganisé : votre projet, vos tâches, vos fichiers et les questions fréquentes en un coup d\'œil'],
-      ['👤','Votre profil s\'ouvre depuis la bulle en haut à droite, et les notifications depuis la cloche'],
+    const commonItems = me && me.role==='client' ? [
+      ['🏠','Accueil réorganisé : l\'étape en cours, ce qu\'on attend de vous, les étapes du projet et vos fichiers en un coup d\'œil'],
+      ['💬','Discussion avec l\'assistant redessinée : vraie fenêtre de conversation, suggestions, et Entrée pour envoyer'],
+      ['✨','Posez une question à l\'assistant directement depuis l\'accueil'],
+    ] : [
+      ['👤','Votre profil s\'ouvre depuis la bulle en haut à droite ; « Se déconnecter » est en bas du menu'],
     ];
     const adminItems = [
-      ['🧭','Menu regroupé par sections (Clients et projets, Business, Intelligence, Compte) et barre de recherche en haut (Ctrl K)'],
-      ['📊','Accueil admin repensé : projets en colonnes glissables, échéances, alertes, avis, finance des 6 derniers mois et accès direct à Rubis'],
+      ['📋','« Suivi et documents » entièrement refait : filtres en tuiles, frise d\'étapes, documents et suivi côte à côte'],
+      ['🔔','Les demandes d\'inscription arrivent en notification et s\'acceptent ou se refusent dans une fenêtre'],
+      ['🧭','Menu allégé : les onglets Demandes, Historique, Pub et Profil ont été retirés'],
     ];
 
     const items = [
@@ -1869,7 +1998,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     function push(score, item){ if(score>0) scored.push({score, item}); }
 
     // Navigation
-    const tabs = [{id:'home',label:'Accueil'},{id:'users',label:'Utilisateurs'},{id:'documents',label:'Suivi & Docs'},{id:'finance',label:'Finance'},{id:'requests',label:'Demandes'},{id:'history',label:'Historique'},{id:'profile',label:'Mon Profil'}];
+    const tabs = [{id:'home',label:'Accueil'},{id:'users',label:'Utilisateurs'},{id:'documents',label:'Suivi et documents'},{id:'finance',label:'Finance'},{id:'profile',label:'Mon profil'}];
     tabs.forEach(t=>push(fuzzyScore(t.label,q),{icon:'🧭',label:t.label,sub:'Navigation',action:()=>{activeTab=t.id;closeCmdPalette();refreshAdminTab();}}));
 
     // Clients/users
@@ -2133,7 +2262,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
         });
         prevFilledDocIds = new Set(nowFilled.map(d=>d.id));
       }
-      if(me){ me = db.users.find(u=>u.id===me.id)||me; clearTimeout(_refreshTimer); _refreshTimer=setTimeout(()=>{ if(me.role==='client') refreshClientTab(); else refreshAdminTab(); },500); }
+      if(me){ me = db.users.find(u=>u.id===me.id)||me; clearTimeout(_refreshTimer); _refreshTimer=setTimeout(()=>{ if(me.role==='client') refreshClientTab(); else { refreshAdminTab(); refreshTopbar(); checkPendingSignupsPopup(); } },500); }
     });
   }
 
@@ -2314,6 +2443,9 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
           requestedAt: new Date().toISOString()
         });
         saveDB();
+        // Les admins connectés reçoivent la fenêtre de validation en temps réel ;
+        // Discord prévient ceux qui ne sont pas devant l'app.
+        sendDiscordNotif('Nouvelle demande d\'inscription', '**@'+un+'** souhaite créer un compte sur Flow.', 0xd9480f);
         showMsg(msg,'Demande envoyée ! Un administrateur examinera votre compte.','success');
         btn.textContent = 'Demande envoyée ✓';
         setTimeout(closeModal, 2200);
@@ -2417,14 +2549,13 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     { id:'users',          icon:iconUsers(),     label:'Utilisateurs'      },
     { id:'documents',      icon:iconDocs(),      label:'Suivi & Docs'      },
     { id:'finance',        icon:iconFinance(),   label:'Finance'           },
-    { id:'requests',       icon:iconRequests(),  label:'Demandes'          },
-    { id:'history',        icon:iconHistory(),   label:'Historique'        },
     { id:'ai-automation',  icon:iconAI(),        label:'Assistant IA' },
     { id:'rubis',          icon:iconRubis(),     label:'Rubis' },
     { id:'ai-visual',      icon:iconEye(),       label:'Sites liés' },
-    { id:'pub',            icon:iconPub(),       label:'Pub' },
-    { id:'profile',        icon:iconProfile(),   label:'Profil'            }
   ];
+  // Onglets retirés du menu : Demandes (remplacé par une notification + une
+  // fenêtre de validation), Historique, Pub, et Profil (ouvert via la bulle en
+  // haut à droite). Le profil reste accessible par son identifiant.
   function canManageProjects(user=me){ return !!user && (user.role==='admin'||user.role==='controller'); }
   function canAccessFinance(user=me){ return !!user && (user.role==='admin'||user.role==='controller'); }
   function canReviewRequests(user=me){ return !!user && (user.role==='admin'||user.role==='controller'); }
@@ -2561,10 +2692,13 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   }
 
   // ── Barre du haut commune (style Windows 11) ──
+  function pendingSignupCount(){
+    return (me && me.role!=='client' && canReviewRequests()) ? (db.pendingUsers||[]).length : 0;
+  }
   function renderTopbar(){
     const isClient = me.role==='client';
     const hasNew = localStorage.getItem('flow_seen_version') !== APP_VERSION;
-    const unread = unreadNotificationCount(me.id, me.role);
+    const unread = unreadNotificationCount(me.id, me.role) + pendingSignupCount();
     return `
     <header id="topbar">
       <button class="tb-brand" onclick="showWhatsNew()" aria-label="Flow — Quoi de neuf ?">
@@ -2611,18 +2745,18 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(typeof openClientNotificationsModal==='function') openClientNotificationsModal();
   }
 
-  // Menu admin regroupé par sections, comme les Paramètres de Windows
+  // Menu admin regroupé par sections, comme les Paramètres de Windows.
+  // Le profil s'ouvre depuis la bulle en haut à droite ; « Se déconnecter »
+  // reste tout en bas de la colonne.
   const ADMIN_NAV_SECTIONS = [
-    { title:'',                   ids:['home','requests','history'] },
+    { title:'',                   ids:['home'] },
     { title:'Clients et projets', ids:['users','documents','ai-visual','myproject'] },
-    { title:'Business',           ids:['finance','pub'] },
+    { title:'Business',           ids:['finance'] },
     { title:'Intelligence',       ids:['rubis','ai-automation'] },
-    { title:'Compte',             ids:['profile','logout'] },
   ];
-  const ADMIN_NAV_LABELS = { documents:'Suivi et documents', profile:'Profil' };
+  const ADMIN_NAV_LABELS = { documents:'Suivi et documents' };
 
   function renderAdminShell(){
-    const pendingCount = (db.pendingUsers||[]).length;
     const aiPendingCount = (db.aiRequests||[]).filter(r=>r.status==='pending_admin').length;
     const myProject = getUserProject(me.id);
     const visible = getAdminVisibleTabs().slice();
@@ -2633,15 +2767,10 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
           ${t.icon}<span>${ADMIN_NAV_LABELS[t.id]||t.label}</span>
           ${t.beta?'<span class="nav-tag">Bêta</span>':''}
           ${t.id==='documents'?`<span id="notif-badge" class="nav-badge" style="display:${notifBadge>0?'inline-flex':'none'};">${notifBadge>9?'9+':notifBadge}</span>`:''}
-          ${t.id==='requests'&&pendingCount>0?`<span class="nav-badge alt">${pendingCount}</span>`:''}
           ${t.id==='ai-automation'&&aiPendingCount>0?`<span class="nav-badge">${aiPendingCount}</span>`:''}
         </button>`;
     const sections = ADMIN_NAV_SECTIONS.map(sec=>{
-      const rows = sec.ids.map(id=>{
-        if(id==='logout') return `
-        <button id="btn-logout" class="nav-item">${iconLogout()}<span>Se déconnecter</span></button>`;
-        return byId[id] ? item(byId[id]) : '';
-      }).join('');
+      const rows = sec.ids.map(id=>byId[id] ? item(byId[id]) : '').join('');
       if(!rows.trim()) return '';
       return (sec.title?`<div class="nav-section">${sec.title}</div>`:'') + rows;
     }).join('');
@@ -2649,6 +2778,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     ${renderTopbar()}
     <nav id="sidebar" role="navigation" aria-label="Navigation principale">
       ${sections}
+      <div class="nav-spacer"></div>
+      <button id="btn-logout" class="nav-item nav-logout">${iconLogout()}<span>Se déconnecter</span></button>
     </nav>
     <div id="main"><div id="tab-content">${renderAdminTab()}</div></div>`;
   }
@@ -2657,16 +2788,14 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(activeTab==='home')           return renderAdminHome();
     if(activeTab==='users')          return renderAdminUsers();
     if(activeTab==='documents')      return renderAdminDocuments();
-    if(activeTab==='history')        return renderAdminHistory();
     if(activeTab==='finance')        return renderAdminFinance();
-    if(activeTab==='requests')       return renderAdminRequests();
     if(activeTab==='ai-automation')  return renderAdminAIAutomation();
     if(activeTab==='rubis')          return canAccessFinance() ? renderRubisChat() : renderAdminHome();
     if(activeTab==='ai-visual')      return renderAdminAIVisual();
-    if(activeTab==='pub')            return renderAdminPub();
     if(activeTab==='myproject')      return renderAdminMyProject();
     if(activeTab==='profile')        return renderAdminProfile();
-    return '';
+    activeTab = 'home';              // onglet supprimé ou inconnu → accueil
+    return renderAdminHome();
   }
 
   function wireAdmin(){
@@ -2679,6 +2808,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     document.getElementById('btn-logout').addEventListener('click',logout);
     wireAdminTabContent();
+    setTimeout(checkPendingSignupsPopup, 500);
   }
 
   // Retire du <body> tout menu kebab qui y aurait été déplacé temporairement
@@ -2706,13 +2836,10 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(activeTab==='home')          wireAdminHome();
     if(activeTab==='users')         wireAdminUsers();
     if(activeTab==='documents')     wireAdminDocuments();
-    if(activeTab==='history')       wireAdminHistory();
     if(activeTab==='finance')       wireAdminFinance();
-    if(activeTab==='requests')      wireAdminRequests();
     if(activeTab==='ai-automation') wireAdminAIAutomation();
     if(activeTab==='rubis'&&canAccessFinance()) wireRubisChat();
     if(activeTab==='ai-visual')     wireAdminAIVisual();
-    if(activeTab==='pub')           wireAdminPub();
     if(activeTab==='myproject'){
       document.querySelectorAll('.btn-download-delivery').forEach(btn=>{ btn.addEventListener('click',()=>downloadDelivery(btn.dataset.pid)); });
       document.querySelectorAll('.btn-step-comments').forEach(btn=>{ btn.addEventListener('click',()=>openStepCommentsModal(btn.dataset.pid, btn.dataset.sid)); });
@@ -2796,6 +2923,9 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
     // ── Alertes (retards, projets à surveiller, documents, inactivité, périmètre) ──
     const alerts = [];
+    if(pendingSignupCount()>0){
+      alerts.push({ dot:'var(--coral)', title:`${pendingSignupCount()} demande(s) d'inscription`, sub:'Cliquez pour accepter ou refuser', fn:'openPendingSignupsModal()' });
+    }
     live.filter(p=>p.dueDate && p.status!=='done' && new Date(p.dueDate)<today).forEach(p=>{
       alerts.push({ dot:'var(--danger)', title:'Échéance dépassée', sub:`${esc(p.name)} · ${esc(clientName(p))}`, tab:null });
     });
@@ -2937,7 +3067,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         <section class="fl-card">
           <div class="fl-card-head">${ic('alert','',18)}<h2>Alertes</h2><span class="fl-meta">${alerts.length}</span></div>
           ${alerts.length ? alerts.slice(0,6).map(a=>`
-            <div class="fl-row" ${a.tab?`style="cursor:pointer;" onclick="goTab('${a.tab}')"`:''}><span class="fl-dot" style="background:${a.dot};"></span>
+            <div class="fl-row" ${a.fn?`style="cursor:pointer;" onclick="${a.fn}"`:a.tab?`style="cursor:pointer;" onclick="goTab('${a.tab}')"`:''}><span class="fl-dot" style="background:${a.dot};"></span>
               <div style="flex:1;min-width:0;"><div>${a.title}</div><div class="fl-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.sub}</div></div></div>`).join('')
             : '<div class="fl-empty">Rien à signaler.</div>'}
         </section>
@@ -3568,34 +3698,58 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     const clients = db.users.filter(u=>u.role==='client'||u.role==='controller');
     const isAdmin = me.role==='admin';
     const totalClientFiles = db.projects.reduce((s,p)=>s+((p.clientFiles||[]).length),0);
+    const live = db.projects.filter(p=>!p.archived);
+    const liveIds = new Set(live.map(p=>p.id));
+    const docsLive = db.documents.filter(d=>liveIds.has(d.projectId));
+    const tiles = [
+      { status:'',         label:'Projets suivis',          value:live.length,                                         icon:'folder',    color:'var(--ink)' },
+      { status:'pending',  label:'À compléter par le client', value:docsLive.filter(d=>d.status==='pending').length,  icon:'hourglass', color:'var(--peach)' },
+      { status:'filled',   label:'À valider',               value:docsLive.filter(d=>d.status==='filled').length,     icon:'clipboard', color:'var(--coral)' },
+      { status:'reviewed', label:'Validés',                 value:docsLive.filter(d=>d.status==='reviewed').length,   icon:'checkc',    color:'var(--sage)' },
+    ];
     return `<div class="fade-up">
-      <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:6px;">Suivi & Documents</h1>
-      <p style="color:rgba(var(--ink-rgb),.45);font-size:.875rem;margin-bottom:16px;">
-        ${isAdmin?'Gérez les frises et envoyez des documents aux clients.':'Consultez les frises et documents (lecture seule).'}
-      </p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center;">
-        <input id="doc-search" class="glass-input" placeholder="🔍 Chercher un client ou projet…" style="max-width:300px;" />
-        <select id="doc-filter-status" class="glass-input" style="width:150px;">
-          <option value="">Tous les statuts</option>
-          <option value="pending">En attente</option>
-          <option value="filled">Remplis</option>
-          <option value="reviewed">Validés</option>
-          <option value="nodoc">Sans document</option>
-        </select>
-        <select id="doc-filter-prio" class="glass-input" style="width:140px;">
-          <option value="">Toutes priorités</option>
-          <option value="urgent">🔴 Urgent</option>
-          <option value="normal">🔵 Normal</option>
-          <option value="low">⚪ Basse</option>
-        </select>
-        <button id="btn-all-client-files" class="btn btn-ghost" style="margin-left:auto;">📤 Tous les fichiers clients${totalClientFiles>0?` (${totalClientFiles})`:''}</button>
+      <div class="home-head">
+        <div>
+          <p class="home-date">${isAdmin?'Frises, documents et tâches de chaque projet':'Consultation des frises et documents (lecture seule)'}</p>
+          <h1>Suivi et documents</h1>
+        </div>
+        <div class="home-actions">
+          <button id="btn-all-client-files" class="btn btn-ghost">${ic('upload')} Fichiers clients${totalClientFiles>0?` (${totalClientFiles})`:''}</button>
+        </div>
       </div>
+
+      <div class="doc-tiles" role="group" aria-label="Filtrer par état des documents">
+        ${tiles.map((t,i)=>`
+          <button class="doc-tile ${i===0?'active':''}" data-status="${t.status}" aria-pressed="${i===0}">
+            <span class="doc-tile-ic" style="color:${t.color};">${ic(t.icon,'',18)}</span>
+            <span class="doc-tile-v">${t.value}</span>
+            <span class="doc-tile-l">${t.label}</span>
+          </button>`).join('')}
+      </div>
+
+      <div class="doc-toolbar">
+        <label class="tb-search" style="max-width:420px;cursor:text;">
+          ${ic('search')}
+          <input id="doc-search" type="search" placeholder="Chercher un client ou un projet" aria-label="Chercher un client ou un projet" style="flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ink);font:inherit;" />
+        </label>
+        <select id="doc-filter-status" style="display:none;" aria-hidden="true">
+          <option value="">Tous</option><option value="pending">En attente</option><option value="filled">Remplis</option><option value="reviewed">Validés</option><option value="nodoc">Sans document</option>
+        </select>
+        <select id="doc-filter-prio" class="glass-input" style="width:auto;min-width:160px;" aria-label="Priorité">
+          <option value="">Toutes priorités</option>
+          <option value="urgent">Urgent</option>
+          <option value="normal">Normal</option>
+          <option value="low">Basse</option>
+        </select>
+        <button class="fl-link doc-nodoc" data-status="nodoc">${ic('file','',14)} Sans document</button>
+      </div>
+
       ${clients.length===0
-        ? `<div class="glass-card" style="padding:40px;text-align:center;color:rgba(var(--ink-rgb),.4);">Aucun client enregistré.</div>`
+        ? `<div class="fl-card" style="text-align:center;color:var(--ink-3);padding:40px;">Aucun client enregistré.</div>`
         : clients.map(u=>{
             const projs = getUserProjects(u.id);
-            if(projs.length===0) return `<div class="client-doc-panel-wrap" data-uid="${u.id}">${renderClientDocPanel(u,isAdmin,null)}</div>`;
-            return projs.map((proj,idx)=>`<div class="client-doc-panel-wrap" data-uid="${u.id}">${renderClientDocPanel(u,isAdmin,proj,idx===0)}</div>`).join('');
+            if(projs.length===0) return `<div class="client-doc-panel-wrap" data-uid="${u.id}" data-pid="">${renderClientDocPanel(u,isAdmin,null)}</div>`;
+            return projs.map((proj,idx)=>`<div class="client-doc-panel-wrap" data-uid="${u.id}" data-pid="${proj.id}">${renderClientDocPanel(u,isAdmin,proj,idx===0)}</div>`).join('');
           }).join('')}
       <div id="doc-pagination" style="text-align:center;margin-top:8px;"></div>
     </div>`;
@@ -3603,160 +3757,181 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
   function renderClientDocPanel(u, canEdit, project, showUserHeader=true){
     if(project===undefined) project = getUserProject(u.id);
-    const docs = project ? getProjectDocs(project.id) : [];
-    const colorStyle = project&&project.color ? `border-left:3px solid ${project.color};padding-left:14px;` : '';
-    return `<div class="glass-card" style="padding:20px;margin-bottom:16px;${colorStyle}">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+    if(!project){
+      return `<div class="trk-card trk-empty">
         ${avatar(u)}
-        <div style="flex:1;">
-          <div style="font-weight:600;">${esc(u.username)}</div>
-          <div style="font-size:.78rem;color:rgba(var(--ink-rgb),.4);">${project?esc(project.name):'Aucun projet'}${project&&project.siteHtml?` <span style="font-size:.62rem;background:rgba(147,181,148,.15);border:1px solid rgba(147,181,148,.3);color:var(--sage);border-radius:999px;padding:1px 6px;vertical-align:middle;">🌐 Site lié</span>`:''}${project&&project.paused?` <span style="font-size:.62rem;background:rgba(240,169,136,.15);border:1px solid rgba(240,169,136,.35);color:var(--peach);border-radius:999px;padding:1px 6px;vertical-align:middle;font-weight:600;">⏸ EN PAUSE</span>`:''}</div>
-          ${project&&project.description?`<div style="font-size:.8rem;color:var(--ink-3);margin-top:2px;">${esc(project.description)}</div>`:''}
-          ${project&&project.tags&&project.tags.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">${project.tags.map(tag=>`<span style="font-size:.68rem;padding:2px 8px;border-radius:999px;background:rgba(var(--fg-rgb),.07);border:1px solid rgba(var(--fg-rgb),.12);color:var(--ink-3);">${esc(tag)}</span>`).join('')}</div>`:''}
-          ${project&&project.budgetEstimated>0?(()=>{
-            const real = getProjectRealRevenue(project.id);
-            const pct = Math.min(100, Math.round(real/project.budgetEstimated*100));
-            const over = real > project.budgetEstimated;
-            return `<div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:.74rem;color:var(--ink-4);">
-              <span>💰 ${real.toLocaleString('fr-FR')}€ / ${project.budgetEstimated.toLocaleString('fr-FR')}€</span>
-              <div style="flex:1;max-width:100px;height:5px;background:rgba(var(--fg-rgb),.07);border-radius:999px;overflow:hidden;">
-                <div style="height:100%;width:${pct}%;background:${over?'var(--peach)':'var(--sage)'};border-radius:999px;"></div>
-              </div>
-              <span style="color:${over?'var(--peach)':'var(--ink-4)'};">${pct}%${over?' ⚠️':''}</span>
-            </div>`;
-          })():''}
-          ${project&&project.toneScores&&project.toneScores.length>=2?(()=>{
-            const recent = project.toneScores.slice(-10);
-            const avg = recent.reduce((s,t)=>s+t.score,0)/recent.length;
-            const color = avg>=4 ? 'var(--sage)' : avg>=2.5 ? 'var(--sky)' : 'var(--peach)';
-            const label = avg>=4 ? 'Climat positif' : avg>=2.5 ? 'Climat neutre' : 'Climat tendu';
-            return `<div style="margin-top:6px;font-size:.72rem;color:${color};" title="Basé sur le ton des ${recent.length} derniers commentaires analysés">🌡️ ${label} (${avg.toFixed(1)}/5)</div>`;
-          })():''}
+        <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(u.firstName?u.firstName+' '+(u.lastName||''):u.username)}</div><div class="fl-meta">@${esc(u.username)} · aucun projet associé</div></div>
+      </div>`;
+    }
+    const docs = getProjectDocs(project.id);
+    const tl = project.timeline||[];
+    const doneSteps = tl.filter(s=>s.status==='done').length;
+    const pct = tl.length ? Math.round(doneSteps/tl.length*100) : 0;
+    const current = tl.find(s=>s.status==='current');
+    const statusInfo = {pending:['En attente','var(--sky)','rgba(43,108,176,.12)'],in_progress:['En cours','var(--coral)','var(--coral-tint)'],done:['Terminé','var(--sage)','rgba(47,125,79,.12)']}[project.status]||[project.status,'var(--ink-3)','rgba(var(--fg-rgb),.06)'];
+    const prio = project.priority||'normal';
+    const tasks = project.internalTasks||[];
+    const tasksDone = tasks.filter(t=>t.done).length;
+    const ctasks = project.clientTasks||[];
+    const cDone = ctasks.filter(t=>t.done).length;
+    const cfiles = project.clientFiles||[];
+    const qaCount = project.clientId ? (db.aiRequests||[]).filter(r=>r.clientId===project.clientId&&r.type==='qa'&&r.status==='answered').length : 0;
+    const bar = (v,total,color)=>`<div class="mini-bar"><i style="width:${total?Math.round(v/total*100):0}%;background:${color};"></i></div>`;
+
+    const budget = project.budgetEstimated>0 ? (()=>{
+      const real = getProjectRealRevenue(project.id);
+      const over = real > project.budgetEstimated;
+      return `<div class="trk-line">
+        <span class="trk-line-ic">${ic('money','',16)}</span>
+        <div style="flex:1;min-width:0;">
+          <div class="trk-line-t">Budget <span class="fl-meta">${real.toLocaleString('fr-FR')} € / ${project.budgetEstimated.toLocaleString('fr-FR')} €</span></div>
+          ${bar(Math.min(real,project.budgetEstimated),project.budgetEstimated,over?'var(--peach)':'var(--sage)')}
         </div>
-        ${canEdit&&project?`
-          <button class="btn btn-ghost btn-sm btn-edit-timeline" data-pid="${project.id}" data-uid="${u.id}">⏱ Timeline</button>
-          <button class="btn btn-primary btn-sm btn-send-doc" data-uid="${u.id}" data-pid="${project.id}">+ Document</button>
+        ${over?`<span class="chip" style="color:var(--peach);">Dépassé</span>`:''}
+      </div>`;
+    })() : '';
+    const climate = project.toneScores&&project.toneScores.length>=2 ? (()=>{
+      const recent = project.toneScores.slice(-10);
+      const avg = recent.reduce((s,t)=>s+t.score,0)/recent.length;
+      const color = avg>=4 ? 'var(--sage)' : avg>=2.5 ? 'var(--sky)' : 'var(--peach)';
+      const label = avg>=4 ? 'Climat positif' : avg>=2.5 ? 'Climat neutre' : 'Climat tendu';
+      return `<div class="trk-line" title="Basé sur le ton des ${recent.length} derniers commentaires analysés">
+        <span class="trk-line-ic" style="color:${color};">${ic(avg>=4?'happy':avg>=2.5?'neutral':'sad','',16)}</span>
+        <div class="trk-line-t" style="flex:1;">${label} <span class="fl-meta">${avg.toFixed(1)} / 5</span></div>
+      </div>`;
+    })() : '';
+
+    return `<article class="trk-card" style="--proj:${project.color||'var(--coral)'};">
+      <header class="trk-head">
+        ${avatar(u)}
+        <div style="flex:1;min-width:0;">
+          <div class="trk-title">
+            <h2>${esc(project.name)}</h2>
+            <span class="chip" style="background:${statusInfo[2]};color:${statusInfo[1]};">${statusInfo[0]}</span>
+            ${prio==='urgent'?`<span class="chip" style="background:rgba(180,35,24,.1);color:var(--danger);">Urgent</span>`:prio==='low'?`<span class="chip">Priorité basse</span>`:''}
+            ${project.pinned?`<span class="chip">${ic('pushpin','',12)} Épinglé</span>`:''}
+            ${project.paused?`<span class="chip" style="background:rgba(168,101,15,.12);color:var(--peach);">${ic('pause','',12)} En pause</span>`:''}
+            ${project.siteHtml?`<span class="chip" style="background:rgba(47,125,79,.1);color:var(--sage);">${ic('globe','',12)} Site lié</span>`:''}
+          </div>
+          <div class="fl-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@${esc(u.username)}${project.dueDate?' · livraison le '+new Date(project.dueDate).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):''}${project.description?' · '+esc(project.description):''}</div>
+          ${project.tags&&project.tags.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">${project.tags.map(tag=>`<span class="chip">${esc(tag)}</span>`).join('')}</div>`:''}
+        </div>
+        ${canEdit?`
+        <div class="trk-actions">
+          <button class="btn btn-ghost btn-sm btn-edit-timeline" data-pid="${project.id}" data-uid="${u.id}">${ic('list','',14)} Étapes</button>
+          <button class="btn btn-primary btn-sm btn-send-doc" data-uid="${u.id}" data-pid="${project.id}">${ic('plus','',14)} Document</button>
           <div class="kebab-wrap">
-            <button class="btn btn-ghost btn-sm kebab-btn" data-pid="${project.id}" title="Plus d'actions">⋮</button>
+            <button class="btn btn-ghost btn-sm kebab-btn" data-pid="${project.id}" aria-label="Plus d'actions" title="Plus d'actions">⋯</button>
             <div class="kebab-menu" id="kebab-${project.id}">
-              <button class="kebab-item btn-pin-project" data-pid="${project.id}">${project.pinned?'📌 Désépingler':'📍 Épingler'}</button>
-              <button class="kebab-item btn-pause-project" data-pid="${project.id}">${project.paused?'▶️ Reprendre le projet':'⏸ Mettre en pause'}</button>
-              <button class="kebab-item btn-share-present" data-pid="${project.id}">🔗 Lien de présentation</button>
-              <button class="kebab-item btn-report" data-uid="${u.id}">📄 Rapport PDF</button>
-              <button class="kebab-item btn-text-summary" data-pid="${project.id}" data-uid="${u.id}">📝 Résumé texte</button>
-              ${project.status==='done'?`<button class="kebab-item btn-ai-newsletter" data-pid="${project.id}" data-uid="${u.id}">✨ Newsletter de fin de projet</button>`:''}
-              <button class="kebab-item btn-dup-project" data-pid="${project.id}">📋 Dupliquer</button>
-              <button class="kebab-item btn-save-template" data-pid="${project.id}">💾 Sauver comme modèle</button>
-              <button class="kebab-item btn-deliver-files" data-pid="${project.id}">${project.deliverable?'📦 Remplacer la livraison':'📦 Livrer les fichiers'}</button>
-              <button class="kebab-item btn-link-site" data-pid="${project.id}">${project.siteHtml?'🌐 Remplacer le site lié':'🌐 Lier le fichier site'}</button>
+              <button class="kebab-item btn-pin-project" data-pid="${project.id}">${ic('pushpin','',16)} ${project.pinned?'Désépingler':'Épingler'}</button>
+              <button class="kebab-item btn-pause-project" data-pid="${project.id}">${ic(project.paused?'arrowright':'pause','',16)} ${project.paused?'Reprendre le projet':'Mettre en pause'}</button>
+              <button class="kebab-item btn-share-present" data-pid="${project.id}">${ic('link','',16)} Lien de présentation</button>
+              <button class="kebab-item btn-report" data-uid="${u.id}">${ic('file','',16)} Rapport PDF</button>
+              <button class="kebab-item btn-text-summary" data-pid="${project.id}" data-uid="${u.id}">${ic('edit','',16)} Résumé texte</button>
+              ${project.status==='done'?`<button class="kebab-item btn-ai-newsletter" data-pid="${project.id}" data-uid="${u.id}">${ic('sparkle','',16)} Newsletter de fin de projet</button>`:''}
+              <button class="kebab-item btn-dup-project" data-pid="${project.id}">${ic('clipboard','',16)} Dupliquer</button>
+              <button class="kebab-item btn-save-template" data-pid="${project.id}">${ic('save','',16)} Sauver comme modèle</button>
+              <button class="kebab-item btn-deliver-files" data-pid="${project.id}">${ic('box','',16)} ${project.deliverable?'Remplacer la livraison':'Livrer les fichiers'}</button>
+              <button class="kebab-item btn-link-site" data-pid="${project.id}">${ic('globe','',16)} ${project.siteHtml?'Remplacer le site lié':'Lier le fichier site'}</button>
               <div class="kebab-divider"></div>
-              <button class="kebab-item btn-archive-project" data-pid="${project.id}">🗄️ Archiver</button>
-              <button class="kebab-item kebab-danger btn-del-project" data-pid="${project.id}">🗑 Supprimer</button>
+              <button class="kebab-item btn-archive-project" data-pid="${project.id}">${ic('archive','',16)} Archiver</button>
+              <button class="kebab-item kebab-danger btn-del-project" data-pid="${project.id}">${ic('trash','',16)} Supprimer</button>
             </div>
           </div>
-        `:''}
-      </div>
-      ${project?`
-        <div style="margin-bottom:12px;">
-          ${renderMiniTimeline(project.timeline)}
+        </div>`:''}
+      </header>
+
+      <div class="trk-progress">
+        <div class="trk-progress-top">
+          <span><strong>${pct} %</strong> <span class="fl-meta">· ${doneSteps}/${tl.length} étape${tl.length>1?'s':''}${current?` · en cours : ${esc(current.label)}`:''}</span></span>
         </div>
-        ${(()=>{
-          const tasks = project.internalTasks||[];
-          const tasksDoneCount = tasks.filter(t=>t.done).length;
-          return canEdit&&tasks.length>0?`
-            <div style="margin:10px 0 0;padding:10px 14px;background:rgba(var(--fg-rgb),.02);border-radius:10px;border:1px solid rgba(var(--fg-rgb),.06);">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:.78rem;font-weight:600;color:var(--ink-3);">✅ TÂCHES INTERNES (${tasksDoneCount}/${tasks.length})</span>
-                <div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm btn-manage-tasks" data-pid="${project.id}">Gérer</button><button class="btn btn-ghost btn-sm btn-extract-tasks" data-pid="${project.id}" title="Extraire des tâches depuis la description du projet">✨</button></div>
-              </div>
-              ${tasks.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-                <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${t.done?'var(--sage)':'rgba(var(--fg-rgb),.2)'};background:${t.done?'rgba(147,181,148,.2)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--sage);flex-shrink:0;">${t.done?'✓':''}</div>
-                <span style="font-size:.78rem;color:${t.done?'var(--ink-4)':'var(--ink-2)'};text-decoration:${t.done?'line-through':'none'};">${esc(t.label)}</span>
-              </div>`).join('')}
-            </div>`:canEdit&&tasks.length===0?`<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ Tâches internes</button><button class="btn btn-ghost btn-sm btn-extract-tasks" data-pid="${project.id}" title="Extraire des tâches depuis la description" style="font-size:.75rem;">✨ Extraire</button></div>`:'';
-        })()}
-        ${(()=>{
-          if(!(canEdit&&project)) return '';
-          const ctasks = project.clientTasks||[];
-          const cDoneCount = ctasks.filter(t=>t.done).length;
-          return ctasks.length>0?`
-            <div style="margin:10px 0 0;padding:10px 14px;background:rgba(155,184,216,.04);border-radius:10px;border:1px solid rgba(155,184,216,.15);">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:.78rem;font-weight:600;color:var(--sky);">📋 À FAIRE CÔTÉ CLIENT (${cDoneCount}/${ctasks.length})</span>
-                <button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}">Gérer</button>
-              </div>
-              ${ctasks.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-                <div style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${t.done?'var(--sage)':'rgba(var(--fg-rgb),.2)'};background:${t.done?'rgba(147,181,148,.2)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--sage);flex-shrink:0;">${t.done?'✓':''}</div>
-                <span style="font-size:.78rem;color:${t.done?'var(--ink-4)':'var(--ink-2)'};text-decoration:${t.done?'line-through':'none'};">${esc(t.label)}</span>
-              </div>`).join('')}
-            </div>`:`<div style="margin-top:8px;"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}" style="font-size:.75rem;">+ À faire côté client</button></div>`;
-        })()}
-        ${(()=>{
-          if(!project) return '';
-          const cfiles = project.clientFiles||[];
-          if(!cfiles.length) return '';
-          return `<div style="margin-top:8px;">
-            <button class="btn btn-ghost btn-sm btn-view-client-files" data-pid="${project.id}">📤 Fichiers client (${cfiles.length})</button>
-          </div>`;
-        })()}
-        ${(()=>{
-          if(!project || !project.clientId) return '';
-          const qaCount = (db.aiRequests||[]).filter(r=>r.clientId===project.clientId&&r.type==='qa'&&r.status==='answered').length;
-          if(qaCount<3) return '';
-          return `<div style="margin-top:8px;">
-            <button class="btn btn-ghost btn-sm btn-ai-summarize-qa" data-cid="${project.clientId}">✨ Résumer les échanges (${qaCount})</button>
-          </div>`;
-        })()}
-        <div class="divider"></div>
-        <div style="font-size:.8rem;font-weight:600;color:rgba(var(--ink-rgb),.5);margin-bottom:8px;">DOCUMENTS (${docs.length})</div>
-        ${docs.length===0
-          ? `<div style="font-size:.82rem;color:rgba(var(--ink-rgb),.35);padding:8px 0;">Aucun document envoyé.</div>`
-          : docs.map(d=>renderDocRow(d,canEdit)).join('')}
-      `:`<div style="font-size:.82rem;color:rgba(var(--ink-rgb),.35);padding:8px 0;">Aucun projet associé.</div>`}
-    </div>`;
+        ${renderMiniTimeline(tl)}
+      </div>
+
+      <div class="trk-grid">
+        <section class="trk-panel">
+          <div class="trk-panel-h">${ic('docs','',16)} Documents <span class="fl-meta">${docs.length}</span></div>
+          ${docs.length===0
+            ? `<div class="fl-empty">Aucun document envoyé.${canEdit?` <button class="fl-link btn-send-doc" data-uid="${u.id}" data-pid="${project.id}">Envoyer le premier</button>`:''}</div>`
+            : docs.map(d=>renderDocRow(d,canEdit)).join('')}
+        </section>
+
+        <section class="trk-panel">
+          <div class="trk-panel-h">${ic('check','',16)} Suivi</div>
+          ${canEdit?`
+          <div class="trk-line">
+            <span class="trk-line-ic">${ic('clipboard','',16)}</span>
+            <div style="flex:1;min-width:0;">
+              <div class="trk-line-t">Tâches internes <span class="fl-meta">${tasksDone}/${tasks.length}</span></div>
+              ${tasks.length?bar(tasksDone,tasks.length,'var(--sage)'):''}
+              ${tasks.filter(t=>!t.done).slice(0,3).map(t=>`<div class="trk-task">${esc(t.label)}</div>`).join('')}
+            </div>
+            <div class="trk-line-btns">
+              <button class="btn btn-ghost btn-sm btn-manage-tasks" data-pid="${project.id}">${tasks.length?'Gérer':'Ajouter'}</button>
+              <button class="btn btn-ghost btn-sm btn-extract-tasks" data-pid="${project.id}" title="Extraire des tâches depuis la description" aria-label="Extraire des tâches automatiquement">${ic('sparkle','',14)}</button>
+            </div>
+          </div>
+          <div class="trk-line">
+            <span class="trk-line-ic">${ic('user','',16)}</span>
+            <div style="flex:1;min-width:0;">
+              <div class="trk-line-t">À faire côté client <span class="fl-meta">${cDone}/${ctasks.length}</span></div>
+              ${ctasks.length?bar(cDone,ctasks.length,'var(--sky)'):''}
+              ${ctasks.filter(t=>!t.done).slice(0,3).map(t=>`<div class="trk-task">${esc(t.label)}</div>`).join('')}
+            </div>
+            <div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}">${ctasks.length?'Gérer':'Ajouter'}</button></div>
+          </div>`:''}
+          ${cfiles.length?`
+          <div class="trk-line">
+            <span class="trk-line-ic">${ic('upload','',16)}</span>
+            <div class="trk-line-t" style="flex:1;">Fichiers du client <span class="fl-meta">${cfiles.length}</span></div>
+            <div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-view-client-files" data-pid="${project.id}">Voir</button></div>
+          </div>`:''}
+          ${qaCount>=3?`
+          <div class="trk-line">
+            <span class="trk-line-ic">${ic('chat','',16)}</span>
+            <div class="trk-line-t" style="flex:1;">Échanges avec l'assistant <span class="fl-meta">${qaCount}</span></div>
+            <div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-ai-summarize-qa" data-cid="${project.clientId}">${ic('sparkle','',14)} Résumer</button></div>
+          </div>`:''}
+          ${budget}
+          ${climate}
+          ${!canEdit&&!cfiles.length&&qaCount<3&&!budget&&!climate?'<div class="fl-empty">Rien à signaler.</div>':''}
+        </section>
+      </div>
+    </article>`;
   }
 
   function renderMiniTimeline(tl){
-    return `<div style="display:flex;gap:0;align-items:center;overflow-x:auto;padding-bottom:6px;">
-      ${tl.map((s,i)=>{
-        const dotColor = s.status==='done'?'#93b594':s.status==='current'?'#d97757':'rgba(var(--fg-rgb),.2)';
-        const textColor= s.status==='done'?'rgba(var(--ink-rgb),.7)':s.status==='current'?'#d97757':'rgba(var(--ink-rgb),.35)';
-        return `
-          ${i>0?`<div style="flex:1;min-width:16px;height:1px;background:rgba(var(--fg-rgb),.1);"></div>`:''}
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;max-width:80px;">
-            <div style="width:22px;height:22px;border-radius:50%;background:${dotColor}33;border:2px solid ${dotColor};display:flex;align-items:center;justify-content:center;font-size:.65rem;"${s.note?` title="${esc(s.note)}"`:''}>
-              ${s.status==='done'?'✓':s.status==='current'?'▶':'○'}
-            </div>
-            <div style="font-size:.65rem;text-align:center;color:${textColor};line-height:1.2;">${esc(s.label)}</div>
-            ${s.dueDate?`<div style="font-size:.63rem;text-align:center;color:var(--ink-4);line-height:1.2;">${esc(new Date(s.dueDate).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}))}</div>`:''}
-          </div>`;
+    if(!tl || !tl.length) return '<div class="fl-empty">Aucune étape définie.</div>';
+    return `<ol class="stepper">
+      ${tl.map(s=>{
+        const st = s.status==='done'?'done':s.status==='current'?'cur':'todo';
+        return `<li class="step step-${st}"${s.note?` title="${esc(s.note)}"`:''}>
+          <span class="step-bar"></span>
+          <span class="step-l">${st==='done'?ic('check','',12):''}${esc(s.label)}</span>
+          ${s.dueDate?`<span class="step-d">${esc(new Date(s.dueDate).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}))}</span>`:''}
+        </li>`;
       }).join('')}
-    </div>`;
+    </ol>`;
   }
 
   function renderDocRow(doc, canEdit){
-    const statusColor = {pending:'rgba(217,119,87,.8)',filled:'rgba(147,181,148,.8)',reviewed:'rgba(155,184,216,.8)'}[doc.status]||'#888';
-    const statusLabel = {pending:'En attente',filled:'Rempli',reviewed:'Validé'}[doc.status]||doc.status;
-    // F16 — relance indicator
+    const st = {pending:['En attente','var(--peach)','rgba(168,101,15,.12)'],filled:['À valider','var(--coral)','var(--coral-tint)'],reviewed:['Validé','var(--sage)','rgba(47,125,79,.12)']}[doc.status]||[doc.status,'var(--ink-3)','rgba(var(--fg-rgb),.06)'];
     const daysPending = doc.sentAt ? Math.floor((Date.now()-new Date(doc.sentAt))/(1000*60*60*24)) : 0;
     const relance = doc.status==='pending' && daysPending>=7;
-    return `<div style="padding:10px 0;border-bottom:1px solid rgba(var(--fg-rgb),.06);">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:1.1rem;">📄</span>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:.85rem;font-weight:500;">${esc(doc.name)}</div>
-          <div style="font-size:.75rem;color:rgba(var(--ink-rgb),.4);">Envoyé le ${esc(doc.sentAt||'—')}</div>
-          ${doc.adminComment&&doc.status==='reviewed'?`<div style="font-size:.75rem;color:var(--sky);font-style:italic;margin-top:4px;">💬 "${esc(doc.adminComment)}"</div>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          ${relance?`<span style="font-size:.68rem;color:var(--peach);border:1px solid rgba(240,169,136,.4);padding:2px 8px;border-radius:8px;background:rgba(240,169,136,.12);font-weight:600;">⚠️ Relance — ${daysPending}j</span>`:''}
-          ${doc.status==='pending'&&daysPending>=14?`<span style="font-size:.68rem;color:var(--danger);border:1px solid rgba(220,80,80,.3);padding:2px 8px;border-radius:8px;background:rgba(220,80,80,.1);font-weight:600;">🚨 ${daysPending}j sans réponse</span>`:''}
-          <span style="font-size:.75rem;color:${statusColor};font-weight:600;">${statusLabel}</span>
-          ${canEdit&&relance?`<button class="btn btn-ghost btn-sm btn-relance" data-did="${doc.id}" title="Générer un message de relance" style="border-color:rgba(240,169,136,.4);color:var(--peach);">✉ Relancer</button>`:''}
-          ${canEdit?`<button class="btn btn-ghost btn-sm btn-view-doc" data-did="${doc.id}">👁 Voir</button>`:''}
-          ${canEdit?`<button class="btn btn-danger btn-sm btn-del-doc" data-did="${doc.id}" title="Supprimer">🗑</button>`:''}
-        </div>
+    return `<div class="doc-row">
+      <span class="file-ic" style="width:34px;height:34px;">${ic('file','',16)}</span>
+      <div style="flex:1 1 180px;min-width:0;">
+        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(doc.name)}</div>
+        <div class="fl-meta">Envoyé le ${esc(doc.sentAt||'—')}${relance?` · <span style="color:${daysPending>=14?'var(--danger)':'var(--peach)'};font-weight:600;">sans réponse depuis ${daysPending} j</span>`:''}</div>
+        ${doc.adminComment&&doc.status==='reviewed'?`<div class="fl-meta" style="font-style:italic;color:var(--sky);">« ${esc(doc.adminComment)} »</div>`:''}
       </div>
+      <span class="chip" style="background:${st[2]};color:${st[1]};">${st[0]}</span>
+      ${canEdit?`
+      <div class="doc-row-btns">
+        ${relance?`<button class="btn btn-ghost btn-sm btn-relance" data-did="${doc.id}" title="Générer un message de relance">${ic('mail','',14)} Relancer</button>`:''}
+        <button class="btn btn-ghost btn-sm btn-view-doc" data-did="${doc.id}">${ic('eye','',14)} Voir</button>
+        <button class="btn btn-ghost btn-sm btn-del-doc" data-did="${doc.id}" title="Supprimer" aria-label="Supprimer le document" style="color:var(--danger);">${ic('trash','',14)}</button>
+      </div>`:''}
     </div>`;
   }
 
@@ -4141,7 +4316,7 @@ DOCUMENTS
         const uid = wrap.dataset.uid;
         const u = db.users.find(x=>x.id===uid);
         if(!u) return false;
-        const project = getUserProject(u.id);
+        const project = wrap.dataset.pid ? db.projects.find(p=>p.id===wrap.dataset.pid) : null;
         const hay = `${u.username} ${u.firstName||''} ${u.lastName||''} ${project?project.name:''}`.toLowerCase();
         const matchQ = !q || hay.includes(q);
         let matchStatus = true;
@@ -4165,6 +4340,20 @@ DOCUMENTS
         if(moreBtn) moreBtn.addEventListener('click',()=>{ docVisibleCount+=DOC_PAGE_SIZE; applyDocFilters(); });
       }
     }
+    // Tuiles d'état + bouton « Sans document » : pilotent le filtre de statut
+    const statusSel = document.getElementById('doc-filter-status');
+    document.querySelectorAll('.doc-tile, .doc-nodoc').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const same = statusSel && statusSel.value===btn.dataset.status;
+        const val = same && btn.dataset.status ? '' : btn.dataset.status;
+        if(statusSel) statusSel.value = val;
+        document.querySelectorAll('.doc-tile, .doc-nodoc').forEach(b=>{
+          const on = b.dataset.status===val && (val!=='' || b.classList.contains('doc-tile'));
+          b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
+        });
+        docVisibleCount=DOC_PAGE_SIZE; applyDocFilters();
+      });
+    });
     document.getElementById('doc-search')?.addEventListener('input', ()=>{ docVisibleCount=DOC_PAGE_SIZE; applyDocFilters(); });
     document.getElementById('doc-filter-status')?.addEventListener('change', ()=>{ docVisibleCount=DOC_PAGE_SIZE; applyDocFilters(); });
     document.getElementById('doc-filter-prio')?.addEventListener('change', ()=>{ docVisibleCount=DOC_PAGE_SIZE; applyDocFilters(); });
@@ -4420,9 +4609,8 @@ DOCUMENTS
     const project = projects.find(p=>p.id===window._clientActiveProjectId)||projects[0]||null;
     const firstName = esc(me.firstName||me.username);
 
-    // Sélecteur de projet si plusieurs
     const projectSelector = projects.length > 1 ? `
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" role="group" aria-label="Choisir un projet">
         ${projects.map(p=>`
           <button class="btn-switch-project btn ${p.id===project?.id?'btn-primary':'btn-ghost'} btn-sm" data-pid="${p.id}">
             ${p.color?`<span style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></span>`:''}
@@ -4439,7 +4627,10 @@ DOCUMENTS
 
     // Avancement, échéance, statut
     const tl = project.timeline||[];
-    const pct = tl.length ? Math.round(tl.filter(s=>s.status==='done').length/tl.length*100) : 0;
+    const doneSteps = tl.filter(s=>s.status==='done').length;
+    const pct = tl.length ? Math.round(doneSteps/tl.length*100) : 0;
+    const current = tl.find(s=>s.status==='current');
+    const nextStep = tl.find(s=>s.status!=='done' && s.status!=='current');
     const statusLabel = {done:'Terminé',in_progress:'En cours',pending:'En attente'}[project.status]||project.status;
     let dueValue = 'Non définie', dueNote = '';
     if(project.dueDate){
@@ -4452,19 +4643,19 @@ DOCUMENTS
 
     // Bandeaux d'information
     const welcomeBanner = project.welcomeMessage ? `
-      <div class="fl-card" style="margin-bottom:16px;">
-        <div class="fl-card-head" style="margin-bottom:6px;">${ic('chat','',18)}<h2>Message de votre équipe</h2></div>
-        <div style="color:var(--ink-2);line-height:1.5;">${esc(project.welcomeMessage)}</div>
+      <div class="fl-card" style="margin-bottom:16px;display:flex;gap:14px;align-items:flex-start;">
+        <span class="file-ic">${ic('chat','',18)}</span>
+        <div><div style="font-weight:600;margin-bottom:2px;">Message de votre équipe</div><div style="color:var(--ink-2);line-height:1.5;">${esc(project.welcomeMessage)}</div></div>
       </div>` : '';
     const pausedBanner = project.paused ? `
-      <div class="fl-card" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;">
-        <span style="color:var(--peach);display:flex;">${ic('pause','',22)}</span>
+      <div class="fl-card" style="margin-bottom:16px;display:flex;gap:14px;align-items:center;">
+        <span class="file-ic" style="background:rgba(168,101,15,.12);color:var(--peach);">${ic('pause','',18)}</span>
         <div><div style="font-weight:600;">Projet en pause</div><div class="fl-meta">Votre équipe a temporairement suspendu l'avancement. N'hésitez pas à la contacter pour plus de détails.</div></div>
       </div>` : '';
     const unsignedQuotes = (db.invoices||[]).filter(i=>i.clientId===me.id && i.type==='Devis' && !i.signedAt);
     const quotesBanner = unsignedQuotes.map(q=>`
-      <div class="fl-card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div style="display:flex;gap:12px;align-items:center;min-width:0;">
+      <div class="fl-card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-color:var(--coral-glow);">
+        <div style="display:flex;gap:14px;align-items:center;min-width:0;">
           <span class="file-ic">${ic('receipt','',18)}</span>
           <div style="min-width:0;">
             <div style="font-weight:600;">Devis en attente de votre accord</div>
@@ -4473,28 +4664,38 @@ DOCUMENTS
         </div>
         <button class="btn btn-primary btn-sm btn-sign-quote" data-id="${q.id}">${ic('check','',14)} J'accepte ce devis</button>
       </div>`).join('');
+    const deliveryBanner = project.deliverable ? `
+      <div class="fl-card" style="margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <span class="file-ic" style="background:rgba(47,125,79,.12);color:var(--sage);">${ic('box','',18)}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;">Vos fichiers sont livrés — ${esc(project.deliverable.name)}</div>
+          <div class="fl-meta">Livré le ${new Date(project.deliverable.deliveredAt).toLocaleDateString('fr-FR')} · ${(project.deliverable.size/1024/1024).toFixed(2)} Mo</div>
+        </div>
+        <button class="btn btn-success btn-sm btn-download-delivery" data-pid="${project.id}">${ic('download','',14)} Télécharger</button>
+      </div>` : '';
 
-    // À faire (aperçu)
+    // Ce qu'on attend du client : tâches ouvertes + documents à remplir
     const tasks = Array.isArray(project.clientTasks) ? project.clientTasks : [];
     const openTasks = tasks.map((t,i)=>({t,i})).filter(x=>!x.t.done);
+    const docsToFill = getProjectDocs(project.id).filter(d=>d.status==='pending');
+    const todoCount = openTasks.length + docsToFill.length;
 
-    // Fichiers et documents (aperçu)
+    // Fichiers récents
     const files = [...(project.clientFiles||[])].sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt)).slice(0,3);
-    const docs = getProjectDocs(project.id).filter(d=>d.status==='pending').slice(0,3);
 
     // Avis (projet terminé)
     const reviewCard = (()=>{
       if(project.status!=='done') return '';
       const existing = (db.reviews||[]).find(r=>r.projectId===project.id && r.clientId===me.id);
       if(existing){
-        return `<section class="fl-card" style="margin-bottom:20px;">
+        return `<section class="fl-card" style="margin-bottom:16px;">
           <div class="fl-card-head">${ic('star','',18)}<h2>Votre avis</h2></div>
           <div style="color:var(--peach);margin-bottom:6px;">${ic('starfill','',18).repeat(existing.rating)}${ic('star','',18).repeat(5-existing.rating)}</div>
           ${existing.comment?`<div style="color:var(--ink-3);line-height:1.5;">« ${esc(existing.comment)} »</div>`:''}
           <div class="fl-meta" style="margin-top:8px;">Merci pour votre retour, envoyé le ${new Date(existing.createdAt).toLocaleDateString('fr-FR')}.</div>
         </section>`;
       }
-      return `<section class="fl-card" style="margin-bottom:20px;">
+      return `<section class="fl-card" style="margin-bottom:16px;">
         <div class="fl-card-head">${ic('party','',18)}<h2>Projet terminé — votre avis compte</h2></div>
         <p style="color:var(--ink-3);margin-bottom:14px;">Une minute pour nous dire comment s'est passée la collaboration ?</p>
         <div id="review-stars" style="display:flex;gap:6px;margin-bottom:14px;color:var(--peach);cursor:pointer;" role="radiogroup" aria-label="Note sur 5">
@@ -4514,83 +4715,94 @@ DOCUMENTS
           <path d="M0 220 C 120 120, 220 100, 420 40" fill="none" stroke="#c4502c" stroke-width="34" stroke-linecap="round"/>
           <path d="M40 250 C 160 160, 260 150, 440 110" fill="none" stroke="#f2b38a" stroke-width="18" stroke-linecap="round"/>
         </svg>
-        <div style="position:relative;flex:1 1 320px;min-width:0;">
+        <div style="position:relative;flex:1 1 340px;min-width:0;">
           <div class="hello">Bonjour ${firstName}, voici votre projet</div>
           <h1 id="proj-title">${esc(project.name)}</h1>
-          ${project.description?`<div style="margin-top:6px;color:rgba(255,255,255,.75);line-height:1.45;">${esc(project.description)}</div>`:''}
+          ${current?`<div class="hero-step">${ic('arrowright','',14)}<span>Étape en cours : <strong>${esc(current.label)}</strong>${nextStep?` <span style="opacity:.7;">· ensuite ${esc(nextStep.label)}</span>`:''}</span></div>`:''}
           <div class="prog">
-            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Avancement</span><span style="font-weight:600;">${pct} %</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Avancement · ${doneSteps}/${tl.length} étapes</span><span style="font-weight:600;">${pct} %</span></div>
             <div class="prog-track"><i style="width:${pct}%;${pct===100?'background:#6ccb8f;':''}"></i></div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;">
-            <button id="btn-client-pdf" class="btn btn-ghost btn-sm">${ic('file','',14)} ${project.status==='done'?'Bilan de fin de projet':'Mon résumé PDF'}</button>
+            <button class="btn btn-primary btn-sm" onclick="goTab('discussion')">${ic('chat','',14)} Poser une question</button>
+            <button id="btn-client-pdf" class="btn btn-ghost btn-sm">${ic('file','',14)} ${project.status==='done'?'Bilan de fin de projet':'Résumé PDF'}</button>
             ${project.websiteUrl&&safeUrl(project.websiteUrl)?`<a href="${esc(safeUrl(project.websiteUrl))}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">${ic('globe','',14)} Voir le site</a>`:''}
           </div>
         </div>
-        <div style="position:relative;display:flex;gap:12px;flex-wrap:wrap;">
+        <div class="hero-tiles">
           <div class="tile"><div class="k">Prochaine échéance</div><div class="v">${dueValue}</div>${dueNote?`<div class="k" style="margin-top:2px;">${dueNote}</div>`:''}</div>
           <div class="tile"><div class="k">Statut</div><div class="v">${statusLabel}</div></div>
+          <div class="tile"><div class="k">À faire de votre côté</div><div class="v">${todoCount}</div></div>
         </div>
       </section>
 
+      ${quotesBanner}
+      ${deliveryBanner}
       ${welcomeBanner}
       ${pausedBanner}
-      ${quotesBanner}
-
-      ${project.deliverable?`
-      <div class="fl-card" style="margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-        <span class="file-ic" style="background:rgba(47,125,79,.12);color:var(--sage);">${ic('box','',18)}</span>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:600;">Fichiers livrés — ${esc(project.deliverable.name)}</div>
-          <div class="fl-meta">Livré le ${new Date(project.deliverable.deliveredAt).toLocaleDateString('fr-FR')} · ${(project.deliverable.size/1024/1024).toFixed(2)} Mo</div>
-        </div>
-        <button class="btn btn-success btn-sm btn-download-delivery" data-pid="${project.id}">${ic('download','',14)} Télécharger</button>
-      </div>`:''}
-
       ${reviewCard}
 
-      <div class="fl-grid">
-        <section class="fl-card" aria-labelledby="todo-t">
-          <div class="fl-card-head">${ic('check','',18)}<h2 id="todo-t">À faire</h2><button class="fl-link" onclick="goTab('client-checklist')">Tout voir</button></div>
-          ${openTasks.length ? openTasks.slice(0,4).map(({t,i})=>`
-            <label class="ctodo">
-              <input type="checkbox" class="ctk-check" data-i="${i}" />
-              <span style="flex:1;min-width:0;">${esc(t.label)}${t.note?`<span class="fl-meta" style="display:block;">${esc(t.note)}</span>`:''}</span>
-            </label>`).join('')
-            : `<div class="fl-empty">${tasks.length?'Tout est fait, merci !':"Rien à faire pour l'instant."}</div>`}
-        </section>
+      <div class="client-layout">
+        <div class="client-main">
+          <section class="fl-card" aria-labelledby="todo-t" style="margin-bottom:20px;">
+            <div class="fl-card-head">${ic('checkc','',18)}<h2 id="todo-t">Ce qu'on attend de vous</h2>${todoCount?`<span class="chip" style="background:var(--coral-tint);color:var(--coral-soft);">${todoCount}</span>`:''}</div>
+            ${todoCount===0 ? `
+              <div style="display:flex;align-items:center;gap:12px;padding:6px 0;">
+                <span class="file-ic" style="background:rgba(47,125,79,.12);color:var(--sage);">${ic('check','',18)}</span>
+                <div><div style="font-weight:600;">Tout est à jour</div><div class="fl-meta">Votre équipe vous préviendra ici si elle a besoin de quelque chose.</div></div>
+              </div>` : `
+              ${docsToFill.map(d=>`
+                <div class="fl-row">
+                  <span class="file-ic" style="width:34px;height:34px;">${ic('clipboard','',16)}</span>
+                  <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(d.name)}</div><div class="fl-meta">Document à compléter</div></div>
+                  <button class="btn btn-primary btn-sm" onclick="goTab('documents')">Remplir</button>
+                </div>`).join('')}
+              ${openTasks.map(({t,i})=>`
+                <label class="ctodo">
+                  <input type="checkbox" class="ctk-check" data-i="${i}" />
+                  <span style="flex:1;min-width:0;">${esc(t.label)}${t.note?`<span class="fl-meta" style="display:block;">${esc(t.note)}</span>`:''}</span>
+                </label>`).join('')}`}
+          </section>
 
-        <section class="fl-card" aria-labelledby="files-t">
-          <div class="fl-card-head">${ic('upload','',18)}<h2 id="files-t">Mes fichiers et documents</h2></div>
-          ${docs.map(d=>`
-            <div class="fl-row" style="cursor:pointer;" onclick="goTab('documents')">
-              <span class="file-ic">${ic('clipboard','',16)}</span>
-              <div style="flex:1;min-width:0;"><div>${esc(d.name)}</div><div class="fl-meta">En attente de votre réponse</div></div>
-            </div>`).join('')}
-          ${files.map(f=>`
-            <div class="fl-row">
-              <span class="file-ic">${ic('file','',16)}</span>
-              <div style="flex:1;min-width:0;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(f.name)}</div><div class="fl-meta">Déposé le ${new Date(f.uploadedAt).toLocaleDateString('fr-FR')}</div></div>
-            </div>`).join('')}
-          ${!docs.length&&!files.length?'<div class="fl-empty">Aucun fichier pour le moment.</div>':''}
-          <button class="drop-btn" onclick="goTab('client-files')">${ic('plus','',16)} Déposer un fichier</button>
-        </section>
+          <section class="fl-card" aria-labelledby="steps-t">
+            <div class="fl-card-head">${ic('list','',18)}<h2 id="steps-t">Étapes du projet</h2><span class="fl-meta">${doneSteps} / ${tl.length}</span></div>
+            ${renderFullTimeline(tl, project.id)}
+          </section>
+        </div>
 
-        ${project.faq&&project.faq.length?`
-        <section class="fl-card" aria-labelledby="faq-t">
-          <div class="fl-card-head">${ic('question','',18)}<h2 id="faq-t">Questions fréquentes</h2></div>
-          ${project.faq.map(f=>`
-            <details class="faq-item">
-              <summary><span class="q">${esc(f.q)}</span>${ic('chevdown','',14)}</summary>
-              <div class="a">${esc(f.a||'—')}</div>
-            </details>`).join('')}
-        </section>`:''}
+        <aside class="client-side">
+          <section class="rubis-card" aria-labelledby="ask-t">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="rubis-gem">${ic('sparkle','',18)}</span>
+              <div><h2 id="ask-t">Assistant projet</h2><div class="sub">Une question sur votre projet ? Réponse immédiate.</div></div>
+            </div>
+            <form class="rubis-ask" id="home-qa-form" onsubmit="return false;">
+              <input id="home-qa-input" placeholder="Ex. : quand sera livré mon site ?" aria-label="Question pour l'assistant" maxlength="500" />
+              <button type="submit" aria-label="Envoyer la question">${ic('arrowright','',14)}</button>
+            </form>
+          </section>
+
+          <section class="fl-card" aria-labelledby="files-t">
+            <div class="fl-card-head">${ic('upload','',18)}<h2 id="files-t">Mes fichiers</h2><button class="fl-link" onclick="goTab('client-files')">Tout voir</button></div>
+            ${files.length ? files.map(f=>`
+              <div class="fl-row">
+                <span class="file-ic" style="width:34px;height:34px;">${ic('file','',16)}</span>
+                <div style="flex:1;min-width:0;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(f.name)}</div><div class="fl-meta">Déposé le ${new Date(f.uploadedAt).toLocaleDateString('fr-FR')}</div></div>
+              </div>`).join('') : '<div class="fl-empty">Aucun fichier déposé pour le moment.</div>'}
+            <button class="drop-btn" onclick="goTab('client-files')">${ic('plus','',16)} Déposer un fichier</button>
+          </section>
+
+          ${project.faq&&project.faq.length?`
+          <section class="fl-card" aria-labelledby="faq-t">
+            <div class="fl-card-head">${ic('question','',18)}<h2 id="faq-t">Questions fréquentes</h2></div>
+            ${project.faq.map(f=>`
+              <details class="faq-item">
+                <summary><span class="q">${esc(f.q)}</span>${ic('chevdown','',14)}</summary>
+                <div class="a">${esc(f.a||'—')}</div>
+              </details>`).join('')}
+          </section>`:''}
+        </aside>
       </div>
-
-      <section class="fl-card" aria-labelledby="steps-t">
-        <div class="fl-card-head">${ic('list','',18)}<h2 id="steps-t">Étapes du projet</h2><span class="fl-meta">${tl.filter(s=>s.status==='done').length} / ${tl.length}</span></div>
-        ${renderFullTimeline(tl, project.id)}
-      </section>
     </div>`;
   }
 
@@ -4601,6 +4813,12 @@ DOCUMENTS
         <h2 style="font-size:1.05rem;font-weight:700;">🔔 Notifications</h2>
         <button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button>
       </div>
+      ${pendingSignupCount()>0?`
+      <button onclick="openPendingSignupsModal()" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px;border-radius:10px;border:1px solid var(--coral-glow);background:var(--coral-tint);color:var(--ink);font:inherit;text-align:left;cursor:pointer;">
+        <span style="color:var(--coral);display:flex;">${ic('users','',20)}</span>
+        <span style="flex:1;"><strong>${pendingSignupCount()} demande${pendingSignupCount()>1?'s':''} d'inscription</strong><span class="fl-meta" style="display:block;">À accepter ou refuser</span></span>
+        <span class="fl-link">Examiner ${ic('chevright','',14)}</span>
+      </button>`:''}
       ${notifs.length===0
         ? `<div style="font-size:.85rem;color:var(--ink-4);padding:20px 0;text-align:center;">Aucune notification pour l'instant.</div>`
         : `<div style="max-height:400px;overflow-y:auto;">
@@ -4723,6 +4941,14 @@ DOCUMENTS
   }
 
   function wireClientHome(){
+    // Carte « Assistant projet » : la question part directement dans Discussion
+    const homeQa = document.getElementById('home-qa-form');
+    if(homeQa) homeQa.addEventListener('submit',e=>{
+      e.preventDefault();
+      const q = (document.getElementById('home-qa-input').value||'').trim();
+      window._qaPrefill = q || null;
+      goTab('discussion');
+    });
     // Aperçu « À faire » : cocher une tâche directement depuis l'accueil
     const homeProject = getUserProjects(me.id).find(p=>p.id===window._clientActiveProjectId)||getUserProject(me.id);
     document.querySelectorAll('.ctk-check').forEach(cb=>{
@@ -5165,6 +5391,9 @@ DOCUMENTS
   function closeModal(){
     const ov=document.getElementById('modal-overlay');
     if(ov){ ov.style.display='none'; ov.innerHTML=''; }
+    // Une demande d'inscription arrivée pendant qu'une autre fenêtre était
+    // ouverte s'affiche dès que celle-ci se ferme.
+    if(me && me.role!=='client') setTimeout(()=>{ if(typeof checkPendingSignupsPopup==='function') checkPendingSignupsPopup(); }, 300);
   }
 
   // Helper : modale de confirmation personnalisée (remplace confirm() natif)
@@ -6103,118 +6332,132 @@ DOCUMENTS
   }
 
   // ─── Tab: Admin Requests ────────────────────────
-  function renderAdminRequests(){
+  // ─── Demandes d'inscription : notification + fenêtre de validation ───
+  // (remplace l'ancien onglet « Demandes »). La fenêtre s'ouvre toute seule
+  // dès qu'une nouvelle demande arrive, et reste accessible depuis la cloche.
+  function renderPendingSignupsBody(){
     const pending = db.pendingUsers||[];
     const blocked = db.blockedAccounts||[];
-    return `<div class="fade-up">
-      <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:6px;">Demandes d'inscription</h1>
-      <p style="color:var(--ink-3);font-size:.875rem;margin-bottom:24px;">Acceptez, refusez ou bloquez les demandes de création de compte.</p>
-
-      ${pending.length===0
-        ? `<div class="glass-card" style="padding:48px;text-align:center;">
-            <div style="font-size:2.5rem;margin-bottom:12px;">✅</div>
-            <div style="color:var(--ink-3);font-size:.9rem;">Aucune demande en attente.</div>
-           </div>`
-        : `<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
-            ${pending.map(u=>`
-              <div class="glass-card" style="padding:18px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--plum));display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:#fff;flex-shrink:0;">${esc((u.firstName||u.username||'?')[0].toUpperCase())}</div>
-                <div style="flex:1;min-width:0;">
-                  <div style="font-weight:600;font-size:.95rem;">${esc(u.firstName||'')} ${esc(u.lastName||'')} <span style="color:var(--ink-3);font-weight:400;">@${esc(u.username)}</span></div>
-                  ${u.email?`<div style="font-size:.78rem;color:var(--ink-4);">✉️ ${esc(u.email)}</div>`:''}
-                  <div style="font-size:.72rem;color:var(--ink-4);margin-top:2px;">Demandé le ${u.requestedAt?new Date(u.requestedAt).toLocaleString('fr-FR'):'—'}</div>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                  <select class="glass-input req-role-select" data-uid="${u.id}" style="width:130px;padding:7px 10px;font-size:.8rem;">
-                    <option value="client">Client</option>
-                    ${me.role==='admin'?'<option value="controller">Contrôleur</option><option value="admin">Admin</option>':''}
-                  </select>
-                  <button class="btn btn-success btn-sm btn-approve-req" data-uid="${u.id}" title="Approuver">✅ Approuver</button>
-                  <button class="btn btn-ghost btn-sm btn-reject-req" data-uid="${u.id}" title="Refuser">❌ Refuser</button>
-                  <button class="btn btn-danger btn-sm btn-block-req" data-uid="${u.id}" title="Bloquer">🚫 Bloquer</button>
-                </div>
-              </div>`).join('')}
-           </div>`}
-
-      ${blocked.length>0?`
-      <div class="glass-card" style="padding:20px;">
-        <h2 style="font-size:.95rem;font-weight:600;margin-bottom:14px;color:var(--danger);">🚫 Comptes bloqués (${blocked.length})</h2>
-        ${blocked.map(b=>`
-          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--glass-edge);">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:.85rem;font-weight:500;">@${esc(b.username)}</div>
-              ${b.email?`<div style="font-size:.75rem;color:var(--ink-4);">${esc(b.email)}</div>`:''}
-              <div style="font-size:.7rem;color:var(--ink-4);">Bloqué le ${b.blockedAt?new Date(b.blockedAt).toLocaleString('fr-FR'):'—'}</div>
+    return `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <span class="file-ic" style="width:40px;height:40px;">${ic('users','',20)}</span>
+        <div style="flex:1;min-width:0;">
+          <h2 style="margin:0;">Demandes d'inscription</h2>
+          <div class="fl-meta">${pending.length?`${pending.length} demande${pending.length>1?'s':''} en attente de votre décision`:'Aucune demande en attente'}</div>
+        </div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px;max-height:56vh;overflow-y:auto;">
+        ${pending.length===0 ? `<div class="fl-empty" style="text-align:center;padding:24px 0;">Tout est traité.</div>` : pending.map(u=>`
+          <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-3);">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span class="avatar" style="width:36px;height:36px;font-size:.85rem;background:var(--coral);">${esc((u.firstName||u.username||'?')[0].toUpperCase())}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;">${esc(u.firstName||'')} ${esc(u.lastName||'')} <span style="color:var(--ink-3);font-weight:400;">@${esc(u.username)}</span></div>
+                <div class="fl-meta">${u.email?esc(u.email)+' · ':''}demandé le ${u.requestedAt?new Date(u.requestedAt).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—'}</div>
+              </div>
             </div>
-            <button class="btn btn-ghost btn-sm btn-unblock-req" data-username="${esc(b.username)}" title="Débloquer">↩ Débloquer</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;">
+              <label class="fl-meta" for="ps-role-${u.id}">Rôle</label>
+              <select id="ps-role-${u.id}" class="glass-input ps-role" data-uid="${u.id}" style="width:auto;min-width:130px;">
+                <option value="client">Client</option>
+                ${me.role==='admin'?'<option value="controller">Contrôleur</option><option value="admin">Admin</option>':''}
+              </select>
+              <span style="flex:1;"></span>
+              <button class="btn btn-danger btn-sm ps-block" data-uid="${u.id}">${ic('ban','',14)} Bloquer</button>
+              <button class="btn btn-ghost btn-sm ps-reject" data-uid="${u.id}">${ic('close','',14)} Refuser</button>
+              <button class="btn btn-primary btn-sm ps-approve" data-uid="${u.id}">${ic('check','',14)} Accepter</button>
+            </div>
           </div>`).join('')}
-      </div>`:''}
-    </div>`;
+      </div>
+      ${blocked.length?`
+      <details style="margin-top:14px;">
+        <summary class="fl-meta" style="cursor:pointer;">Comptes bloqués (${blocked.length})</summary>
+        ${blocked.map(b=>`
+          <div class="fl-row">
+            <div style="flex:1;min-width:0;"><div>@${esc(b.username)}</div><div class="fl-meta">${b.email?esc(b.email)+' · ':''}bloqué le ${b.blockedAt?new Date(b.blockedAt).toLocaleDateString('fr-FR'):'—'}</div></div>
+            <button class="btn btn-ghost btn-sm ps-unblock" data-username="${esc(b.username)}">${ic('undo','',14)} Débloquer</button>
+          </div>`).join('')}
+      </details>`:''}`;
   }
 
-  function wireAdminRequests(){
-    document.querySelectorAll('.btn-approve-req').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
-        if(!req) return;
-        const roleEl = document.querySelector(`.req-role-select[data-uid="${req.id}"]`);
-        const role = roleEl ? roleEl.value : 'client';
-        if(!canCreateRole(me.role, role)){
-          toast('Vous n\'avez pas la permission d\'attribuer ce rôle.','error'); return;
-        }
-        db.users.push({
-          id: req.id,
-          username: req.username,
-          firstName: req.firstName||'',
-          lastName: req.lastName||'',
-          email: req.email||'',
-          password: req.password,
-          photo: null,
-          role: role,
-          internalNote: ''
-        });
+  function _signupSeen(){
+    if(!window._signupSeenSet){
+      try{ window._signupSeenSet = new Set(JSON.parse(sessionStorage.getItem('flow_signup_seen')||'[]')); }
+      catch(_){ window._signupSeenSet = new Set(); }
+    }
+    return window._signupSeenSet;
+  }
+  function openPendingSignupsModal(){
+    const seen = _signupSeen();
+    (db.pendingUsers||[]).forEach(u=>seen.add(u.id));
+    try{ sessionStorage.setItem('flow_signup_seen', JSON.stringify([...seen])); }catch(_){}
+    showModal(renderPendingSignupsBody(), wirePendingSignups);
+  }
+  // Après une décision : met à jour la cloche et l'écran, puis rouvre la
+  // fenêtre s'il reste des demandes à traiter.
+  function _afterSignupDecision(){
+    saveDB();
+    refreshTopbar();
+    if(activeTab==='home') refreshAdminTab();
+    if((db.pendingUsers||[]).length) openPendingSignupsModal(); else closeModal();
+  }
+  function wirePendingSignups(){
+    const box = document.querySelector('.modal-box');
+    if(!box) return;
+    box.querySelectorAll('.ps-approve').forEach(btn=>btn.addEventListener('click',()=>{
+      const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
+      if(!req) return;
+      const roleEl = box.querySelector(`.ps-role[data-uid="${req.id}"]`);
+      const role = roleEl ? roleEl.value : 'client';
+      if(!canCreateRole(me.role, role)){ toast('Vous n\'avez pas la permission d\'attribuer ce rôle.','error'); return; }
+      db.users.push({ id:req.id, username:req.username, firstName:req.firstName||'', lastName:req.lastName||'', email:req.email||'', password:req.password, photo:null, role, internalNote:'' });
+      db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
+      logActivity('user_created','Compte approuvé : @'+req.username+' ('+role+')');
+      toast('Compte @'+req.username+' accepté.','success');
+      _afterSignupDecision();
+    }));
+    box.querySelectorAll('.ps-reject').forEach(btn=>btn.addEventListener('click',()=>{
+      const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
+      if(!req) return;
+      confirmAction('Refuser la demande de @'+req.username+' ?', ()=>{
         db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
-        logActivity('user_created','Compte approuvé : @'+req.username+' ('+role+')');
-        saveDB(); toast('Compte @'+req.username+' approuvé !','success'); refreshAdminTab();
-      });
-    });
-
-    document.querySelectorAll('.btn-reject-req').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
-        if(!req) return;
-        confirmAction('Refuser la demande de @'+req.username+' ?', ()=>{
-          db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
-          logActivity('request_rejected','Demande refusée : @'+req.username);
-          saveDB(); toast('Demande refusée.','info'); refreshAdminTab();
-        }, {label:'Refuser', danger:true});
-      });
-    });
-
-    document.querySelectorAll('.btn-block-req').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
-        if(!req) return;
-        confirmAction('Bloquer @'+req.username+' ? Aucune future demande ne sera acceptée avec ce pseudo/email.', ()=>{
-          if(!db.blockedAccounts) db.blockedAccounts = [];
-          db.blockedAccounts.push({ username: req.username, email: req.email||'', blockedAt: new Date().toISOString(), blockedBy: me.username });
-          db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
-          logActivity('request_blocked','Compte bloqué : @'+req.username);
-          saveDB(); toast('Compte bloqué.','info'); refreshAdminTab();
-        }, {label:'Bloquer', danger:true});
-      });
-    });
-
-    document.querySelectorAll('.btn-unblock-req').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const uname = btn.dataset.username;
-        confirmAction('Débloquer @'+uname+' ?', ()=>{
-          db.blockedAccounts = (db.blockedAccounts||[]).filter(b=>b.username!==uname);
-          logActivity('request_unblocked','Compte débloqué : @'+uname);
-          saveDB(); toast('Compte débloqué.','success'); refreshAdminTab();
-        }, {label:'Débloquer', danger:false});
-      });
-    });
+        logActivity('request_rejected','Demande refusée : @'+req.username);
+        toast('Demande refusée.','info');
+        _afterSignupDecision();
+      }, {label:'Refuser', danger:true});
+    }));
+    box.querySelectorAll('.ps-block').forEach(btn=>btn.addEventListener('click',()=>{
+      const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
+      if(!req) return;
+      confirmAction('Bloquer @'+req.username+' ? Aucune future demande ne sera acceptée avec ce pseudo ou cet email.', ()=>{
+        if(!db.blockedAccounts) db.blockedAccounts = [];
+        db.blockedAccounts.push({ username:req.username, email:req.email||'', blockedAt:new Date().toISOString(), blockedBy:me.username });
+        db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
+        logActivity('request_blocked','Compte bloqué : @'+req.username);
+        toast('Compte bloqué.','info');
+        _afterSignupDecision();
+      }, {label:'Bloquer', danger:true});
+    }));
+    box.querySelectorAll('.ps-unblock').forEach(btn=>btn.addEventListener('click',()=>{
+      const uname = btn.dataset.username;
+      db.blockedAccounts = (db.blockedAccounts||[]).filter(b=>b.username!==uname);
+      logActivity('request_unblocked','Compte débloqué : @'+uname);
+      toast('Compte débloqué.','success');
+      saveDB(); openPendingSignupsModal();
+    }));
+  }
+  // Ouvre automatiquement la fenêtre quand une demande pas encore vue arrive
+  // (à la connexion, ou en temps réel via la synchronisation Firebase).
+  function checkPendingSignupsPopup(){
+    if(!me || me.role==='client' || !canReviewRequests()) return;
+    const pending = db.pendingUsers||[];
+    const fresh = pending.filter(u=>!_signupSeen().has(u.id));
+    if(!fresh.length) return;
+    const ov = document.getElementById('modal-overlay');
+    if(ov && ov.style.display==='flex') return; // une autre fenêtre est ouverte : on attendra sa fermeture
+    sendBrowserNotif('Flow — Nouvelle demande d\'inscription', fresh.map(u=>'@'+u.username).join(', ')+' souhaite créer un compte.');
+    openPendingSignupsModal();
   }
 
   // ─── Tab: Mon Projet (admin/controller with project) ───
@@ -8774,13 +9017,37 @@ Réponds UNIQUEMENT avec un objet JSON de la forme {"urgency":"...","category":"
       }).join('');
   }
 
+  // Bulles de la discussion (partagées par l'historique, l'envoi et le résumé d'accueil)
+  const QA_TYPING = '<span class="qa-typing" aria-label="L\'assistant écrit"><i></i><i></i><i></i></span>';
+  function qaUserBubbleHTML(text, time){
+    return `<div class="qa-row qa-row-user"><div class="qa-bubble qa-user">${esc(text)}</div>${time?`<div class="qa-time">${time}</div>`:''}</div>`;
+  }
+  function qaBotBubbleHTML(id, inner, label){
+    return `<span class="qa-avatar" aria-hidden="true">${ic('sparkle','',14)}</span>
+      <div class="qa-bot-col">
+        ${label?`<div class="qa-label">${label}</div>`:''}
+        <div ${id?`id="${id}-content"`:''} class="qa-md qa-bubble qa-bot">${inner}</div>
+      </div>`;
+  }
+  function qaEmptyStateHTML(project, suggestions){
+    return `<div id="qa-empty-state" class="qa-empty">
+      <span class="qa-empty-ic">${ic('sparkle','',28)}</span>
+      <h2>Bonjour ${esc(me.firstName||me.username)}, que voulez-vous savoir ?</h2>
+      <p>Je connais l'avancement de <strong>${esc(project?project.name:'votre projet')}</strong>, ses étapes, ses délais et vos documents.</p>
+      ${suggestions&&suggestions.length?`
+      <div id="qa-suggestions" class="qa-sugs">
+        ${suggestions.map(s=>`<button class="qa-suggestion" data-q="${esc(s)}">${ic('chat','',16)}<span>${esc(s)}</span></button>`).join('')}
+      </div>`:''}
+    </div>`;
+  }
+
   function renderClientDiscussionQA(){
     const proj = getUserProject(me.id);
     if(!proj){
-      return `<div class="fade-up" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;padding:48px 24px;text-align:center;">
-        <div style="font-size:2.5rem;margin-bottom:16px;opacity:.6;">📁</div>
-        <div style="font-size:.95rem;font-weight:600;color:var(--ink-2);margin-bottom:8px;">Aucun projet associé</div>
-        <div style="font-size:.82rem;color:var(--ink-4);line-height:1.6;max-width:280px;">L'assistant sera disponible dès que votre équipe aura créé votre projet.</div>
+      return `<div class="fade-up qa-window" style="align-items:center;justify-content:center;text-align:center;padding:48px 24px;">
+        <span class="qa-empty-ic">${ic('folder','',28)}</span>
+        <h2 style="margin:14px 0 6px;">Aucun projet associé</h2>
+        <p class="fl-meta" style="max-width:300px;">L'assistant sera disponible dès que votre équipe aura créé votre projet.</p>
       </div>`;
     }
     const qaReqs = (db.aiRequests||[])
@@ -8789,97 +9056,68 @@ Réponds UNIQUEMENT avec un objet JSON de la forme {"urgency":"...","category":"
     const inCooldown = _qaCooldownUntil > Date.now();
     const cooldownSec = inCooldown ? Math.ceil((_qaCooldownUntil - Date.now()) / 1000) : 0;
     const hasHistory = qaReqs.length > 0;
-
-    // #2 — Suggestions contextuelles dynamiques
     const suggestions = generateContextSuggestions(proj);
 
     // Historique de versions du site — "ce qui a changé depuis votre dernière visite"
     const siteHistory = proj.siteHistory||[];
-    const lastSeenKey = 'flow_site_history_seen_'+proj.id;
-    const lastSeenAt = localStorage.getItem(lastSeenKey);
+    const lastSeenAt = localStorage.getItem('flow_site_history_seen_'+proj.id);
     const newVersionsCount = lastSeenAt ? siteHistory.filter(h=>new Date(h.replacedAt)>new Date(lastSeenAt)).length : 0;
     const versionBanner = siteHistory.length>0 ? `
-      <div id="qa-version-banner" style="background:rgba(155,184,216,.07);border:1px solid rgba(155,184,216,.18);border-radius:12px;padding:10px 14px;margin-bottom:12px;flex-shrink:0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;" id="qa-version-toggle">
-          <span style="font-size:.8rem;color:var(--sky);font-weight:600;">🌐 ${newVersionsCount>0?`${newVersionsCount} mise(s) à jour du site depuis votre dernière visite`:'Historique des mises à jour du site'}</span>
-          <span style="font-size:.7rem;color:var(--ink-4);">${siteHistory.length} version(s) précédente(s) ▾</span>
-        </div>
-        <div id="qa-version-list" style="display:none;margin-top:10px;">
+      <div id="qa-version-banner" class="qa-banner">
+        <button type="button" id="qa-version-toggle" class="qa-banner-btn">
+          ${ic('globe','',16)}
+          <span style="flex:1;">${newVersionsCount>0?`${newVersionsCount} mise(s) à jour du site depuis votre dernière visite`:'Historique des mises à jour du site'}</span>
+          <span class="fl-meta">${siteHistory.length} version(s)</span>${ic('chevdown','',14)}
+        </button>
+        <div id="qa-version-list" style="display:none;margin-top:8px;">
           ${[...siteHistory].reverse().map(h=>`
-            <div style="padding:8px 0;border-top:1px solid rgba(var(--fg-rgb),.06);font-size:.78rem;color:var(--ink-3);">
-              <div style="font-weight:600;color:var(--ink-2);">Version remplacée le ${new Date(h.replacedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</div>
-              ${h.excerptBefore?`<div style="margin-top:3px;font-style:italic;color:var(--ink-4);">Ancien contenu : "${esc(h.excerptBefore.substring(0,120))}…"</div>`:''}
+            <div class="fl-row" style="display:block;">
+              <div style="font-weight:600;">Version remplacée le ${new Date(h.replacedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}</div>
+              ${h.excerptBefore?`<div class="fl-meta" style="font-style:italic;">Ancien contenu : « ${esc(h.excerptBefore.substring(0,120))}… »</div>`:''}
             </div>`).join('')}
         </div>
       </div>` : '';
 
-    return `<div class="fade-up" style="display:flex;flex-direction:column;height:calc(100vh - 120px);max-height:calc(100vh - 120px);">
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid rgba(var(--fg-rgb),.07);flex-shrink:0;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--coral),var(--peach));display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;box-shadow:0 2px 10px rgba(217,119,87,.3);">✨</div>
-          <div>
-            <div style="font-size:.9rem;font-weight:700;letter-spacing:-.01em;">Assistant projet</div>
-            <div style="font-size:.7rem;color:var(--ink-4);">Posez vos questions sur le site et l'avancement</div>
-          </div>
+    let lastDay = '';
+    const history = qaReqs.map(r=>{
+      const d = new Date(r.createdAt);
+      const day = isNaN(d) ? '' : d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+      const sep = day && day!==lastDay ? `<div class="qa-day"><span>${day}</span></div>` : '';
+      lastDay = day;
+      const t = isNaN(d) ? '' : d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      return `${sep}${qaUserBubbleHTML(r.originalMessage, t)}
+        <div class="qa-row qa-row-bot">${qaBotBubbleHTML('', renderMarkdown(r.groqAnswer||r.geminiAnswer||''))}</div>`;
+    }).join('');
+
+    return `<div class="fade-up qa-window">
+      <header class="qa-head">
+        <span class="qa-head-ic">${ic('sparkle','',20)}</span>
+        <div style="flex:1;min-width:0;">
+          <div class="qa-head-t">Assistant projet <span class="qa-online" title="Disponible"></span></div>
+          <div class="fl-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(proj.name)} · réponses instantanées sur l'avancement, les délais et le site</div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <span id="qa-rate-badge" style="font-size:.67rem;padding:2px 8px;border-radius:999px;
-            background:${inCooldown?'rgba(220,80,80,.15)':'rgba(155,184,216,.08)'};
-            border:1px solid ${inCooldown?'rgba(220,80,80,.3)':'rgba(155,184,216,.2)'};
-            color:${inCooldown?'#f08a8a':'var(--sky)'};">
-            ${inCooldown ? `⏸ ${cooldownSec}s` : `${_qaBurstCount}/${QA_BURST_SIZE}`}
-          </span>
-          ${hasHistory ? `<button id="qa-clear-btn" title="Effacer la conversation" style="background:none;border:none;cursor:pointer;color:var(--ink-4);font-size:.8rem;padding:4px 6px;border-radius:6px;transition:color .15s;" onmouseover="this.style.color='#f08a8a'" onmouseout="this.style.color='var(--ink-4)'">🗑</button>` : ''}
-        </div>
-      </div>
+        <span id="qa-rate-badge" class="chip" title="Messages envoyés dans la série en cours"
+          style="background:${inCooldown?'rgba(180,35,24,.1)':'rgba(var(--fg-rgb),.06)'};color:${inCooldown?'var(--danger)':'var(--ink-3)'};">
+          ${inCooldown ? `⏸ ${cooldownSec}s` : `${_qaBurstCount}/${QA_BURST_SIZE}`}
+        </span>
+        ${hasHistory ? `<button id="qa-clear-btn" class="tb-icon" title="Effacer la conversation" aria-label="Effacer la conversation">${ic('trash','',18)}</button>` : ''}
+      </header>
       ${versionBanner}
-      <!-- Messages -->
-      <div id="qa-messages" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:12px 0 6px;min-height:0;">
-        ${!hasHistory
-          ? `<div id="qa-empty-state" style="display:flex;flex-direction:column;align-items:center;padding:28px 8px 16px;">
-              <div style="font-size:2rem;margin-bottom:10px;opacity:.5;">💬</div>
-              <div style="font-size:.85rem;color:var(--ink-4);margin-bottom:20px;text-align:center;">Commencez la conversation !</div>
-              <div id="qa-suggestions" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:360px;">
-                ${suggestions.map(s=>`<button class="qa-suggestion" data-q="${esc(s)}">${esc(s)}</button>`).join('')}
-              </div>
-            </div>`
-          : qaReqs.map(r=>{
-              const t=(d=>isNaN(d)?'':d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}))(new Date(r.createdAt));
-              return `
-              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-                <div style="max-width:82%;background:var(--coral);color:#fff;border-radius:18px 18px 5px 18px;padding:10px 14px;font-size:.875rem;line-height:1.55;word-break:break-word;">${esc(r.originalMessage)}</div>
-                <div style="font-size:.63rem;color:var(--ink-4);padding-right:2px;">${t}</div>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:8px;">
-                <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,rgba(155,184,216,.25),rgba(155,184,216,.12));display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;margin-top:2px;">✨</div>
-                <div style="flex:1;min-width:0;">
-                  <div class="qa-md" style="background:rgba(var(--fg-rgb),.04);border:1px solid rgba(var(--fg-rgb),.08);border-radius:5px 18px 18px 18px;padding:11px 14px;font-size:.875rem;color:var(--ink-2);line-height:1.65;word-break:break-word;">${renderMarkdown(r.groqAnswer||r.geminiAnswer||'')}</div>
-                </div>
-              </div>`;
-            }).join('')}
+      <div id="qa-messages" class="qa-msgs">
+        ${hasHistory ? history : qaEmptyStateHTML(proj, suggestions)}
       </div>
-      <!-- Input -->
-      <div style="padding:10px 0 2px;border-top:1px solid rgba(var(--fg-rgb),.06);flex-shrink:0;">
-        <div style="display:flex;gap:6px;align-items:flex-end;">
-          <div style="flex:1;position:relative;">
-            <textarea id="qa-input" maxlength="500"
-              placeholder="${inCooldown?`Disponible dans ${cooldownSec}s…`:'Posez une question…'}" rows="1"
-              style="width:100%;resize:none;background:rgba(var(--fg-rgb),.05);border:1px solid rgba(var(--fg-rgb),.10);border-radius:14px;padding:11px 14px 11px 14px;font-size:.875rem;color:var(--ink);font-family:inherit;line-height:1.5;box-sizing:border-box;outline:none;transition:border-color .2s,background .2s;min-height:44px;max-height:120px;overflow-y:auto;"
-              onfocus="this.style.borderColor='rgba(155,184,216,.38)';this.style.background='rgba(var(--fg-rgb),.07)'"
-              onblur="this.style.borderColor='rgba(var(--fg-rgb),.10)';this.style.background='rgba(var(--fg-rgb),.05)'"
-              ${inCooldown?'disabled':''}></textarea>
-            <span id="qa-char-count" style="position:absolute;bottom:6px;right:6px;font-size:.6rem;color:var(--ink-4);pointer-events:none;"></span>
-          </div>
-          <!-- Bouton micro : caché par défaut, affiché si Web Speech API disponible -->
-          <button id="qa-voice-btn" title="Dictée vocale" style="display:none;width:40px;height:40px;flex-shrink:0;border-radius:12px;background:rgba(155,184,216,.10);border:1px solid rgba(155,184,216,.20);cursor:pointer;align-items:center;justify-content:center;font-size:1rem;color:var(--sky);transition:background .15s;">🎤</button>
-          <button id="qa-send-btn" class="btn btn-primary"
-            style="width:40px;height:40px;flex-shrink:0;padding:0;border-radius:12px;display:flex;align-items:center;justify-content:center;"
-            ${inCooldown?'disabled':''}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 12V2M2 7l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
+      <footer class="qa-composer">
+        <div class="qa-inputbox">
+          <textarea id="qa-input" maxlength="500" rows="1"
+            placeholder="${inCooldown?`Disponible dans ${cooldownSec}s…`:'Écrivez votre question…'}" aria-label="Votre question"
+            ${inCooldown?'disabled':''}></textarea>
+          <span id="qa-char-count" class="qa-count"></span>
+          <!-- Bouton micro : caché par défaut, affiché si la dictée vocale est disponible -->
+          <button id="qa-voice-btn" class="qa-icon-btn" title="Dictée vocale" aria-label="Dictée vocale" style="display:none;">🎤</button>
+          <button id="qa-send-btn" class="qa-send" aria-label="Envoyer" ${inCooldown?'disabled':''}>${ic('send','',18)}</button>
         </div>
-      </div>
+        <div class="qa-hint">Entrée pour envoyer · Maj + Entrée pour aller à la ligne</div>
+      </footer>
     </div>`;
   }
 
@@ -8969,19 +9207,8 @@ Utilise du markdown simple (**gras**, listes à puces, titres ###) pour structur
     const msgId = 'brief_'+Date.now();
     const wrap = document.createElement('div');
     wrap.id = msgId+'-wrap';
-    wrap.style.cssText='display:flex;align-items:flex-start;gap:8px;';
-    wrap.innerHTML=`
-      <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,rgba(217,119,87,.35),rgba(240,169,136,.2));display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;margin-top:2px;">✨</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:.68rem;color:var(--ink-4);margin-bottom:4px;">Résumé automatique</div>
-        <div id="${msgId}-content" class="qa-md" style="background:rgba(217,119,87,.06);border:1px solid rgba(217,119,87,.15);border-radius:5px 18px 18px 18px;padding:11px 14px;font-size:.875rem;color:var(--ink-2);line-height:1.65;word-break:break-word;">
-          <span style="display:inline-flex;gap:4px;align-items:center;">
-            <span style="width:5px;height:5px;border-radius:50%;background:var(--ink-4);animation:qa-dot 1.2s 0s infinite;display:inline-block;"></span>
-            <span style="width:5px;height:5px;border-radius:50%;background:var(--ink-4);animation:qa-dot 1.2s .2s infinite;display:inline-block;"></span>
-            <span style="width:5px;height:5px;border-radius:50%;background:var(--ink-4);animation:qa-dot 1.2s .4s infinite;display:inline-block;"></span>
-          </span>
-        </div>
-      </div>`;
+    wrap.className = 'qa-row qa-row-bot';
+    wrap.innerHTML = qaBotBubbleHTML(msgId, QA_TYPING, 'Résumé de votre projet');
     msgs.appendChild(wrap);
     msgs.scrollTop = msgs.scrollHeight;
     // Construire le prompt
@@ -9022,11 +9249,9 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
       const wrap=document.getElementById(msgId+'-wrap');
       if(wrap) wrap.remove();
       // Recreate empty state
-      const emptyDiv=document.createElement('div');
-      emptyDiv.id='qa-empty-state';
-      emptyDiv.style.cssText='display:flex;flex-direction:column;align-items:center;padding:28px 8px 16px;';
-      emptyDiv.innerHTML=`<div style="font-size:2rem;margin-bottom:10px;opacity:.5;">💬</div><div style="font-size:.85rem;color:var(--ink-4);margin-bottom:20px;text-align:center;">Commencez la conversation !</div>`;
-      msgs.prepend(emptyDiv);
+      const holder=document.createElement('div');
+      holder.innerHTML=qaEmptyStateHTML(proj, []);
+      msgs.prepend(holder.firstElementChild);
     }
   }
 
@@ -9100,16 +9325,14 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
           clearInterval(_qaCooldownTimer);
           _qaCooldownUntil = 0;
           badge.textContent = `${_qaBurstCount}/${QA_BURST_SIZE}`;
-          badge.style.background = 'rgba(155,184,216,.08)';
-          badge.style.borderColor = 'rgba(155,184,216,.2)';
-          badge.style.color = 'var(--sky)';
-          if(inp){ inp.disabled=false; inp.placeholder='Posez une question…'; inp.focus(); }
+          badge.style.background = 'rgba(var(--fg-rgb),.06)';
+          badge.style.color = 'var(--ink-3)';
+          if(inp){ inp.disabled=false; inp.placeholder='Écrivez votre question…'; inp.focus(); }
           if(btn) btn.disabled=false;
         } else {
           badge.textContent = `⏸ ${rem}s`;
-          badge.style.background = 'rgba(220,80,80,.15)';
-          badge.style.borderColor = 'rgba(220,80,80,.3)';
-          badge.style.color = '#f08a8a';
+          badge.style.background = 'rgba(180,35,24,.1)';
+          badge.style.color = 'var(--danger)';
           if(inp){ inp.disabled=true; inp.placeholder=`Disponible dans ${rem}s…`; }
           if(btn) btn.disabled=true;
         }
@@ -9158,12 +9381,9 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
       const empty = document.getElementById('qa-empty-state');
       if(empty) empty.style.display='none';
       const t = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-      const div = document.createElement('div');
-      div.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;';
-      div.innerHTML = `
-        <div style="max-width:82%;background:var(--coral);color:#fff;border-radius:18px 18px 5px 18px;padding:10px 14px;font-size:.875rem;line-height:1.55;word-break:break-word;">${esc(text)}</div>
-        <div style="font-size:.63rem;color:var(--ink-4);padding-right:2px;">${t}</div>`;
-      msgs.appendChild(div);
+      const holder = document.createElement('div');
+      holder.innerHTML = qaUserBubbleHTML(text, t);
+      msgs.appendChild(holder.firstElementChild);
       msgs.scrollTop = msgs.scrollHeight;
     }
 
@@ -9172,18 +9392,8 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
       if(!msgs) return;
       const wrap = document.createElement('div');
       wrap.id = msgId+'-wrap';
-      wrap.style.cssText = 'display:flex;align-items:flex-start;gap:8px;';
-      wrap.innerHTML = `
-        <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,rgba(155,184,216,.28),rgba(155,184,216,.12));display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;margin-top:2px;">✨</div>
-        <div style="flex:1;min-width:0;">
-          <div id="${msgId}-content" class="qa-md" style="background:rgba(var(--fg-rgb),.04);border:1px solid rgba(var(--fg-rgb),.08);border-radius:5px 18px 18px 18px;padding:11px 14px;font-size:.875rem;color:var(--ink-2);line-height:1.65;word-break:break-word;">
-            <span style="display:inline-flex;gap:4px;align-items:center;">
-              <span style="width:5px;height:5px;border-radius:50%;background:var(--ink-4);animation:qa-dot 1.2s 0s infinite;display:inline-block;"></span>
-              <span style="width:5px;height:5px;border-radius:50%;background:var(--ink-4);animation:qa-dot 1.2s .2s infinite;display:inline-block;"></span>
-              <span style="width:5px;height:5px;border-radius:50%;background:var(--ink-4);animation:qa-dot 1.2s .4s infinite;display:inline-block;"></span>
-            </span>
-          </div>
-        </div>`;
+      wrap.className = 'qa-row qa-row-bot';
+      wrap.innerHTML = qaBotBubbleHTML(msgId, QA_TYPING);
       msgs.appendChild(wrap);
       msgs.scrollTop = msgs.scrollHeight;
     }
@@ -9291,9 +9501,16 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
 
     sendBtn.addEventListener('click', doSend);
     input.addEventListener('keydown', e=>{
-      if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); doSend(); }
-      if(e.key==='Enter'&&!e.shiftKey&&window.innerWidth<769){ e.preventDefault(); doSend(); }
+      // Entrée envoie, Maj+Entrée passe à la ligne (comme une messagerie)
+      if(e.key==='Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); doSend(); }
     });
+    // Question posée depuis la carte « Assistant projet » de l'accueil
+    if(window._qaPrefill){
+      input.value = window._qaPrefill;
+      window._qaPrefill = null;
+      resizeInput();
+      if(!input.disabled) doSend();
+    }
   }
 
   // ── Legacy stub (plus appelé, gardé pour compatibilité) ──
