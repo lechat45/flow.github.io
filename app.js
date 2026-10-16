@@ -25,7 +25,7 @@
   // ─── Default data ───────────────────────────────
   const SEED = {
     users: [
-      { id:'u1', username:'Sacha',  password:'sha256:8e2ff622e0da75207ff78f74a625b54e76bf2187d069964ee73af155b43bda03', role:'admin',
+      { id:'u1', username:'Sacha',  password:'sha256:7f204f9d4c60db37b8307d493622894f6d20577a0a87ecb6d7b532bb58b9cee3', role:'admin',
         firstName:'Sacha', lastName:'', email:'sacha@flow.app', photo:null,
         projectId:null, createdAt:'2024-01-01' },
       { id:'u2', username:'Alexis', password:'sha256:9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0', role:'controller',
