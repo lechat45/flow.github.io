@@ -1232,6 +1232,38 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .mk-pin.is-active { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 0 4px var(--coral-glow), 0 2px 8px rgba(0,0,0,.3); z-index: 2; }
 .mk-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; max-height: 74vh; }
 .mk-note { display: flex; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--surface-3); font-size: 13px; color: var(--ink-2); }
+.mk-note.mk-reply { background: rgba(43,108,176,.08); white-space: pre-line; }
+.mk-ai-out { flex: none; max-height: 42vh; overflow-y: auto; }
+.mk-ai-out:empty { display: none; }
+/* Outils IA v3.8 */
+.ai-mh { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.ai-sec { margin-top: 14px; }
+.ai-check { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); margin-bottom: 6px; cursor: pointer; font-size: 13.5px; line-height: 1.4; }
+.ai-check input { accent-color: var(--coral); margin-top: 2px; flex: none; }
+.ai-loading { display: flex; align-items: center; gap: 8px; padding: 16px 4px; color: var(--ink-3); font-size: 13.5px; }
+.ai-loading svg { color: var(--coral); animation: aiPulse 1.2s ease-in-out infinite; }
+@keyframes aiPulse { 50% { opacity: .35; transform: scale(.85); } }
+@media (prefers-reduced-motion: reduce) { .ai-loading svg { animation: none; } }
+.ai-err { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: rgba(180,35,24,.08); color: var(--danger); font-size: 13px; }
+.ai-past { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+.ai-past summary { cursor: pointer; }
+.ai-past-i { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.5; }
+.ai-panel { padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-3); display: flex; flex-direction: column; }
+.ai-panel .btn-sm { align-self: flex-start; }
+.ai-ul { margin: 4px 0 8px 18px; font-size: 13px; line-height: 1.5; }
+.ai-md { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); max-height: 58vh; overflow-y: auto; }
+.ai-md h3 { font-size: 14.5px; margin: 14px 0 4px; color: var(--ink); }
+.ai-md h3:first-child { margin-top: 0; }
+.risk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.ai-filled { border-color: var(--coral) !important; box-shadow: 0 0 0 1px var(--coral-glow); }
+.ai-help-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; background: none; border: 0; padding: 2px 0; color: var(--coral); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.ai-help-btn:hover { text-decoration: underline; }
+.ai-help-in { margin-top: 6px; padding: 10px; border-radius: 8px; border: 1px dashed var(--coral); background: var(--coral-tint); }
+.ch-week { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; padding: 14px 18px; border-radius: 14px; background: var(--surface-1); border: 1px solid var(--border); }
+.ch-week-ic { width: 32px; height: 32px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--coral-tint); color: var(--coral); }
+.ch-week-k { font-size: 12px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+.ch-week-t { color: var(--ink-2); line-height: 1.55; }
+.ch-week-t.is-loading { color: var(--ink-4); font-style: italic; }
 .mk-side-h { font-weight: 600; display: flex; align-items: center; gap: 8px; justify-content: space-between; }
 .mk-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 80px; }
 .mk-cmt { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); }
@@ -1465,7 +1497,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.7';
+  const APP_VERSION = '3.8';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1965,12 +1997,14 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     const isAdminLike = me && (me.role==='admin'||me.role==='controller');
 
     const commonItems = me && me.role==='client' ? [
+      ['✨','Nouveau : « Cette semaine sur votre projet » sur l''accueil, et un bouton « M''aider à répondre » dans les documents à remplir'],
       ['🏠','Nouvelle page d\'accueil : votre projet, ce qu\'on attend de vous, les étapes et vos fichiers en un coup d\'œil'],
       ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
     ] : [
       ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
     ];
     const adminItems = [
+      ['✨','IA : compte rendu d''appel (⋯ d''un projet), synthèse et réponse aux commentaires de maquette, dates proposées pour les étapes, et « Plan d''action » du jour dans les Alertes'],
       ['🔑','Clés Groq : bouton « Tester les clés », nettoyage automatique du copier-coller et bascule vers un autre modèle si Groq retire le modèle habituel'],
       ['📁','Nouvel onglet « Projets » : tous vos projets au même endroit, avec recherche, tri, modification rapide, archivage et suppression'],
     ];
@@ -3583,7 +3617,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         </section>
 
         <section class="fl-card">
-          <div class="fl-card-head">${ic('alert','',18)}<h2>Alertes</h2><span class="fl-meta">${alerts.length}</span></div>
+          <div class="fl-card-head">${ic('alert','',18)}<h2>Alertes</h2><span class="fl-meta">${alerts.length}</span>${activeP.length?`<button id="btn-ai-risk" class="fl-link" style="margin-left:auto;" title="Les projets à risque et quoi faire aujourd'hui">${ic('sparkle','',14)} Plan d'action</button>`:''}</div>
           ${alerts.length ? alerts.slice(0,6).map(a=>`
             <div class="fl-row" ${a.fn?`style="cursor:pointer;" onclick="${a.fn}"`:a.tab?`style="cursor:pointer;" onclick="goTab('${a.tab}')"`:''}><span class="fl-dot" style="background:${a.dot};"></span>
               <div style="flex:1;min-width:0;"><div>${a.title}</div><div class="fl-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.sub}</div></div></div>`).join('')
@@ -3798,6 +3832,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     const btnWorkload = document.getElementById('btn-workload');
     if(btnWorkload) btnWorkload.addEventListener('click', openWorkloadModal);
+    document.getElementById('btn-ai-risk')?.addEventListener('click',()=>openRiskPlanModal());
     // Kanban drag & drop
     function moveProjectToStatus(p, newStatus){
       if(!p || p.status===newStatus) return;
@@ -4487,6 +4522,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             <div class="kebab-menu" id="kebab-${project.id}">
               <button class="kebab-item btn-pin-project" data-pid="${project.id}">${ic('pushpin','',16)} ${project.pinned?'Désépingler':'Épingler'}</button>
               <button class="kebab-item btn-pause-project" data-pid="${project.id}">${ic(project.paused?'arrowright':'pause','',16)} ${project.paused?'Reprendre le projet':'Mettre en pause'}</button>
+              <button class="kebab-item btn-call-report" data-pid="${project.id}">${ic('sparkle','',16)} Compte rendu d'appel</button>
               <button class="kebab-item btn-report" data-uid="${u.id}">${ic('file','',16)} Rapport PDF</button>
               <button class="kebab-item btn-save-template" data-pid="${project.id}">${ic('save','',16)} Sauver comme modèle</button>
               <div class="kebab-divider"></div>
@@ -4704,6 +4740,9 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     document.querySelectorAll('.btn-ai-summarize-qa').forEach(b=>{
       b.addEventListener('click',()=>openSummarizeQAModal(b.dataset.cid));
+    });
+    document.querySelectorAll('.btn-call-report').forEach(b=>{
+      b.addEventListener('click',()=>openCallReportModal(b.dataset.pid));
     });
     document.querySelectorAll('.btn-extract-tasks').forEach(b=>{
       b.addEventListener('click',()=>{
@@ -5450,6 +5489,16 @@ DOCUMENTS
         </div>
       </section>
 
+      ${(()=>{
+        if(!aiKey() || project.status==='done' || (window._wkFail||{})[clientWeekKey(project)]) return '';
+        const t = clientWeekCached(project);
+        return `<section class="ch-week" id="ch-week">
+          <span class="ch-week-ic">${ic('sparkle','',16)}</span>
+          <div style="min-width:0;"><div class="ch-week-k">Cette semaine sur votre projet</div>
+          <div class="ch-week-t ${t?'':'is-loading'}" id="ch-week-t" data-pid="${project.id}" aria-live="polite">${t?esc(t):'Préparation de votre point de la semaine…'}</div></div>
+        </section>`;
+      })()}
+
       ${quotesBanner}
       ${deliveryBanner}
       ${welcomeBanner}
@@ -5672,6 +5721,7 @@ DOCUMENTS
 
   function wireClientHome(){
     wireMockupButtons();
+    loadClientWeekRecap();
     // Carte « Assistant projet » : la question part directement dans Discussion
     const homeQa = document.getElementById('home-qa-form');
     if(homeQa) homeQa.addEventListener('submit',e=>{
@@ -6328,7 +6378,10 @@ DOCUMENTS
         </div>
         <aside class="mk-side">
           ${m.note?`<div class="mk-note">${ic('chat','',14)}<span>${esc(m.note)}</span></div>`:''}
+          ${m.teamReply?`<div class="mk-note mk-reply">${ic('mail','',14)}<span><strong>Réponse de l'équipe</strong> · ${new Date(m.teamReply.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}<br>${esc(m.teamReply.text)}</span></div>`:''}
           <div class="mk-side-h">Commentaires <span class="fl-meta">${open} ouvert${open>1?'s':''} · ${m.pins.length} au total</span></div>
+          ${!isClient && m.pins.some(x=>x.role==='client') ? `<button id="mk-ai" class="btn btn-ghost btn-sm" style="align-self:flex-start;">${ic('sparkle','',14)} Synthèse et réponse IA</button>` : ''}
+          <div id="mk-ai-out" class="mk-ai-out"></div>
           <div id="mk-new"></div>
           <div class="mk-list">
             ${m.pins.length===0?`<div class="fl-empty">Aucun commentaire. ${locked?'':'Cliquez sur l\'image pour en ajouter un.'}</div>`:m.pins.map(pin=>`
@@ -6371,6 +6424,7 @@ DOCUMENTS
     document.querySelectorAll('.mk-pin').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); highlight(b.dataset.pin); }));
     document.querySelectorAll('.mk-cmt').forEach(c=>c.addEventListener('mouseenter',()=>highlight(c.dataset.pin)));
     if(focusPin) highlight(focusPin);
+    document.getElementById('mk-ai')?.addEventListener('click',()=>runMockupAI(p.id, m.id));
 
     // Nouveau commentaire épinglé
     const stage = document.getElementById('mk-stage');
@@ -7388,7 +7442,10 @@ DOCUMENTS
             <input class="glass-input tl-note-input" placeholder="Note sur cette étape (optionnel)…" value="${esc(s.note||'')}" data-sid="${s.id}" style="font-size:.8rem;" />
           </div>`).join('')}
       </div>
-      <button id="tl-add" class="btn btn-ghost" style="width:100%;justify-content:center;margin:10px 0;">+ Ajouter une étape</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+        <button id="tl-add" class="btn btn-ghost" style="flex:1 1 180px;justify-content:center;">+ Ajouter une étape</button>
+        <button id="tl-ai-dates" class="btn btn-ghost" style="flex:1 1 180px;justify-content:center;" title="Propose une date pour chaque étape restante, d'après la date de livraison et vos anciens projets">${ic('sparkle','',16)} Proposer des dates</button>
+      </div>
       <div style="margin-bottom:14px;">
         <label class="label">Description du projet (optionnel)</label>
         <textarea id="tl-desc" class="glass-input" placeholder="Décrivez brièvement le projet…">${esc(p.description||'')}</textarea>
@@ -7479,6 +7536,7 @@ DOCUMENTS
         </div>`;
       })()}`,
     ()=>{
+      wireTimelineAIDates(p);
       document.getElementById('tl-add').addEventListener('click',()=>{
         const container=document.getElementById('tl-steps');
         const newId=uid();
@@ -7829,12 +7887,14 @@ DOCUMENTS
           ${f.type==='textarea'
             ?`<textarea class="glass-input doc-field" data-fid="${f.id}">${esc(f.value)}</textarea>`
             :`<input class="glass-input doc-field" type="text" data-fid="${f.id}" value="${esc(f.value)}" />`}
+          ${aiKey()?`<button type="button" class="ai-help-btn" data-fid="${f.id}" aria-expanded="false">${ic('sparkle','',13)} M'aider à répondre</button><div class="ai-help" id="ai-help-${f.id}"></div>`:''}
         </div>`).join('')}
       <div style="display:flex;gap:10px;margin-top:16px;">
         <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;justify-content:center;">Annuler</button>
         <button id="fill-submit" class="btn btn-primary" style="flex:1;justify-content:center;">📤 Envoyer à l'admin</button>
       </div>`,
     ()=>{
+      wireDocAIHelp(doc);
       document.getElementById('fill-submit').addEventListener('click',()=>{
         let hasError=false;
         document.querySelectorAll('.doc-field').forEach(inp=>{
@@ -11265,6 +11325,392 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
     return full;
   }
 
+
+  // ════════════════════════════════════════════════
+  //  OUTILS IA (v3.8) : compte rendu d'appel, synthèse des maquettes,
+  //  planning proposé, plan d'action du jour, aide aux documents,
+  //  récapitulatif de la semaine côté client.
+  // ════════════════════════════════════════════════
+  function aiKey(){ return getGroqKeyPool()[0] || db.aiConfig?.groqKey || ''; }
+  async function aiAsk(prompt, maxTokens=600, system){
+    const key = aiKey();
+    if(!key) throw new Error('NO_GROQ_KEY');
+    const json = await groqPost(key, [
+      { role:'system', content: system || "Tu es l'assistant d'une agence web. Tu réponds toujours en français, de façon claire, concrète et concise." },
+      { role:'user', content: prompt }
+    ], maxTokens);
+    return (json.choices?.[0]?.message?.content || '').trim();
+  }
+  function aiParseJSON(text){
+    const m = String(text||'').replace(/```(json)?/g,'').match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    if(!m) throw new Error('BAD_JSON');
+    try{ return JSON.parse(m[0]); }catch(_){ throw new Error('BAD_JSON'); }
+  }
+  function aiErrMsg(e){
+    const c = (e && e.message) || '';
+    if(c==='NO_GROQ_KEY') return "Aucune clé Groq configurée (onglet Assistant IA).";
+    if(/RATE_LIMIT/.test(c)) return "L'IA est très sollicitée : réessayez dans une minute.";
+    if(/INVALID_KEY|AUTH_401/.test(c)) return "Clé Groq refusée : vérifiez-la dans l'onglet Assistant IA.";
+    if(c==='BAD_JSON') return "La réponse de l'IA était illisible : réessayez.";
+    return "L'IA n'a pas pu répondre ("+c+").";
+  }
+  const aiStrList = v => Array.isArray(v) ? v.map(x=>String(x||'').trim()).filter(Boolean).slice(0,12) : [];
+  const aiLoading = txt => `<div class="ai-loading">${ic('sparkle','',16)} ${txt}</div>`;
+  const aiStepState = s => s.status==='done' ? 'fait' : s.status==='current' ? 'en cours' : 'à venir';
+
+  // ── 1. Compte rendu d'appel : notes en vrac → compte rendu, tâches, message client ──
+  function openCallReportModal(projectId){
+    const p = db.projects.find(x=>x.id===projectId); if(!p) return;
+    const client = db.users.find(u=>u.id===p.clientId);
+    const past = (p.callReports||[]).slice().reverse();
+    showModal(`
+      <div class="ai-mh">
+        <span class="file-ic">${ic('sparkle','',18)}</span>
+        <div style="flex:1;min-width:0;"><h2 style="margin:0;">Compte rendu d'appel</h2><div class="fl-meta">${esc(p.name)}${client?' · '+esc(client.firstName||client.username):''}</div></div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <label class="label" for="cr-notes">Vos notes, même en vrac</label>
+      <textarea id="cr-notes" class="glass-input" style="min-height:150px;" maxlength="6000" placeholder="Ex. : veut un header plus sombre, envoie les photos lundi, inquiet pour la date, ajouter une page tarifs…"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;">
+        <button id="cr-mic" class="btn btn-ghost" style="display:none;">${ic('mic','',16)} Dicter</button>
+        <button id="cr-go" class="btn btn-primary">${ic('sparkle','',16)} Générer le compte rendu</button>
+      </div>
+      <div id="cr-out" aria-live="polite"></div>
+      ${past.length?`<details class="ai-past"><summary class="fl-meta">Comptes rendus précédents (${past.length})</summary>
+        ${past.slice(0,10).map(r=>`<div class="ai-past-i"><div class="fl-meta">${new Date(r.at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})} · ${esc(r.by||'')}</div><div style="white-space:pre-line;">${esc(r.summary)}</div></div>`).join('')}
+      </details>`:''}`,
+    ()=>{
+      const notes = document.getElementById('cr-notes');
+      const out = document.getElementById('cr-out');
+      // Dictée vocale (navigateurs compatibles)
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const mic = document.getElementById('cr-mic');
+      if(SR && mic){
+        mic.style.display = '';
+        let rec = null;
+        mic.addEventListener('click',()=>{
+          if(rec){ rec.stop(); return; }
+          rec = new SR(); rec.lang='fr-FR'; rec.continuous=true; rec.interimResults=false;
+          const base = notes.value ? notes.value.trimEnd()+' ' : '';
+          rec.onresult = e=>{ notes.value = base + Array.from(e.results).map(r=>r[0].transcript).join(' '); };
+          rec.onend = rec.onerror = ()=>{ rec=null; mic.innerHTML = ic('mic','',16)+' Dicter'; };
+          rec.start(); mic.innerHTML = ic('pause','',16)+' Arrêter';
+        });
+      }
+      const go = document.getElementById('cr-go');
+      go.addEventListener('click', async ()=>{
+        const txt = notes.value.trim();
+        if(txt.length<15){ toast('Ajoutez un peu plus de notes.','info'); notes.focus(); return; }
+        go.disabled = true;
+        out.innerHTML = aiLoading("L'IA rédige le compte rendu…");
+        const steps = (p.timeline||[]).map(s=>`${s.label} (${aiStepState(s)})`).join(', ');
+        const prompt = `Voici les notes brutes prises pendant un appel avec un client d'une agence web.
+Projet : ${p.name}
+Étapes : ${steps||'non définies'}
+Client : ${client?(client.firstName||client.username):'inconnu'}
+
+Notes :
+"""${txt}"""
+
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, de la forme :
+{"resume":"compte rendu clair en 3 à 6 lignes commençant chacune par « - »","taches_equipe":["action concrète pour l'agence"],"taches_client":["ce que le client doit fournir ou faire"],"message_client":"message court et chaleureux au client qui récapitule l'appel et les prochaines étapes, vouvoiement, sans signature"}
+N'invente rien qui ne soit pas dans les notes. Mets des listes vides s'il n'y a rien.`;
+        try{
+          const r = aiParseJSON(await aiAsk(prompt, 900));
+          const team = aiStrList(r.taches_equipe), cli = aiStrList(r.taches_client);
+          const box = (list, cls) => list.map((t,i)=>`<label class="ai-check"><input type="checkbox" class="${cls}" data-i="${i}" checked><span>${esc(t)}</span></label>`).join('');
+          out.innerHTML = `
+            <div class="ai-sec"><label class="label" for="cr-sum">Compte rendu</label><textarea id="cr-sum" class="glass-input" style="min-height:110px;">${esc(String(r.resume||'').trim())}</textarea></div>
+            ${team.length?`<div class="ai-sec"><div class="label">Tâches pour l'équipe</div>${box(team,'cr-t')}</div>`:''}
+            ${cli.length?`<div class="ai-sec"><div class="label">À faire par le client</div>${box(cli,'cr-c')}</div>`:''}
+            ${p.clientId?`<div class="ai-sec">
+              <label class="ai-check" style="margin-bottom:6px;"><input type="checkbox" id="cr-send" checked><span><strong>Envoyer ce récapitulatif au client</strong> (notification)</span></label>
+              <textarea id="cr-msg" class="glass-input" style="min-height:90px;" aria-label="Message au client">${esc(String(r.message_client||'').trim())}</textarea></div>`:''}
+            <div style="display:flex;justify-content:flex-end;margin-top:14px;"><button id="cr-save" class="btn btn-primary">${ic('check','',16)} Enregistrer</button></div>`;
+          document.getElementById('cr-save').addEventListener('click',()=>{
+            const summary = document.getElementById('cr-sum').value.trim();
+            if(!summary){ toast('Le compte rendu est vide.','info'); return; }
+            const P = db.projects.find(x=>x.id===projectId); // objet à jour (la synchro temps réel a pu remplacer db)
+            if(!P){ toast('Ce projet n\'existe plus.','error'); return; }
+            const pickedT = team.filter((_,i)=>document.querySelector(`.cr-t[data-i="${i}"]`)?.checked);
+            const pickedC = cli.filter((_,i)=>document.querySelector(`.cr-c[data-i="${i}"]`)?.checked);
+            const now = new Date().toISOString();
+            P.callReports = P.callReports || [];
+            P.callReports.push({ id:uid(), at:now, by:me.username, notes:txt, summary });
+            if(pickedT.length){ P.internalTasks = P.internalTasks||[]; pickedT.forEach(label=>P.internalTasks.push({id:uid(),label,done:false,createdAt:now})); }
+            if(pickedC.length){ P.clientTasks = P.clientTasks||[]; pickedC.forEach(label=>P.clientTasks.push({id:uid(),label,done:false,createdAt:now})); }
+            const msg = document.getElementById('cr-msg')?.value.trim();
+            const sent = !!(P.clientId && document.getElementById('cr-send')?.checked && msg);
+            if(sent) pushNotification(P.clientId, 'Récapitulatif de notre échange', msg, 'info');
+            logActivity('call_report', `Compte rendu d'appel ajouté pour "${P.name}"`);
+            saveDB(); closeModal(); refreshAdminTab();
+            const n = pickedT.length + pickedC.length;
+            toast(`Compte rendu enregistré${n?` · ${n} tâche(s) ajoutée(s)`:''}${sent?' · client prévenu':''}.`,'success');
+          });
+        }catch(e){ out.innerHTML = `<div class="ai-err">${esc(aiErrMsg(e))}</div>`; }
+        finally{ go.disabled = false; }
+      });
+    });
+  }
+
+  // ── 2. Maquettes : synthèse des retours du client + brouillon de réponse ──
+  async function runMockupAI(projectId, mockupId){
+    const out = document.getElementById('mk-ai-out'); if(!out) return;
+    const p = db.projects.find(x=>x.id===projectId);
+    const m = getMockups(p).find(x=>x.id===mockupId); if(!m) return;
+    const open = m.pins.filter(x=>x.role==='client' && !x.resolved);
+    const list = open.length ? open : m.pins.filter(x=>x.role==='client');
+    if(!list.length){ toast('Aucun commentaire du client à analyser.','info'); return; }
+    const btn = document.getElementById('mk-ai'); if(btn) btn.disabled = true;
+    out.innerHTML = aiLoading("L'IA lit les commentaires…");
+    const prompt = `Un client a commenté la maquette « ${m.name} » du projet « ${p.name} ». Ses commentaires (numéro : texte) :
+${list.map(x=>`${x.n} : ${x.text}`).join('\n')}
+${m.note?`\nNote de l'équipe jointe à la maquette : ${m.note}\n`:''}
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour :
+{"modifications":["modification concrète à faire, regroupée et sans doublon, suivie des numéros de commentaires entre parenthèses"],"reponse":"message court, chaleureux et professionnel au client (vouvoiement, sans signature) qui le remercie, reformule ce qui va être modifié et annonce une nouvelle version"}`;
+    try{
+      const r = aiParseJSON(await aiAsk(prompt, 800));
+      const mods = aiStrList(r.modifications);
+      out.innerHTML = `<div class="ai-panel">
+        <div class="label">Modifications à faire</div>
+        ${mods.length?`<ul class="ai-ul">${mods.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
+        <button id="mk-ai-tasks" class="btn btn-ghost btn-sm">${ic('plus','',14)} Ajouter aux tâches de l'équipe</button>`:'<div class="fl-meta">Aucune modification identifiée.</div>'}
+        ${p.clientId?`<label class="label" for="mk-ai-reply" style="margin-top:12px;">Brouillon de réponse au client</label>
+        <textarea id="mk-ai-reply" class="glass-input" style="min-height:100px;">${esc(String(r.reponse||'').trim())}</textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button id="mk-ai-send" class="btn btn-primary btn-sm">${ic('mail','',14)} Envoyer au client</button></div>`:''}
+      </div>`;
+      document.getElementById('mk-ai-tasks')?.addEventListener('click',e=>{
+        const b = e.currentTarget;
+        const P = db.projects.find(x=>x.id===projectId); if(!P) return;
+        P.internalTasks = P.internalTasks||[];
+        const now = new Date().toISOString();
+        mods.forEach(label=>P.internalTasks.push({id:uid(), label:(m.name+' : '+label).slice(0,220), done:false, createdAt:now}));
+        saveDB(); b.disabled = true; b.textContent = 'Tâches ajoutées';
+        toast(`${mods.length} tâche(s) ajoutée(s).`,'success');
+      });
+      document.getElementById('mk-ai-send')?.addEventListener('click',()=>{
+        const text = document.getElementById('mk-ai-reply').value.trim(); if(!text) return;
+        const P = db.projects.find(x=>x.id===projectId);
+        const M = getMockups(P).find(x=>x.id===mockupId); if(!M) return;
+        M.teamReply = { text, at:new Date().toISOString(), by:me.username };
+        pushNotification(P.clientId, 'Réponse à vos commentaires', `« ${M.name} » : ${text}`, 'info');
+        saveDB(); refreshAdminTab(); toast('Réponse envoyée au client.','success');
+        openMockupViewer(projectId, mockupId);
+      });
+    }catch(e){ out.innerHTML = `<div class="ai-err">${esc(aiErrMsg(e))}</div>`; }
+    finally{ if(btn) btn.disabled = false; }
+  }
+
+  // ── 3. Planning : dates proposées pour les étapes restantes ──
+  function wireTimelineAIDates(p){
+    const btn = document.getElementById('tl-ai-dates'); if(!btn) return;
+    btn.addEventListener('click', async ()=>{
+      const rows = [...document.querySelectorAll('#tl-steps .tl-label-input')].map(inp=>({
+        sid: inp.dataset.sid, label: inp.value.trim(),
+        status: document.querySelector(`.tl-status-select[data-sid="${inp.dataset.sid}"]`)?.value || 'pending',
+      })).filter(r=>r.label);
+      const todo = rows.filter(r=>r.status!=='done');
+      if(!todo.length){ toast('Aucune étape restante à planifier.','info'); return; }
+      const iso = d => { const x=new Date(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+      const today = new Date(); today.setHours(12,0,0,0);
+      const due = document.getElementById('tl-due')?.value || '';
+      const end = due && new Date(due+'T12:00:00')>today ? new Date(due+'T12:00:00') : null;
+      // Répartition simple (sans IA, ou si l'IA échoue) : jusqu'à la livraison, sinon 7 jours par étape
+      const spread = ()=> todo.map((_,i)=> iso(end ? today.getTime()+(end-today)*(i+1)/todo.length : today.getTime()+(i+1)*7*86400000));
+      let dates = null, tip = '';
+      btn.disabled = true; const label = btn.innerHTML; btn.innerHTML = ic('sparkle','',16)+' Calcul du planning…';
+      if(aiKey()){
+        const history = db.projects.filter(x=>x.id!==p.id && x.status==='done' && x.createdAt && x.dueDate).slice(-8)
+          .map(x=>`${(x.timeline||[]).length} étapes en ${Math.max(1,Math.round((new Date(x.dueDate)-new Date(x.createdAt))/86400000))} jours`);
+        const prompt = `Tu planifies un projet web. Nous sommes le ${iso(today)}.
+Projet : ${p.name}${p.description?` — ${p.description.slice(0,300)}`:''}
+Date de livraison souhaitée : ${end?iso(end):'aucune (propose un rythme réaliste)'}
+Étapes restantes, dans l'ordre :
+${todo.map((r,i)=>`${i+1}. ${r.label}${r.status==='current'?' (en cours)':''}`).join('\n')}
+${history.length?`Durées de nos projets passés : ${history.join(' ; ')}.`:''}
+Donne une date de fin réaliste pour chaque étape (les étapes longues comme le développement prennent plus de temps que les validations), dans l'ordre, jamais avant aujourd'hui${end?' et jamais après la livraison':''}, en évitant les week-ends.
+Réponds UNIQUEMENT avec un objet JSON valide : {"dates":["AAAA-MM-JJ", ...],"conseil":"une phrase de conseil sur ce planning"}`;
+        try{
+          const r = aiParseJSON(await aiAsk(prompt, 500));
+          const list = Array.isArray(r.dates) ? r.dates.map(String) : [];
+          if(list.length===todo.length && list.every(d=>/^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(new Date(d)))){
+            // Garde-fous : ordre croissant, pas avant aujourd'hui, pas après la livraison
+            let prev = iso(today);
+            dates = list.map(d=>{ let v = d<prev ? prev : d; if(end && v>iso(end)) v = iso(end); prev = v; return v; });
+            tip = String(r.conseil||'').trim();
+          }
+        }catch(e){ tip = ''; console.warn('[Flow] Planning IA :', e.message); }
+      }
+      const byAI = !!dates;
+      if(!dates) dates = spread();
+      todo.forEach((r,i)=>{
+        const inp = document.querySelector(`.tl-date-input[data-sid="${r.sid}"]`);
+        if(inp){ inp.value = dates[i]; inp.classList.add('ai-filled'); }
+      });
+      btn.disabled = false; btn.innerHTML = label;
+      toast(byAI ? ('Dates proposées par l\'IA. Vérifiez-les puis enregistrez.'+(tip?' '+tip:'')) : 'Dates réparties automatiquement. Vérifiez-les puis enregistrez.', 'success', 6000);
+    });
+  }
+
+  // ── 4. Plan d'action du jour : projets à risque et actions concrètes ──
+  function riskProjects(){
+    const nowMs = Date.now();
+    return db.projects.filter(p=>!p.archived && p.status!=='done').map(p=>{
+      const h = projectHealthScore(p);
+      const tl = p.timeline||[];
+      const pct = tl.length ? Math.round(tl.filter(s=>s.status==='done').length/tl.length*100) : 0;
+      const days = p.dueDate ? Math.ceil((new Date(p.dueDate)-nowMs)/86400000) : null;
+      const docs = (db.documents||[]).filter(d=>d.projectId===p.id && d.status==='pending' && d.sentAt)
+        .map(d=>({ name:d.name, days:Math.floor((nowMs-new Date(d.sentAt))/86400000) })).filter(d=>d.days>=5);
+      const toFix = getMockups(p).filter(m=>m.status==='changes').length;
+      const client = db.users.find(u=>u.id===p.clientId);
+      return { p, h, pct, days, docs, toFix, client, cur:tl.find(s=>s.status==='current') };
+    }).filter(x=>x.h.score<70 || (x.days!==null && x.days<=7) || x.docs.length || x.toFix)
+      .sort((a,b)=>a.h.score-b.h.score).slice(0,5);
+  }
+  function openRiskPlanModal(force){
+    const rows = riskProjects();
+    const sig = new Date().toDateString()+'|'+rows.map(x=>x.p.id+':'+x.h.score).join(',');
+    showModal(`
+      <div class="ai-mh">
+        <span class="file-ic">${ic('target','',18)}</span>
+        <div style="flex:1;min-width:0;"><h2 style="margin:0;">Plan d'action du jour</h2><div class="fl-meta">${rows.length?`${rows.length} projet${rows.length>1?'s':''} à surveiller`:'Aucun projet à risque'}</div></div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      ${rows.length?`<div class="risk-chips">${rows.map(x=>`<span class="chip" style="background:rgba(var(--fg-rgb),.05);color:${x.h.color};">${esc(x.p.name)} · ${x.h.score}</span>`).join('')}</div>
+      <div id="risk-out" class="ai-md" aria-live="polite">${aiLoading("L'IA prépare vos priorités…")}</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px;"><button id="risk-redo" class="btn btn-ghost btn-sm">${ic('refresh','',14)} Régénérer</button></div>`
+      : `<div class="fl-empty" style="text-align:center;padding:24px 0;">Tous vos projets sont sur de bons rails. Rien d'urgent aujourd'hui.</div>`}`,
+    async ()=>{
+      if(!rows.length) return;
+      document.getElementById('risk-redo').addEventListener('click',()=>openRiskPlanModal(true));
+      const out = document.getElementById('risk-out');
+      if(!force && window._riskPlan && window._riskPlan.sig===sig){ out.innerHTML = window._riskPlan.html; return; }
+      const ctx = rows.map(x=>[
+        `Projet : ${x.p.name} (client : ${x.client?(x.client.firstName||x.client.username):'aucun'})`,
+        `Santé ${x.h.score}/100${x.h.reasons.length?' — '+x.h.reasons.join(', '):''}`,
+        `Avancement ${x.pct} %${x.cur?`, étape en cours : ${x.cur.label}`:''}`,
+        x.days===null ? 'Pas de date de livraison' : x.days<0 ? `En retard de ${-x.days} jours` : `Livraison dans ${x.days} jours`,
+        x.docs.length ? 'Documents sans réponse du client : '+x.docs.map(d=>`${d.name} (${d.days} j)`).join(', ') : '',
+        x.toFix ? `${x.toFix} maquette(s) avec des modifications demandées` : '',
+        x.p.paused ? 'Projet en pause' : '',
+      ].filter(Boolean).join('\n')).join('\n\n');
+      const prompt = `Voici les projets à surveiller dans mon agence web aujourd'hui :
+
+${ctx}
+
+Pour chaque projet, écris en markdown :
+### Nom du projet
+**Pourquoi :** une phrase sur le vrai risque.
+**À faire aujourd'hui :** une à trois actions très concrètes (qui contacter, quoi envoyer, quoi décider), en liste à puces.
+
+Termine par « ### Priorité n°1 » avec une seule phrase qui dit par quoi commencer. Sois direct et bref, n'invente aucune donnée.`;
+      try{
+        const html = renderMarkdown(await aiAsk(prompt, 1000));
+        window._riskPlan = { sig, html };
+        if(document.getElementById('risk-out')) document.getElementById('risk-out').innerHTML = html;
+      }catch(e){ if(document.getElementById('risk-out')) document.getElementById('risk-out').innerHTML = `<div class="ai-err">${esc(aiErrMsg(e))}</div>`; }
+    });
+  }
+
+  // ── 5. Documents client : « M'aider à répondre » sur chaque champ ──
+  let _docAiUses = 0;
+  function wireDocAIHelp(doc){
+    document.querySelectorAll('.ai-help-btn').forEach(b=>b.addEventListener('click',()=>{
+      const fid = b.dataset.fid;
+      const f = doc.fields.find(x=>x.id===fid);
+      const box = document.getElementById('ai-help-'+fid);
+      if(!f || !box) return;
+      if(box.innerHTML){ box.innerHTML=''; b.setAttribute('aria-expanded','false'); return; }
+      b.setAttribute('aria-expanded','true');
+      const field = document.querySelector(`.doc-field[data-fid="${fid}"]`);
+      box.innerHTML = `<div class="ai-help-in">
+        <label class="fl-meta" for="ai-help-i-${fid}">Notez quelques idées en vrac, l'assistant les met en forme :</label>
+        <textarea id="ai-help-i-${fid}" class="glass-input" style="min-height:60px;margin-top:4px;" maxlength="800" placeholder="Ex. : boulangerie familiale, produits bio, clients du quartier, ton chaleureux"></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-primary btn-sm ai-help-go">${ic('sparkle','',14)} Rédiger ma réponse</button></div>
+      </div>`;
+      const ta = box.querySelector('textarea');
+      if(field && field.value.trim()) ta.value = field.value.trim();
+      ta.focus();
+      box.querySelector('.ai-help-go').addEventListener('click', async e=>{
+        const go = e.currentTarget;
+        const ideas = ta.value.trim();
+        if(ideas.length<3){ ta.focus(); return; }
+        if(_docAiUses>=20){ toast("Vous avez beaucoup utilisé l'aide : réessayez plus tard.",'info'); return; }
+        _docAiUses++;
+        go.disabled = true; go.innerHTML = ic('sparkle','',14)+' Rédaction…';
+        const proj = db.projects.find(x=>x.id===doc.projectId);
+        const long = f.type==='textarea';
+        const prompt = `Un client d'une agence web remplit le document « ${doc.name} »${proj?` pour son projet « ${proj.name} »`:''}.
+Question : « ${f.label} »
+Ses idées en vrac : """${ideas}"""
+Rédige sa réponse à cette question, à la première personne, comme si c'était lui qui écrivait : claire, naturelle, ${long?'2 à 5 phrases':'une seule ligne courte'}. Garde uniquement les informations qu'il a données, n'invente rien. Écris dans la langue de ses idées. Donne uniquement le texte de la réponse, sans guillemets ni introduction.`;
+        try{
+          let t = await aiAsk(prompt, long?400:120, "Tu aides les clients d'une agence web à remplir leurs documents. Tu ne produis jamais de code.");
+          t = t.replace(/^["«»\s]+|["«»\s]+$/g,'');
+          if(!long) t = t.split('\n')[0];
+          if(field){ field.value = t; field.style.borderColor=''; field.focus(); }
+          box.innerHTML = ''; b.setAttribute('aria-expanded','false');
+          toast('Réponse proposée : relisez-la et modifiez-la si besoin.','success');
+        }catch(err){
+          go.disabled = false; go.innerHTML = ic('sparkle','',14)+' Rédiger ma réponse';
+          toast(aiErrMsg(err).replace(/ \(onglet Assistant IA\)/,''),'error');
+        }
+      });
+    }));
+  }
+
+  // ── 6. Accueil client : « Cette semaine sur votre projet » ──
+  const _wkBusy = {};
+  function clientWeekKey(p){ return 'flow_wk_'+p.id+'_'+isoWeekKey(); }
+  function clientWeekCached(p){
+    window._wkRecap = window._wkRecap || {};
+    const k = clientWeekKey(p);
+    if(window._wkRecap[k]) return window._wkRecap[k];
+    try{ const v = localStorage.getItem(k); if(v){ window._wkRecap[k] = v; return v; } }catch(_){}
+    return '';
+  }
+  async function loadClientWeekRecap(){
+    const el = document.getElementById('ch-week-t'); if(!el) return;
+    const p = db.projects.find(x=>x.id===el.dataset.pid); if(!p) return;
+    const k = clientWeekKey(p);
+    if(clientWeekCached(p) || _wkBusy[k]) return;
+    _wkBusy[k] = true;
+    const since = Date.now()-7*86400000;
+    const recent = d => d && new Date(d).getTime()>=since;
+    const tl = p.timeline||[];
+    const docs = getProjectDocs(p.id);
+    const mks = getMockups(p);
+    const facts = [
+      `Projet : ${p.name}`,
+      `Étapes : ${tl.map(s=>`${s.label} (${aiStepState(s)}${s.dueDate?`, prévue le ${new Date(s.dueDate).toLocaleDateString('fr-FR')}`:''})`).join(', ')||'non définies'}`,
+      p.dueDate ? `Livraison prévue le ${new Date(p.dueDate).toLocaleDateString('fr-FR')}` : '',
+      ...mks.filter(m=>recent(m.createdAt)).map(m=>`Nouvelle maquette envoyée cette semaine : ${m.name}`),
+      ...mks.filter(m=>m.teamReply && recent(m.teamReply.at)).map(m=>`L'équipe a répondu aux commentaires sur la maquette ${m.name}`),
+      ...docs.filter(d=>d.status==='reviewed' && recent(d.reviewedAt||d.filledAt)).map(d=>`Document validé par l'équipe : ${d.name}`),
+      ...docs.filter(d=>d.status==='pending').map(d=>`Document que le client doit encore remplir : ${d.name}`),
+      ...mks.filter(m=>m.status==='pending').map(m=>`Maquette que le client doit valider : ${m.name}`),
+      ...(p.clientTasks||[]).filter(t=>!t.done).slice(0,4).map(t=>`Tâche du client : ${t.label}`),
+      p.deliverable && recent(p.deliverable.deliveredAt) ? 'Les fichiers finaux ont été livrés cette semaine' : '',
+      p.paused ? 'Le projet est en pause' : '',
+    ].filter(Boolean).join('\n');
+    const prompt = `Écris au client, en 2 ou 3 phrases (vouvoiement, ton chaleureux et rassurant), un petit point « Cette semaine sur votre projet » : où en est le projet, ce qui arrive ensuite et, s'il y en a, ce qui est attendu de sa part. Appuie-toi uniquement sur ces informations, n'invente ni date ni chiffre :
+
+${facts}
+
+Donne uniquement le texte, sans titre ni formule de politesse.`;
+    try{
+      const t = (await aiAsk(prompt, 220, "Tu es l'assistant de suivi de projet d'une agence web. Tu réponds en français.")).replace(/^["«\s]+|["»\s]+$/g,'');
+      if(!t) throw new Error('EMPTY');
+      window._wkRecap[k] = t;
+      try{ localStorage.setItem(k, t); }catch(_){}
+      const cur = document.getElementById('ch-week-t');
+      if(cur && cur.dataset.pid===p.id){ cur.textContent = t; cur.classList.remove('is-loading'); }
+    }catch(_){
+      (window._wkFail = window._wkFail || {})[k] = true; // pas de nouvel essai à chaque rafraîchissement
+      document.getElementById('ch-week')?.remove();
+    }finally{ _wkBusy[k] = false; }
+  }
 
   // ════════════════════════════════════════════════
   //  RUBIS — Assistant IA Finance & Projets (admin/contrôleur)
