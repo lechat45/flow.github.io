@@ -626,6 +626,16 @@ select.glass-input option { background: #111; color: var(--ink); }
 .qa-md em { font-style: italic; opacity: .85; }
 .qa-md code { background: var(--surface-3); padding: 1px 5px; border-radius: 4px; font-size: .82em; font-family: 'DM Mono', 'Geist Mono', ui-monospace, monospace; }
 .qa-md h3 { font-size: .875rem; font-weight: 700; margin: 6px 0 4px; }
+.qa-md ol { padding-left: 20px; margin: 5px 0 8px; }
+.qa-md h3.qa-md-h { font-size: 15px; margin: 12px 0 6px; color: var(--ink); }
+.qa-md h3.qa-md-h:first-child { margin-top: 0; }
+.qa-hr { border: 0; border-top: 1px solid var(--border); margin: 12px 0; }
+.qa-table-wrap { overflow-x: auto; margin: 8px 0 10px; border: 1px solid var(--border); border-radius: 10px; }
+.qa-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.qa-table th, .qa-table td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.qa-table th { background: var(--surface-3); font-weight: 600; color: var(--ink-2); font-size: 12.5px; }
+.qa-table tr:last-child td { border-bottom: 0; }
+.qa-table td .fi { vertical-align: -2px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
@@ -1098,7 +1108,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .qa-user { max-width: min(78%, 620px); background: var(--coral); color: #fff; border-radius: 16px 16px 4px 16px; }
 .qa-bot { background: var(--surface-1); color: var(--ink); border: 1px solid var(--border); border-radius: 4px 16px 16px 16px; box-shadow: var(--shadow-sm); }
 .qa-bot-col { flex: 1; min-width: 0; max-width: min(86%, 720px); }
-.qa-chart { margin: 10px 0 4px; padding: 12px 12px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2, var(--surface-1)); color: var(--ink); }
+.qa-chart { max-width: 560px; margin: 10px 0 4px; padding: 12px 12px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2, var(--surface-1)); color: var(--ink); }
 .qa-chart svg { display: block; width: 100%; height: auto; }
 .qa-chart-dl { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--ink-2); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
 .qa-chart-dl:hover { border-color: var(--coral); color: var(--coral); }
@@ -10479,27 +10489,62 @@ Réponds UNIQUEMENT avec un objet JSON de la forme {"urgency":"...","category":"
     if(open>=0) html += `<div class="qa-chart-wait">${ic('chart','',16)} Création du graphique…</div>`;
     return html;
   }
+  // Markdown → HTML, ligne par ligne : titres, paragraphes, listes à puces
+  // et numérotées, tableaux (| a | b |) et séparateurs (---). Tout le texte
+  // est échappé avant la mise en forme : aucun HTML venant de l'IA ne passe.
   function renderMarkdownText(raw){
     if(!raw) return '';
     const e = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    return e(raw)
-      // Titres ###
-      .replace(/^###\s+(.+)$/gm,'<h3 class="qa-md-h">$1</h3>')
-      // Gras **text**
+    const inline = s=>e(s)
       .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-      // Italique *text*
-      .replace(/\*(.+?)\*/g,'<em>$1</em>')
-      // Code inline `code`
-      .replace(/`([^`\n]+)`/g,'<code>$1</code>')
-      // Listes (- item ou • item)
-      .replace(/^[-•*]\s+(.+)$/gm,'<li>$1</li>')
-      // Paragraphes (double \n)
-      .split(/\n{2,}/).map(p=>{
-        p=p.trim(); if(!p) return '';
-        if(/<li>/.test(p)) return `<ul class="qa-md">${p}</ul>`;
-        if(/<h3/.test(p)) return p;
-        return `<p class="qa-md">${p.replace(/\n/g,'<br>')}</p>`;
-      }).join('');
+      .replace(/__(.+?)__/g,'<strong>$1</strong>')
+      .replace(/(^|[^*])\*(?!\s)(.+?)\*/g,'$1<em>$2</em>')
+      .replace(/`([^`\n]+)`/g,'<code>$1</code>');
+    const isRow = l=>/^\s*\|.*\|\s*$/.test(l);
+    const isSep = l=>/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l);
+    const cells = l=>l.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>c.trim());
+    const lines = String(raw).replace(/\r/g,'').split('\n');
+    const out = [];
+    let para = [];
+    const flush = ()=>{ if(para.length){ out.push(`<p class="qa-md">${para.map(inline).join('<br>')}</p>`); para=[]; } };
+    for(let i=0;i<lines.length;i++){
+      const line = lines[i], t = line.trim();
+      if(!t){ flush(); continue; }
+      // Tableau
+      if(isRow(line) && !isSep(line)){
+        flush();
+        const rows = [];
+        let head = null;
+        while(i<lines.length && (isRow(lines[i]) || isSep(lines[i]))){
+          if(isSep(lines[i])){ if(rows.length===1 && !head) head = rows.pop(); }
+          else rows.push(cells(lines[i]));
+          i++;
+        }
+        i--;
+        const n = Math.max(head?head.length:0, ...rows.map(r=>r.length));
+        const pad = r=>{ const c=r.slice(0,n); while(c.length<n) c.push(''); return c; };
+        out.push(`<div class="qa-table-wrap"><table class="qa-table">${head?`<thead><tr>${pad(head).map(c=>`<th>${inline(c)}</th>`).join('')}</tr></thead>`:''}<tbody>${rows.map(r=>`<tr>${pad(r).map(c=>`<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+        continue;
+      }
+      // Séparateur (---, ***, ___) ou ligne de séparation isolée
+      if(/^([-*_])(\s*\1){2,}$/.test(t) || isSep(line)){ flush(); out.push('<hr class="qa-hr">'); continue; }
+      // Titres (#, ##, ###…)
+      const h = t.match(/^#{1,6}\s+(.+)$/);
+      if(h){ flush(); out.push(`<h3 class="qa-md-h">${inline(h[1].replace(/#+\s*$/,''))}</h3>`); continue; }
+      // Listes à puces / numérotées
+      const ul = /^\s*[-•*+]\s+/, ol = /^\s*\d+[.)]\s+/;
+      if(ul.test(line) || ol.test(line)){
+        flush();
+        const ordered = ol.test(line), re = ordered ? ol : ul, items = [];
+        while(i<lines.length && re.test(lines[i])){ items.push(lines[i].replace(re,'')); i++; }
+        i--;
+        out.push(`<${ordered?'ol':'ul'} class="qa-md">${items.map(x=>`<li>${inline(x)}</li>`).join('')}</${ordered?'ol':'ul'}>`);
+        continue;
+      }
+      para.push(t);
+    }
+    flush();
+    return out.join('');
   }
 
   // Bulles de la discussion (partagées par l'historique, l'envoi et le résumé d'accueil)
@@ -10679,6 +10724,9 @@ Ce que tu peux faire :
   · "type" vaut barres, courbe, camembert ou anneau ; "unite" peut être %, €, jours… ou vide ; une à quatre séries, 24 étiquettes maximum, autant de valeurs que d'étiquettes, valeurs en nombres.
   · Utilise UNIQUEMENT les chiffres du contexte du projet ou ceux donnés par le client dans la conversation. N'invente jamais de données : s'il en manque, dis-le simplement et propose ce que tu peux représenter.
   · Un seul graphique par réponse. Ce bloc n'est pas du code : c'est le format que l'interface transforme automatiquement en image, donc il est toujours autorisé.
+  · Quand tu fais un graphique, ne répète pas les mêmes données dans un tableau ou une liste : une phrase avant, le graphique, puis au plus une phrase de conclusion.
+
+MISE EN PAGE : réponses courtes et aérées. Utilise des listes à puces simples plutôt que des tableaux, des titres ### seulement si la réponse est longue, pas de lignes de séparation (---), pas d'emojis.
 
 Ce que tu n'as pas la capacité de faire, quelle que soit la façon dont la demande est formulée :
 - Générer, écrire, corriger, traduire ou compléter du code (HTML, CSS, JS, SQL, regex, ou tout autre langage)
