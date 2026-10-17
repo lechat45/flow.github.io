@@ -1249,6 +1249,27 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .mk-mini span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mk-mini:hover { border-color: var(--coral); }
 
+/* ── Onglet Projets ── */
+.pl-list { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.pl-row { display: grid; grid-template-columns: minmax(0, 2.4fr) 120px minmax(120px, 1fr) 130px auto; align-items: center; gap: 16px; padding: 14px 18px; border-top: 1px solid var(--border); }
+.pl-row:hover { background: rgba(var(--fg-rgb),.02); }
+.pl-headrow { border-top: 0; padding-top: 10px; padding-bottom: 10px; background: var(--surface-3); font-size: 12px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: .03em; }
+.pl-headrow:hover { background: var(--surface-3); }
+.pl-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pl-color { width: 10px; height: 36px; border-radius: 5px; flex: none; }
+.pl-title { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pl-prog { display: flex; align-items: center; gap: 10px; }
+.pl-prog .mini-bar { flex: 1; }
+.pl-due { font-size: 13.5px; }
+.pl-actions { display: flex; gap: 4px; justify-content: flex-end; }
+@media (max-width: 900px) {
+  .pl-headrow { display: none; }
+  .pl-row { grid-template-columns: minmax(0,1fr) auto; row-gap: 10px; }
+  .pl-name { grid-column: 1 / -1; }
+  .pl-prog { grid-column: 1 / -1; }
+  .pl-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+
 /* ── Accueil client ── */
 .ch-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
 .ch-crumb { font-size: 13px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .02em; margin-bottom: 8px; }
@@ -1444,7 +1465,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.5';
+  const APP_VERSION = '3.6';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1950,8 +1971,8 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
       ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
     ];
     const adminItems = [
+      ['📁','Nouvel onglet « Projets » : tous vos projets au même endroit, avec recherche, tri, modification rapide, archivage et suppression'],
       ['📋','Le suivi de chaque projet est refait : vue compacte repliable, documents, tâches et éléments partagés côte à côte'],
-      ['⚙','Menu ⋯ simplifié : lien de présentation, résumé texte, newsletter et duplication retirés'],
     ];
 
     const items = [
@@ -2429,7 +2450,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     function push(score, item){ if(score>0) scored.push({score, item}); }
 
     // Navigation
-    const tabs = [{id:'home',label:'Accueil'},{id:'users',label:'Utilisateurs'},{id:'documents',label:'Suivi et documents'},{id:'finance',label:'Finance'},{id:'profile',label:'Mon profil'}];
+    const tabs = [{id:'home',label:'Accueil'},{id:'users',label:'Utilisateurs'},{id:'projects',label:'Projets'},{id:'documents',label:'Suivi et documents'},{id:'finance',label:'Finance'},{id:'profile',label:'Mon profil'}];
     tabs.forEach(t=>push(fuzzyScore(t.label,q),{icon:'🧭',label:t.label,sub:'Navigation',action:()=>{activeTab=t.id;closeCmdPalette();refreshAdminTab();}}));
 
     // Clients/users
@@ -3035,6 +3056,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     { id:'home',           icon:iconHome(),      label:'Accueil'           },
     { id:'users',          icon:iconUsers(),     label:'Utilisateurs'      },
     { id:'documents',      icon:iconDocs(),      label:'Suivi & Docs'      },
+    { id:'projects',       icon:iconProject(),   label:'Projets'           },
     { id:'finance',        icon:iconFinance(),   label:'Finance'           },
     { id:'ai-automation',  icon:iconAI(),        label:'Assistant IA' },
     { id:'rubis',          icon:iconRubis(),     label:'Rubis' },
@@ -3149,6 +3171,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
   function getAdminVisibleTabs(){
     return adminTabs.filter(t=>
+      (t.id!=='projects'||canManageProjects()) &&
       (t.id!=='history'||canViewHistory()) &&
       (t.id!=='finance'||canAccessFinance()) &&
       (t.id!=='requests'||canReviewRequests()) &&
@@ -3241,7 +3264,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   // reste tout en bas de la colonne.
   const ADMIN_NAV_SECTIONS = [
     { title:'',                   ids:['home'] },
-    { title:'Clients et projets', ids:['users','documents','ai-visual','myproject'] },
+    { title:'Clients et projets', ids:['users','projects','documents','ai-visual','myproject'] },
     { title:'Business',           ids:['finance'] },
     { title:'Intelligence',       ids:['rubis','ai-automation'] },
   ];
@@ -3278,6 +3301,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   function renderAdminTab(){
     if(activeTab==='home')           return renderAdminHome();
     if(activeTab==='users')          return renderAdminUsers();
+    if(activeTab==='projects')       return canManageProjects(me) ? renderAdminProjects() : renderAdminHome();
     if(activeTab==='documents')      return renderAdminDocuments();
     if(activeTab==='finance')        return renderAdminFinance();
     if(activeTab==='ai-automation')  return renderAdminAIAutomation();
@@ -3328,6 +3352,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   function wireAdminTabContent(){
     if(activeTab==='home')          wireAdminHome();
     if(activeTab==='users')         wireAdminUsers();
+    if(activeTab==='projects' && canManageProjects(me)) wireAdminProjects();
     if(activeTab==='documents')     wireAdminDocuments();
     if(activeTab==='finance')       wireAdminFinance();
     if(activeTab==='ai-automation') wireAdminAIAutomation();
@@ -7108,6 +7133,208 @@ DOCUMENTS
     a.download = p.deliverable.name;
     a.click();
     toast('Téléchargement démarré…','success');
+  }
+
+  // ═══════════════════════════════════════════════
+  //  ONGLET « PROJETS » (admin) — liste de tous les projets,
+  //  modification rapide, archivage et suppression
+  // ═══════════════════════════════════════════════
+  const PROJ_STATUS = { pending:['En attente','var(--sky)','rgba(43,108,176,.12)'], in_progress:['En cours','var(--coral)','var(--coral-tint)'], done:['Terminé','var(--sage)','rgba(47,125,79,.12)'] };
+  const PROJ_COLORS = ['#c4502c','#2f7d4f','#2b6cb0','#7a4cc2','#a8650f','#0f766e','#b42318','#6b7280'];
+
+  function renderAdminProjects(){
+    const all = db.projects;
+    const f = window._projFilter || 'active';
+    const sort = window._projSort || 'due';
+    const count = k => k==='archived' ? all.filter(p=>p.archived).length
+      : k==='active' ? all.filter(p=>!p.archived).length
+      : all.filter(p=>!p.archived && p.status===k).length;
+    const tiles = [
+      { k:'active',      label:'Tous les projets', icon:'folder' },
+      { k:'pending',     label:'En attente',       icon:'clock' },
+      { k:'in_progress', label:'En cours',         icon:'arrowright' },
+      { k:'done',        label:'Terminés',         icon:'checkc' },
+      { k:'archived',    label:'Archivés',         icon:'archive' },
+    ];
+    const list = all.filter(p => f==='archived' ? p.archived : f==='active' ? !p.archived : (!p.archived && p.status===f));
+    const pctOf = p => { const tl=p.timeline||[]; return tl.length ? Math.round(tl.filter(s=>s.status==='done').length/tl.length*100) : 0; };
+    const sorted = [...list].sort((a,b)=>{
+      if(sort==='name') return a.name.localeCompare(b.name,'fr');
+      if(sort==='recent') return new Date(b.createdAt||0)-new Date(a.createdAt||0);
+      if(sort==='progress') return pctOf(b)-pctOf(a);
+      const da = a.dueDate ? new Date(a.dueDate).getTime() : Infinity, dbb = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+      return da-dbb;
+    });
+    const canEdit = canManageProjects(me);
+
+    return `<div class="fade-up">
+      <div class="home-head">
+        <div><p class="home-date">${all.length} projet${all.length>1?'s':''} au total</p><h1>Projets</h1></div>
+        <div class="home-actions">
+          ${canEdit?`<button id="btn-proj-new" class="btn btn-primary">${ic('plus')} Nouveau projet</button>`:''}
+        </div>
+      </div>
+
+      <div class="doc-tiles" role="group" aria-label="Filtrer les projets">
+        ${tiles.map(t=>`
+          <button class="doc-tile proj-filter ${f===t.k?'active':''}" data-filter="${t.k}" aria-pressed="${f===t.k}">
+            <span class="doc-tile-ic">${ic(t.icon,'',18)}</span>
+            <span class="doc-tile-v">${count(t.k)}</span>
+            <span class="doc-tile-l">${t.label}</span>
+          </button>`).join('')}
+      </div>
+
+      <div class="doc-toolbar">
+        <label class="tb-search" style="max-width:420px;cursor:text;">
+          ${ic('search')}
+          <input id="proj-search" type="search" placeholder="Chercher un projet, un client ou un tag" aria-label="Chercher un projet" value="${esc(window._projQuery||'')}" style="flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ink);font:inherit;" />
+        </label>
+        <label class="fl-meta" for="proj-sort" style="margin-left:auto;">Trier par</label>
+        <select id="proj-sort" class="glass-input" style="width:auto;min-width:150px;">
+          <option value="due" ${sort==='due'?'selected':''}>Échéance</option>
+          <option value="recent" ${sort==='recent'?'selected':''}>Plus récents</option>
+          <option value="name" ${sort==='name'?'selected':''}>Nom</option>
+          <option value="progress" ${sort==='progress'?'selected':''}>Avancement</option>
+        </select>
+      </div>
+
+      ${sorted.length===0 ? `<div class="fl-card cl-empty"><span class="qa-empty-ic">${ic('folder','',28)}</span><h2>Aucun projet ici</h2><p class="fl-meta">${f==='archived'?'Aucun projet archivé.':'Créez un projet avec le bouton « Nouveau projet ».'}</p></div>` : `
+      <section class="pl-list" aria-label="Liste des projets">
+        <div class="pl-row pl-headrow" aria-hidden="true"><span>Projet</span><span>Statut</span><span>Avancement</span><span>Échéance</span><span></span></div>
+        ${sorted.map(p=>{
+          const client = db.users.find(u=>u.id===p.clientId);
+          const st = PROJ_STATUS[p.status]||[p.status||'—','var(--ink-3)','rgba(var(--fg-rgb),.06)'];
+          const pct = pctOf(p);
+          const days = p.dueDate ? Math.ceil((new Date(p.dueDate)-new Date())/86400000) : null;
+          const late = p.status!=='done' && days!==null && days<0;
+          const hay = [p.name, client?client.username:'', client?(client.firstName||'')+' '+(client.lastName||''):'', ...(p.tags||[])].join(' ').toLowerCase();
+          return `<article class="pl-row" data-hay="${esc(hay)}">
+            <div class="pl-name">
+              <span class="pl-color" style="background:${p.color||'var(--coral)'};"></span>
+              <div style="min-width:0;">
+                <div class="pl-title">${esc(p.name)}${p.priority==='urgent'?` <span class="chip" style="background:rgba(180,35,24,.1);color:var(--danger);">Urgent</span>`:''}${p.paused?` <span class="chip">En pause</span>`:''}</div>
+                <div class="fl-meta">${client?esc((`${client.firstName||''} ${client.lastName||''}`).trim()||client.username):'Sans client'}${(p.tags||[]).length?' · '+p.tags.map(esc).join(', '):''}</div>
+              </div>
+            </div>
+            <div><span class="chip" style="background:${st[2]};color:${st[1]};">${p.archived?'Archivé':st[0]}</span></div>
+            <div class="pl-prog"><div class="mini-bar" style="max-width:none;margin:0;"><i style="width:${pct}%;background:${p.status==='done'?'var(--sage)':'var(--coral)'};"></i></div><span class="fl-meta">${pct} %</span></div>
+            <div class="pl-due" style="${late?'color:var(--danger);font-weight:600;':''}">${p.dueDate?new Date(p.dueDate).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'<span class="fl-meta">Aucune</span>'}${late?`<div class="fl-meta" style="color:var(--danger);">${-days} j de retard</div>`:''}</div>
+            <div class="pl-actions">
+              ${canEdit?`
+              <button class="btn btn-ghost btn-sm pl-edit" data-pid="${p.id}">${ic('edit','',14)} Modifier</button>
+              <button class="btn btn-ghost btn-sm pl-archive" data-pid="${p.id}" title="${p.archived?'Restaurer':'Archiver'}" aria-label="${p.archived?'Restaurer':'Archiver'} ${esc(p.name)}">${ic(p.archived?'undo':'archive','',14)}</button>
+              <button class="btn btn-ghost btn-sm pl-delete" data-pid="${p.id}" title="Supprimer" aria-label="Supprimer ${esc(p.name)}" style="color:var(--danger);">${ic('trash','',14)}</button>`:''}
+            </div>
+          </article>`;
+        }).join('')}
+        <div id="proj-noresult" class="fl-empty" style="display:none;padding:16px;">Aucun projet ne correspond à la recherche.</div>
+      </section>`}
+    </div>`;
+  }
+
+  function wireAdminProjects(){
+    document.getElementById('btn-proj-new')?.addEventListener('click', openCreateProjectModal);
+    document.querySelectorAll('.proj-filter').forEach(b=>b.addEventListener('click',()=>{ window._projFilter = b.dataset.filter; refreshAdminTab(); }));
+    document.getElementById('proj-sort')?.addEventListener('change',e=>{ window._projSort = e.target.value; refreshAdminTab(); });
+    const search = document.getElementById('proj-search');
+    const applySearch = ()=>{
+      const q = (search?.value||'').trim().toLowerCase();
+      window._projQuery = search?.value||'';
+      let shown = 0;
+      document.querySelectorAll('.pl-row[data-hay]').forEach(r=>{ const ok = !q || r.dataset.hay.includes(q); r.style.display = ok?'':'none'; if(ok) shown++; });
+      const nr = document.getElementById('proj-noresult'); if(nr) nr.style.display = shown?'none':'block';
+    };
+    search?.addEventListener('input', applySearch);
+    applySearch();
+    document.querySelectorAll('.pl-edit').forEach(b=>b.addEventListener('click',()=>openEditProjectModal(b.dataset.pid)));
+    document.querySelectorAll('.pl-delete').forEach(b=>b.addEventListener('click',()=>confirmDeleteProject(b.dataset.pid)));
+    document.querySelectorAll('.pl-archive').forEach(b=>b.addEventListener('click',()=>{
+      const p = db.projects.find(x=>x.id===b.dataset.pid); if(!p) return;
+      p.archived = !p.archived;
+      logActivity(p.archived?'project_archived':'project_unarchived', (p.archived?'Projet archivé : ':'Projet restauré : ')+p.name);
+      saveDB(); toast(p.archived?'Projet archivé.':'Projet restauré.', 'info'); refreshAdminTab();
+    }));
+  }
+
+  // Modification rapide d'un projet
+  function openEditProjectModal(projectId){
+    const p = db.projects.find(x=>x.id===projectId);
+    if(!p) return;
+    const clients = db.users.filter(u=>u.role==='client'||u.role==='controller');
+    const color = p.color || PROJ_COLORS[0];
+    showModal(`
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <span class="file-ic">${ic('edit','',18)}</span>
+        <div style="flex:1;min-width:0;"><h2 style="margin:0;">Modifier le projet</h2><div class="fl-meta">${esc(p.name)}</div></div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <div class="set-grid" style="margin-bottom:12px;">
+        <div style="grid-column:1/-1;"><label class="label" for="ep-name">Nom du projet</label><input id="ep-name" class="glass-input" value="${esc(p.name)}" /></div>
+        <div><label class="label" for="ep-client">Client</label>
+          <select id="ep-client" class="glass-input">
+            <option value="">Aucun</option>
+            ${clients.map(c=>`<option value="${c.id}" ${p.clientId===c.id?'selected':''}>${esc((`${c.firstName||''} ${c.lastName||''}`).trim()||c.username)} (@${esc(c.username)})</option>`).join('')}
+          </select></div>
+        <div><label class="label" for="ep-status">Statut</label>
+          <select id="ep-status" class="glass-input">
+            ${Object.entries(PROJ_STATUS).map(([k,v])=>`<option value="${k}" ${p.status===k?'selected':''}>${v[0]}</option>`).join('')}
+          </select></div>
+        <div><label class="label" for="ep-prio">Priorité</label>
+          <select id="ep-prio" class="glass-input">
+            <option value="urgent" ${p.priority==='urgent'?'selected':''}>Urgent</option>
+            <option value="normal" ${(p.priority||'normal')==='normal'?'selected':''}>Normale</option>
+            <option value="low" ${p.priority==='low'?'selected':''}>Basse</option>
+          </select></div>
+        <div><label class="label" for="ep-due">Date de livraison</label><input id="ep-due" class="glass-input" type="date" value="${esc(p.dueDate||'')}" /></div>
+        <div style="grid-column:1/-1;"><label class="label" for="ep-desc">Description</label><textarea id="ep-desc" class="glass-input" style="min-height:70px;">${esc(p.description||'')}</textarea></div>
+        <div><label class="label" for="ep-tags">Tags (séparés par des virgules)</label><input id="ep-tags" class="glass-input" value="${esc((p.tags||[]).join(', '))}" /></div>
+        <div><label class="label" for="ep-url">Adresse du site</label><input id="ep-url" class="glass-input" placeholder="https://…" value="${esc(p.websiteUrl||'')}" /></div>
+        <div style="grid-column:1/-1;"><span class="label">Couleur</span>
+          <div id="ep-colors" style="display:flex;gap:8px;flex-wrap:wrap;" role="radiogroup" aria-label="Couleur du projet">
+            ${PROJ_COLORS.map(c=>`<button type="button" class="color-dot ${c===color?'selected':''}" data-color="${c}" style="background:${c};" role="radio" aria-checked="${c===color}" aria-label="Couleur ${c}"></button>`).join('')}
+          </div></div>
+      </div>
+      <div id="ep-msg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:.85rem;"></div>
+      <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;">
+        <button id="ep-delete" class="btn btn-ghost" style="color:var(--danger);">${ic('trash','',16)} Supprimer</button>
+        <div style="display:flex;gap:10px;">
+          <button onclick="closeModal()" class="btn btn-ghost">Annuler</button>
+          <button id="ep-save" class="btn btn-primary">${ic('save','',16)} Enregistrer</button>
+        </div>
+      </div>`,
+    ()=>{
+      let chosen = color;
+      document.querySelectorAll('#ep-colors .color-dot').forEach(d=>d.addEventListener('click',()=>{
+        chosen = d.dataset.color;
+        document.querySelectorAll('#ep-colors .color-dot').forEach(x=>{ x.classList.toggle('selected', x===d); x.setAttribute('aria-checked', x===d); });
+      }));
+      document.getElementById('ep-delete').addEventListener('click',()=>confirmDeleteProject(p.id));
+      document.getElementById('ep-save').addEventListener('click',()=>{
+        const msg = document.getElementById('ep-msg');
+        const name = document.getElementById('ep-name').value.trim();
+        const url = document.getElementById('ep-url').value.trim();
+        if(!name){ showMsg(msg,'Le nom du projet est requis.','error'); return; }
+        if(url && !safeUrl(url)){ showMsg(msg,'L\'adresse du site doit commencer par http:// ou https://.','error'); return; }
+        const target = db.projects.find(x=>x.id===p.id) || p; // version actuelle (synchronisation en temps réel)
+        const oldStatus = target.status;
+        target.name = name;
+        target.clientId = document.getElementById('ep-client').value || null;
+        target.status = document.getElementById('ep-status').value;
+        target.priority = document.getElementById('ep-prio').value;
+        target.dueDate = document.getElementById('ep-due').value || null;
+        target.description = document.getElementById('ep-desc').value.trim();
+        target.tags = document.getElementById('ep-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+        target.websiteUrl = url;
+        target.color = chosen;
+        target.updatedAt = new Date().toISOString();
+        if(oldStatus!==target.status && target.clientId){
+          pushNotification(target.clientId, 'Statut du projet mis à jour', `Votre projet "${target.name}" est maintenant ${(PROJ_STATUS[target.status]||['?'])[0].toLowerCase()}.`, target.status==='done'?'success':'info');
+        }
+        logActivity('project_updated','Projet modifié : '+target.name);
+        saveDB(); closeModal(); toast('Projet mis à jour.','success'); refreshAdminTab();
+      });
+    });
+    document.querySelector('.modal-box')?.classList.add('modal-md');
   }
 
   function confirmDeleteProject(projectId){
