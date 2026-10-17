@@ -1249,6 +1249,49 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .mk-mini span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mk-mini:hover { border-color: var(--coral); }
 
+/* ── Suivi de projet (carte repliable) ── */
+.trk2 { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); margin-bottom: 14px; overflow: hidden; position: relative; }
+.trk2::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--proj, var(--coral)); }
+.trk2-empty { display: flex; align-items: center; gap: 12px; padding: 14px 18px 14px 22px; }
+.trk2-empty::before { background: var(--border-hi); }
+.trk2-head { display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; align-items: center; gap: 18px; padding: 16px 18px 16px 22px; }
+@media (max-width: 760px) { .trk2-head { grid-template-columns: auto minmax(0,1fr); } .trk2-due, .trk2-actions { grid-column: 1 / -1; } .trk2-due { display: flex; gap: 8px; align-items: baseline; } }
+.trk2-ring { width: 56px; height: 56px; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; background: conic-gradient(var(--c) calc(var(--p) * 1%), rgba(var(--fg-rgb),.08) 0); flex: none; }
+.trk2-ring::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: var(--surface-1); }
+.trk2-ring span { position: relative; font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.trk2-ring small { font-size: 10px; font-weight: 600; color: var(--ink-3); }
+.trk2-id { min-width: 0; }
+.trk2-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.trk2-title h2 { margin: 0; font-size: 17px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.trk2-sub { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+.trk2-client { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.trk2-client .avatar { width: 22px; height: 22px; font-size: .6rem; }
+.trk2-due { text-align: right; }
+.trk2-due-v { font-family: var(--font-display); font-weight: 600; font-size: 16px; white-space: nowrap; }
+.trk2-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.trk2-toggle { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--ink-2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.trk2-toggle:hover { background: var(--surface-3); }
+.trk2-toggle svg { transition: transform .18s; }
+.trk2.is-open .trk2-toggle svg { transform: rotate(180deg); }
+.trk2-body { display: none; padding: 4px 18px 18px 22px; border-top: 1px solid var(--border); }
+.trk2.is-open .trk2-body { display: block; }
+.trk2-body > .stepper { margin: 14px 0 16px; }
+.trk2-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.trk2-panel { background: var(--surface-3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+:root[data-theme="dark"] .trk2-panel { background: rgba(255,255,255,.03); }
+.trk2-panel-h { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 6px; }
+.trk2-panel-h .fl-meta { margin-left: auto; }
+.trk2-panel .doc-row:first-of-type { border-top: 0; }
+.trk2-item { padding: 9px 0; border-top: 1px solid var(--border); }
+.trk2-panel-h + .trk2-item { border-top: 0; }
+.trk2-item-h { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; min-height: 30px; }
+.trk2-item-h > svg { color: var(--ink-3); flex: none; }
+.trk2-item-h .fl-meta { font-weight: 400; }
+.trk2-item-btns { margin-left: auto; display: flex; gap: 4px; }
+.trk2-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.trk2-list li { font-size: 12.5px; color: var(--ink-3); padding-left: 12px; position: relative; margin-top: 3px; }
+.trk2-list li::before { content: ''; position: absolute; left: 0; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: rgba(var(--fg-rgb),.25); }
+
 /* ── Sécurité ── */
 .sec-steps { counter-reset: st; list-style: none; display: flex; flex-direction: column; gap: 10px; }
 .sec-steps li { counter-increment: st; display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; }
@@ -1340,7 +1383,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.3';
+  const APP_VERSION = '3.4';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1839,15 +1882,12 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   function showWhatsNew(){
     const isAdminLike = me && (me.role==='admin'||me.role==='controller');
 
-    const commonItems = me && me.role==='client' ? [
-      ['🖼','Nouvel onglet « Maquettes » : cliquez sur l\'image pour laisser vos remarques, puis validez ou demandez des modifications'],
-      ['🔐','Connexion sécurisée : votre mot de passe n\'est plus stocké dans Flow'],
-    ] : [
-      ['🔐','Connexion sécurisée par Firebase : les mots de passe ne sont plus stockés dans la base'],
+    const commonItems = [
+      ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
     ];
     const adminItems = [
-      ['🖼','Envoyez des maquettes depuis « Suivi et documents » : le client les commente directement sur l\'image'],
-      ['🛡','Nouveau panneau « Sécurité des comptes » dans Utilisateurs, avec les étapes pour verrouiller la base'],
+      ['📋','Le suivi de chaque projet est refait : vue compacte repliable, documents, tâches et éléments partagés côte à côte'],
+      ['⚙','Menu ⋯ simplifié : lien de présentation, résumé texte, newsletter et duplication retirés'],
     ];
 
     const items = [
@@ -4279,10 +4319,11 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
   function renderClientDocPanel(u, canEdit, project, showUserHeader=true){
     if(project===undefined) project = getUserProject(u.id);
+    const clientName = `${u.firstName||''} ${u.lastName||''}`.trim() || u.username;
     if(!project){
-      return `<div class="trk-card trk-empty">
+      return `<div class="trk2 trk2-empty">
         ${avatar(u)}
-        <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(u.firstName?u.firstName+' '+(u.lastName||''):u.username)}</div><div class="fl-meta">@${esc(u.username)} · aucun projet associé</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(clientName)}</div><div class="fl-meta">@${esc(u.username)} · aucun projet associé</div></div>
       </div>`;
     }
     const docs = getProjectDocs(project.id);
@@ -4290,69 +4331,76 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     const doneSteps = tl.filter(s=>s.status==='done').length;
     const pct = tl.length ? Math.round(doneSteps/tl.length*100) : 0;
     const current = tl.find(s=>s.status==='current');
-    const statusInfo = {pending:['En attente','var(--sky)','rgba(43,108,176,.12)'],in_progress:['En cours','var(--coral)','var(--coral-tint)'],done:['Terminé','var(--sage)','rgba(47,125,79,.12)']}[project.status]||[project.status,'var(--ink-3)','rgba(var(--fg-rgb),.06)'];
+    const st = {pending:['En attente','var(--sky)','rgba(43,108,176,.12)'],in_progress:['En cours','var(--coral)','var(--coral-tint)'],done:['Terminé','var(--sage)','rgba(47,125,79,.12)']}[project.status]||[project.status,'var(--ink-3)','rgba(var(--fg-rgb),.06)'];
+    const ringColor = project.status==='done' ? 'var(--sage)' : (project.color||'var(--coral)');
+    const days = project.dueDate ? Math.ceil((new Date(project.dueDate)-new Date())/86400000) : null;
+    const dueTxt = project.status==='done' ? 'Livré' : days===null ? 'Sans date' : days<0 ? `${-days} j de retard` : days===0 ? "Aujourd'hui" : `J-${days}`;
+    const dueCol = project.status!=='done' && days!==null && days<0 ? 'var(--danger)' : project.status!=='done' && days!==null && days<=7 ? 'var(--peach)' : 'var(--ink)';
     const prio = project.priority||'normal';
+    const open = (window._trkOpen && project.id in window._trkOpen) ? window._trkOpen[project.id] : project.status!=='done';
+
     const tasks = project.internalTasks||[];
-    const tasksDone = tasks.filter(t=>t.done).length;
+    const tDone = tasks.filter(t=>t.done).length;
     const ctasks = project.clientTasks||[];
     const cDone = ctasks.filter(t=>t.done).length;
     const cfiles = project.clientFiles||[];
+    const mks = getMockups(project);
     const qaCount = project.clientId ? (db.aiRequests||[]).filter(r=>r.clientId===project.clientId&&r.type==='qa'&&r.status==='answered').length : 0;
-    const bar = (v,total,color)=>`<div class="mini-bar"><i style="width:${total?Math.round(v/total*100):0}%;background:${color};"></i></div>`;
+    const docsWaiting = docs.filter(d=>d.status==='filled').length;
+    const mini = (v,total,color)=>`<div class="mini-bar" style="max-width:none;"><i style="width:${total?Math.round(v/total*100):0}%;background:${color};"></i></div>`;
+    const taskList = (list)=> list.filter(t=>!t.done).slice(0,4).map(t=>`<li>${esc(t.label)}</li>`).join('');
 
     const budget = project.budgetEstimated>0 ? (()=>{
       const real = getProjectRealRevenue(project.id);
       const over = real > project.budgetEstimated;
-      return `<div class="trk-line">
-        <span class="trk-line-ic">${ic('money','',16)}</span>
-        <div style="flex:1;min-width:0;">
-          <div class="trk-line-t">Budget <span class="fl-meta">${real.toLocaleString('fr-FR')} € / ${project.budgetEstimated.toLocaleString('fr-FR')} €</span></div>
-          ${bar(Math.min(real,project.budgetEstimated),project.budgetEstimated,over?'var(--peach)':'var(--sage)')}
-        </div>
-        ${over?`<span class="chip" style="color:var(--peach);">Dépassé</span>`:''}
+      return `<div class="trk2-item">
+        <div class="trk2-item-h">${ic('money','',15)}<span>Budget</span><span class="fl-meta">${real.toLocaleString('fr-FR')} € / ${project.budgetEstimated.toLocaleString('fr-FR')} €</span></div>
+        ${mini(Math.min(real,project.budgetEstimated),project.budgetEstimated,over?'var(--peach)':'var(--sage)')}
+        ${over?'<div class="fl-meta" style="color:var(--peach);">Budget dépassé</div>':''}
       </div>`;
     })() : '';
     const climate = project.toneScores&&project.toneScores.length>=2 ? (()=>{
       const recent = project.toneScores.slice(-10);
       const avg = recent.reduce((s,t)=>s+t.score,0)/recent.length;
-      const color = avg>=4 ? 'var(--sage)' : avg>=2.5 ? 'var(--sky)' : 'var(--peach)';
-      const label = avg>=4 ? 'Climat positif' : avg>=2.5 ? 'Climat neutre' : 'Climat tendu';
-      return `<div class="trk-line" title="Basé sur le ton des ${recent.length} derniers commentaires analysés">
-        <span class="trk-line-ic" style="color:${color};">${ic(avg>=4?'happy':avg>=2.5?'neutral':'sad','',16)}</span>
-        <div class="trk-line-t" style="flex:1;">${label} <span class="fl-meta">${avg.toFixed(1)} / 5</span></div>
+      const col = avg>=4 ? 'var(--sage)' : avg>=2.5 ? 'var(--sky)' : 'var(--peach)';
+      return `<div class="trk2-item" title="Ton des ${recent.length} derniers échanges analysés">
+        <div class="trk2-item-h"><span style="color:${col};display:flex;">${ic(avg>=4?'happy':avg>=2.5?'neutral':'sad','',15)}</span><span>${avg>=4?'Climat positif':avg>=2.5?'Climat neutre':'Climat tendu'}</span><span class="fl-meta">${avg.toFixed(1)} / 5</span></div>
       </div>`;
     })() : '';
 
-    return `<article class="trk-card" style="--proj:${project.color||'var(--coral)'};">
-      <header class="trk-head">
-        ${avatar(u)}
-        <div style="flex:1;min-width:0;">
-          <div class="trk-title">
+    return `<article class="trk2 ${open?'is-open':''}" data-pid="${project.id}" style="--proj:${project.color||'var(--coral)'};">
+      <header class="trk2-head">
+        <div class="trk2-ring" style="--p:${pct};--c:${ringColor};" role="img" aria-label="${pct} % terminé"><span>${pct}<small>%</small></span></div>
+        <div class="trk2-id">
+          <div class="trk2-title">
             <h2>${esc(project.name)}</h2>
-            <span class="chip" style="background:${statusInfo[2]};color:${statusInfo[1]};">${statusInfo[0]}</span>
-            ${prio==='urgent'?`<span class="chip" style="background:rgba(180,35,24,.1);color:var(--danger);">Urgent</span>`:prio==='low'?`<span class="chip">Priorité basse</span>`:''}
-            ${project.pinned?`<span class="chip">${ic('pushpin','',12)} Épinglé</span>`:''}
+            <span class="chip" style="background:${st[2]};color:${st[1]};">${st[0]}</span>
+            ${prio==='urgent'?`<span class="chip" style="background:rgba(180,35,24,.1);color:var(--danger);">Urgent</span>`:''}
             ${project.paused?`<span class="chip" style="background:rgba(168,101,15,.12);color:var(--peach);">${ic('pause','',12)} En pause</span>`:''}
+            ${project.pinned?`<span class="chip" title="Épinglé">${ic('pushpin','',12)}</span>`:''}
             ${project.siteHtml?`<span class="chip" style="background:rgba(47,125,79,.1);color:var(--sage);">${ic('globe','',12)} Site lié</span>`:''}
           </div>
-          <div class="fl-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@${esc(u.username)}${project.dueDate?' · livraison le '+new Date(project.dueDate).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):''}${project.description?' · '+esc(project.description):''}</div>
-          ${project.tags&&project.tags.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">${project.tags.map(tag=>`<span class="chip">${esc(tag)}</span>`).join('')}</div>`:''}
+          <div class="trk2-sub">
+            <span class="trk2-client">${avatar(u)}<span>${esc(clientName)}</span></span>
+            <span class="fl-meta">${current?`Étape en cours : <strong style="color:var(--ink-2);">${esc(current.label)}</strong>`:tl.length?`${doneSteps} / ${tl.length} étapes`:'Aucune étape'}</span>
+          </div>
         </div>
-        ${canEdit?`
-        <div class="trk-actions">
-          <button class="btn btn-ghost btn-sm btn-edit-timeline" data-pid="${project.id}" data-uid="${u.id}">${ic('list','',14)} Étapes</button>
+        <div class="trk2-due">
+          <div class="trk2-due-v" style="color:${dueCol};">${dueTxt}</div>
+          <div class="fl-meta">${project.dueDate?new Date(project.dueDate).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'échéance'}</div>
+        </div>
+        <div class="trk2-actions">
+          ${canEdit?`
           <button class="btn btn-primary btn-sm btn-send-doc" data-uid="${u.id}" data-pid="${project.id}">${ic('plus','',14)} Document</button>
+          <button class="btn btn-ghost btn-sm btn-edit-timeline" data-pid="${project.id}" data-uid="${u.id}" aria-label="Modifier les étapes" title="Modifier les étapes">${ic('list','',15)}</button>
           <div class="kebab-wrap">
             <button class="btn btn-ghost btn-sm kebab-btn" data-pid="${project.id}" aria-label="Plus d'actions" title="Plus d'actions">⋯</button>
             <div class="kebab-menu" id="kebab-${project.id}">
               <button class="kebab-item btn-pin-project" data-pid="${project.id}">${ic('pushpin','',16)} ${project.pinned?'Désépingler':'Épingler'}</button>
               <button class="kebab-item btn-pause-project" data-pid="${project.id}">${ic(project.paused?'arrowright':'pause','',16)} ${project.paused?'Reprendre le projet':'Mettre en pause'}</button>
-              <button class="kebab-item btn-share-present" data-pid="${project.id}">${ic('link','',16)} Lien de présentation</button>
               <button class="kebab-item btn-report" data-uid="${u.id}">${ic('file','',16)} Rapport PDF</button>
-              <button class="kebab-item btn-text-summary" data-pid="${project.id}" data-uid="${u.id}">${ic('edit','',16)} Résumé texte</button>
-              ${project.status==='done'?`<button class="kebab-item btn-ai-newsletter" data-pid="${project.id}" data-uid="${u.id}">${ic('sparkle','',16)} Newsletter de fin de projet</button>`:''}
-              <button class="kebab-item btn-dup-project" data-pid="${project.id}">${ic('clipboard','',16)} Dupliquer</button>
               <button class="kebab-item btn-save-template" data-pid="${project.id}">${ic('save','',16)} Sauver comme modèle</button>
+              <div class="kebab-divider"></div>
               <button class="kebab-item btn-send-mockup" data-pid="${project.id}">${ic('image','',16)} Envoyer une maquette</button>
               <button class="kebab-item btn-deliver-files" data-pid="${project.id}">${ic('box','',16)} ${project.deliverable?'Remplacer la livraison':'Livrer les fichiers'}</button>
               <button class="kebab-item btn-link-site" data-pid="${project.id}">${ic('globe','',16)} ${project.siteHtml?'Remplacer le site lié':'Lier le fichier site'}</button>
@@ -4360,78 +4408,59 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
               <button class="kebab-item btn-archive-project" data-pid="${project.id}">${ic('archive','',16)} Archiver</button>
               <button class="kebab-item kebab-danger btn-del-project" data-pid="${project.id}">${ic('trash','',16)} Supprimer</button>
             </div>
-          </div>
-        </div>`:''}
+          </div>`:''}
+          <button class="trk2-toggle" aria-expanded="${open}" aria-label="${open?'Replier':'Déplier'} le suivi de ${esc(project.name)}">${ic('chevdown','',18)}</button>
+        </div>
       </header>
 
-      <div class="trk-progress">
-        <div class="trk-progress-top">
-          <span><strong>${pct} %</strong> <span class="fl-meta">· ${doneSteps}/${tl.length} étape${tl.length>1?'s':''}${current?` · en cours : ${esc(current.label)}`:''}</span></span>
-        </div>
+      <div class="trk2-body">
         ${renderMiniTimeline(tl)}
-      </div>
+        <div class="trk2-grid">
+          <section class="trk2-panel">
+            <div class="trk2-panel-h">${ic('docs','',16)} Documents <span class="fl-meta">${docs.length}${docsWaiting?` · <span style="color:var(--coral-soft);font-weight:600;">${docsWaiting} à valider</span>`:''}</span></div>
+            ${docs.length===0
+              ? `<div class="fl-empty">Aucun document envoyé.${canEdit?` <button class="fl-link btn-send-doc" data-uid="${u.id}" data-pid="${project.id}">Envoyer le premier</button>`:''}</div>`
+              : docs.map(d=>renderDocRow(d,canEdit)).join('')}
+          </section>
 
-      <div class="trk-grid">
-        <section class="trk-panel">
-          <div class="trk-panel-h">${ic('docs','',16)} Documents <span class="fl-meta">${docs.length}</span></div>
-          ${docs.length===0
-            ? `<div class="fl-empty">Aucun document envoyé.${canEdit?` <button class="fl-link btn-send-doc" data-uid="${u.id}" data-pid="${project.id}">Envoyer le premier</button>`:''}</div>`
-            : docs.map(d=>renderDocRow(d,canEdit)).join('')}
-        </section>
+          <section class="trk2-panel">
+            <div class="trk2-panel-h">${ic('checkc','',16)} Tâches</div>
+            ${canEdit?`
+            <div class="trk2-item">
+              <div class="trk2-item-h">${ic('clipboard','',15)}<span>Équipe</span><span class="fl-meta">${tDone} / ${tasks.length}</span>
+                <span class="trk2-item-btns"><button class="btn btn-ghost btn-sm btn-manage-tasks" data-pid="${project.id}">${tasks.length?'Gérer':'Ajouter'}</button><button class="btn btn-ghost btn-sm btn-extract-tasks" data-pid="${project.id}" title="Extraire des tâches depuis la description" aria-label="Extraire des tâches automatiquement">${ic('sparkle','',14)}</button></span></div>
+              ${tasks.length?mini(tDone,tasks.length,'var(--sage)'):''}
+              ${tasks.length?`<ul class="trk2-list">${taskList(tasks)}</ul>`:''}
+            </div>
+            <div class="trk2-item">
+              <div class="trk2-item-h">${ic('user','',15)}<span>Client</span><span class="fl-meta">${cDone} / ${ctasks.length}</span>
+                <span class="trk2-item-btns"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}">${ctasks.length?'Gérer':'Ajouter'}</button></span></div>
+              ${ctasks.length?mini(cDone,ctasks.length,'var(--sky)'):''}
+              ${ctasks.length?`<ul class="trk2-list">${taskList(ctasks)}</ul>`:''}
+            </div>` : `<div class="fl-empty">Réservé aux administrateurs.</div>`}
+          </section>
 
-        <section class="trk-panel">
-          <div class="trk-panel-h">${ic('check','',16)} Suivi</div>
-          ${canEdit?`
-          <div class="trk-line">
-            <span class="trk-line-ic">${ic('clipboard','',16)}</span>
-            <div style="flex:1;min-width:0;">
-              <div class="trk-line-t">Tâches internes <span class="fl-meta">${tasksDone}/${tasks.length}</span></div>
-              ${tasks.length?bar(tasksDone,tasks.length,'var(--sage)'):''}
-              ${tasks.filter(t=>!t.done).slice(0,3).map(t=>`<div class="trk-task">${esc(t.label)}</div>`).join('')}
+          <section class="trk2-panel">
+            <div class="trk2-panel-h">${ic('folder','',16)} Partagé</div>
+            ${(mks.length||canEdit)?`
+            <div class="trk2-item">
+              <div class="trk2-item-h">${ic('image','',15)}<span>Maquettes</span><span class="fl-meta">${mks.length}</span>
+                ${canEdit?`<span class="trk2-item-btns"><button class="btn btn-ghost btn-sm btn-send-mockup" data-pid="${project.id}">${ic('plus','',14)} Envoyer</button></span>`:''}</div>
+              ${mks.slice(0,3).map(m=>`<button class="mk-mini btn-open-mockup" data-pid="${project.id}" data-mid="${m.id}"><span>${esc(m.name)}</span>${mockupChip(m.status)}</button>`).join('')}
+            </div>`:''}
+            <div class="trk2-item">
+              <div class="trk2-item-h">${ic('upload','',15)}<span>Fichiers du client</span><span class="fl-meta">${cfiles.length}</span>
+                ${cfiles.length?`<span class="trk2-item-btns"><button class="btn btn-ghost btn-sm btn-view-client-files" data-pid="${project.id}">Voir</button></span>`:''}</div>
             </div>
-            <div class="trk-line-btns">
-              <button class="btn btn-ghost btn-sm btn-manage-tasks" data-pid="${project.id}">${tasks.length?'Gérer':'Ajouter'}</button>
-              <button class="btn btn-ghost btn-sm btn-extract-tasks" data-pid="${project.id}" title="Extraire des tâches depuis la description" aria-label="Extraire des tâches automatiquement">${ic('sparkle','',14)}</button>
-            </div>
-          </div>
-          <div class="trk-line">
-            <span class="trk-line-ic">${ic('user','',16)}</span>
-            <div style="flex:1;min-width:0;">
-              <div class="trk-line-t">À faire côté client <span class="fl-meta">${cDone}/${ctasks.length}</span></div>
-              ${ctasks.length?bar(cDone,ctasks.length,'var(--sky)'):''}
-              ${ctasks.filter(t=>!t.done).slice(0,3).map(t=>`<div class="trk-task">${esc(t.label)}</div>`).join('')}
-            </div>
-            <div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}">${ctasks.length?'Gérer':'Ajouter'}</button></div>
-          </div>`:''}
-          ${(()=>{
-            const mks = getMockups(project);
-            if(!mks.length && !canEdit) return '';
-            const toCheck = mks.filter(m=>m.status==='changes').length;
-            return `<div class="trk-line">
-              <span class="trk-line-ic">${ic('image','',16)}</span>
-              <div style="flex:1;min-width:0;">
-                <div class="trk-line-t">Maquettes <span class="fl-meta">${mks.length}${toCheck?` · ${toCheck} avec retours`:''}</span></div>
-                ${mks.slice(0,4).map(m=>`<button class="mk-mini btn-open-mockup" data-pid="${project.id}" data-mid="${m.id}"><span>${esc(m.name)}</span>${mockupChip(m.status)}</button>`).join('')}
-              </div>
-              ${canEdit?`<div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-send-mockup" data-pid="${project.id}">${ic('plus','',14)} Envoyer</button></div>`:''}
-            </div>`;
-          })()}
-          ${cfiles.length?`
-          <div class="trk-line">
-            <span class="trk-line-ic">${ic('upload','',16)}</span>
-            <div class="trk-line-t" style="flex:1;">Fichiers du client <span class="fl-meta">${cfiles.length}</span></div>
-            <div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-view-client-files" data-pid="${project.id}">Voir</button></div>
-          </div>`:''}
-          ${qaCount>=3?`
-          <div class="trk-line">
-            <span class="trk-line-ic">${ic('chat','',16)}</span>
-            <div class="trk-line-t" style="flex:1;">Échanges avec l'assistant <span class="fl-meta">${qaCount}</span></div>
-            <div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-ai-summarize-qa" data-cid="${project.clientId}">${ic('sparkle','',14)} Résumer</button></div>
-          </div>`:''}
-          ${budget}
-          ${climate}
-          ${!canEdit&&!cfiles.length&&qaCount<3&&!budget&&!climate?'<div class="fl-empty">Rien à signaler.</div>':''}
-        </section>
+            ${qaCount>=3?`
+            <div class="trk2-item">
+              <div class="trk2-item-h">${ic('chat','',15)}<span>Échanges avec l'assistant</span><span class="fl-meta">${qaCount}</span>
+                <span class="trk2-item-btns"><button class="btn btn-ghost btn-sm btn-ai-summarize-qa" data-cid="${project.clientId}">${ic('sparkle','',14)} Résumer</button></span></div>
+            </div>`:''}
+            ${budget}
+            ${climate}
+          </section>
+        </div>
       </div>
     </article>`;
   }
@@ -4474,6 +4503,16 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   function wireAdminDocuments(){
     document.getElementById('btn-all-client-files')?.addEventListener('click',openAllClientFilesModal);
     wireMockupButtons();
+    // Replier / déplier le suivi d'un projet (état mémorisé pendant la session)
+    document.querySelectorAll('.trk2-toggle').forEach(b=>b.addEventListener('click',()=>{
+      const card = b.closest('.trk2'); if(!card) return;
+      const open = !card.classList.contains('is-open');
+      card.classList.toggle('is-open', open);
+      b.setAttribute('aria-expanded', open);
+      b.setAttribute('aria-label', (open?'Replier':'Déplier')+b.getAttribute('aria-label').replace(/^(Replier|Déplier)/,''));
+      window._trkOpen = window._trkOpen || {};
+      window._trkOpen[card.dataset.pid] = open;
+    }));
     // Kebab menu toggle — portail body pour échapper à tous les containing blocks
     document.querySelectorAll('.kebab-btn').forEach(btn=>{
       btn.addEventListener('click',(e)=>{
@@ -5606,80 +5645,474 @@ DOCUMENTS
     }
   }
 
+  // ═══════════════════════════════════════════════
+  //  KIT PDF FLOW — mise en page commune à tous les PDF générés
+  //  (bandeau d'en-tête, tuiles de chiffres, étapes, tableaux, badges,
+  //  pied de page). Uniquement des formes dessinées : la police PDF
+  //  intégrée ne sait pas afficher les symboles ✓ ▶ ★.
+  // ═══════════════════════════════════════════════
+  const PDF_C = {
+    coral:[196,80,44], tint:[251,233,227], ink:[26,26,26], ink2:[70,70,70], ink3:[125,125,125],
+    line:[230,224,220], surf:[246,243,241], dark:[43,33,29], white:[255,255,255],
+    sage:[47,125,79], sageTint:[229,243,234], sky:[43,108,176], skyTint:[230,239,250],
+    peach:[168,101,15], peachTint:[250,240,224], danger:[180,35,24], dangerTint:[252,234,232],
+  };
+  // Retire ce que la police intégrée ne sait pas afficher
+  function pdfSafe(s){
+    return String(s==null?'':s)
+      .replace(/[  ]/g,' ').replace(/[‘’]/g,"'").replace(/[“”«»]/g,'"')
+      .replace(/[^\x09\x0A\x0D\x20-\x7E¡-ÿ€—–…·’]/g,'');
+  }
+  function pdfHexToRgb(hex){
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'');
+    return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : null;
+  }
+  // Couleur d'accent : celle du projet si elle est assez soutenue, sinon le corail Flow
+  function pdfAccent(project){
+    const c = project && pdfHexToRgb(project.color);
+    if(!c) return PDF_C.coral;
+    const lum = (0.2126*c[0]+0.7152*c[1]+0.0722*c[2])/255;
+    return lum > 0.62 ? PDF_C.coral : c;
+  }
+  const PDF_STATUS = {
+    project: { pending:['En attente','sky','skyTint'], in_progress:['En cours','accent','tint'], done:['Terminé','sage','sageTint'] },
+    doc:     { pending:['À remplir','peach','peachTint'], filled:['Rempli','sky','skyTint'], reviewed:['Validé','sage','sageTint'] },
+    mockup:  { pending:['À valider','accent','tint'], changes:['Modifs demandées','peach','peachTint'], approved:['Validée','sage','sageTint'] },
+  };
+  const pdfDate = d => d ? new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '—';
+
+  function createPdfKit(o){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ format:'a4', unit:'mm' });
+    const W=210, H=297, M=18, C=PDF_C, accent=o.accent||C.coral;
+    const k = { doc, W, H, M, C, accent, y:0 };
+    const fill = c=>doc.setFillColor(c[0],c[1],c[2]);
+    const draw = c=>doc.setDrawColor(c[0],c[1],c[2]);
+    const color = c=>doc.setTextColor(c[0],c[1],c[2]);
+    const font = (style,size)=>{ doc.setFont('helvetica',style); doc.setFontSize(size); };
+    const tone = key => key==='accent' ? accent : C[key];
+    const alpha = (a,fn)=>{ try{ doc.saveGraphicsState(); doc.setGState(new doc.GState({opacity:a})); fn(); doc.restoreGraphicsState(); }catch(_){ fn(); } };
+    doc.setLineCap('round'); doc.setLineJoin('round');
+    Object.assign(k, { fill, draw, color, font, tone });
+
+    k.logo = (x,y,s)=>{
+      fill(accent); doc.roundedRect(x,y,s,s,s*.26,s*.26,'F');
+      doc.setDrawColor(255,255,255); doc.setLineWidth(s*.075);
+      for(let i=0;i<3;i++) doc.lines([[s*.22,-s*.13, s*.46,s*.13, s*.68,0]], x+s*.16, y+s*(.32+i*.19), [1,1], 'S');
+    };
+    k.check = (cx,cy,col,sz=1)=>{ draw(col); doc.setLineWidth(.7*sz); doc.line(cx-1.5*sz,cy+.1*sz,cx-.4*sz,cy+1.2*sz); doc.line(cx-.4*sz,cy+1.2*sz,cx+1.6*sz,cy-1.1*sz); };
+
+    // ── En-tête principal ──
+    k.header = ()=>{
+      font('bold',21);
+      const titleW = W-2*M-(o.aside?68:8);
+      const tl = doc.splitTextToSize(pdfSafe(o.title||''), titleW).slice(0,2);
+      const bandH = 54 + (tl.length-1)*8 + (o.subtitle?0:-5);
+      fill(C.dark); doc.rect(0,0,W,bandH,'F');
+      alpha(.6, ()=>{ fill(accent); doc.circle(W-6,-8,42,'F'); });
+      alpha(.35,()=>{ fill([242,179,138]); doc.circle(W+8,bandH-6,30,'F'); });
+      fill(C.white); doc.rect(0,bandH,W,40,'F'); // coupe les décors qui dépassent du bandeau
+      k.logo(M,13,9);
+      color(C.white); font('bold',13); doc.text('Flow', M+12, 19.4);
+      font('normal',8.5); color([214,204,198]);
+      doc.text(pdfSafe(o.dateLabel || pdfDate(new Date())), W-M, 19, {align:'right'});
+      color([242,179,138]); font('bold',8.5); doc.text(pdfSafe(o.kicker||'').toUpperCase(), M, 33, {charSpace:.6});
+      color(C.white); font('bold',21); doc.text(tl, M, 42);
+      let yy = 42+(tl.length-1)*8;
+      if(o.subtitle){ font('normal',9.5); color([222,212,206]); doc.text(doc.splitTextToSize(pdfSafe(o.subtitle), titleW)[0], M, yy+7.5); }
+      if(o.aside){
+        font('normal',8); color([214,204,198]); doc.text(pdfSafe(o.aside.label).toUpperCase(), W-M, 33, {align:'right', charSpace:.4});
+        font('bold',19); color(C.white); doc.text(pdfSafe(o.aside.value), W-M, 42, {align:'right'});
+      }
+      k.y = bandH + 12;
+    };
+    // ── En-tête réduit des pages suivantes ──
+    k.newPage = ()=>{
+      doc.addPage();
+      fill(C.dark); doc.rect(0,0,W,12,'F');
+      k.logo(M,3,6); color(C.white); font('bold',8.5); doc.text('Flow', M+8.5, 7.4);
+      font('normal',8); color([214,204,198]); doc.text(doc.splitTextToSize(pdfSafe(o.title||''),120)[0], W-M, 7.4, {align:'right'});
+      k.y = 24;
+    };
+    k.ensure = h=>{ if(k.y+h > H-22) k.newPage(); };
+
+    k.section = (label, right)=>{
+      k.ensure(30); k.y += 3; // le titre reste avec au moins sa première ligne
+      color(accent); font('bold',8.5); doc.text(pdfSafe(label).toUpperCase(), M, k.y, {charSpace:.5});
+      if(right){ color(C.ink3); font('normal',8.5); doc.text(pdfSafe(right), W-M, k.y, {align:'right'}); }
+      draw(C.line); doc.setLineWidth(.3); doc.line(M, k.y+2.6, W-M, k.y+2.6);
+      k.y += 9.5;
+    };
+    k.para = (text, opt={})=>{
+      const size = opt.size||10; font(opt.style||'normal', size); color(opt.color||C.ink2);
+      const lh = size*0.44;
+      doc.splitTextToSize(pdfSafe(text), opt.width||W-2*M).forEach(l=>{ k.ensure(lh+1); doc.text(l, opt.x||M, k.y); k.y += lh; });
+      k.y += (opt.after!=null ? opt.after : 3);
+    };
+    k.badge = (text,x,y,fg,bg,align)=>{
+      font('bold',7.5); const t = pdfSafe(text); const tw = doc.getTextWidth(t)+5;
+      const bx = align==='right' ? x-tw : x;
+      fill(bg); doc.roundedRect(bx,y-3.7,tw,5.3,2.65,2.65,'F'); color(fg); doc.text(t, bx+2.5, y);
+      return tw;
+    };
+    k.statusBadge = (kind,status,x,y,align)=>{
+      const s = (PDF_STATUS[kind]||{})[status] || [status||'—','ink3','surf'];
+      return k.badge(s[0], x, y, tone(s[1]), tone(s[2]), align);
+    };
+    k.ring = (cx,cy,r,pct,col)=>{
+      doc.setLineWidth(1.9); draw(C.line); doc.circle(cx,cy,r,'S');
+      if(pct>0){
+        draw(col); const steps = Math.max(2, Math.round(72*pct/100)); const a0 = -Math.PI/2;
+        let px=cx+r*Math.cos(a0), py=cy+r*Math.sin(a0);
+        for(let i=1;i<=steps;i++){ const a=a0+2*Math.PI*(Math.min(pct,100)/100)*i/steps; const nx=cx+r*Math.cos(a), ny=cy+r*Math.sin(a); doc.line(px,py,nx,ny); px=nx; py=ny; }
+      }
+      doc.setLineWidth(.2);
+    };
+    k.bar = (x,y,w,h,pct,col)=>{ fill(C.line); doc.roundedRect(x,y,w,h,h/2,h/2,'F'); if(pct>0){ fill(col||accent); doc.roundedRect(x,y,Math.max(h,w*Math.min(pct,100)/100),h,h/2,h/2,'F'); } };
+    k.kpis = items=>{
+      const h = 22; k.ensure(h+6);
+      const gap = 4, n = items.length, w = (W-2*M-gap*(n-1))/n;
+      items.forEach((it,i)=>{
+        const x = M+i*(w+gap);
+        fill(C.surf); doc.roundedRect(x,k.y,w,h,2.5,2.5,'F');
+        if(it.ring!=null){
+          k.ring(x+10.5,k.y+h/2,6.3,it.ring,it.color||accent);
+          color(C.ink); font('bold',13); doc.text(pdfSafe(it.value), x+20, k.y+10.8);
+          font('normal',7.8); color(C.ink3); doc.text(doc.splitTextToSize(pdfSafe(it.label), w-22)[0], x+20, k.y+16.2);
+        } else {
+          color(it.color||C.ink); font('bold',13.5);
+          doc.text(doc.splitTextToSize(pdfSafe(it.value), w-8)[0], x+5, k.y+10.8);
+          font('normal',7.8); color(C.ink3); doc.text(doc.splitTextToSize(pdfSafe(it.label), w-8)[0], x+5, k.y+16.2);
+        }
+      });
+      k.y += h+7;
+    };
+    k.timeline = steps=>{
+      steps.forEach((s,i)=>{
+        font('italic',8.5);
+        const note = s.note ? doc.splitTextToSize(pdfSafe(s.note), W-2*M-44) : [];
+        const rowH = 10.5 + note.length*3.8;
+        k.ensure(rowH);
+        const cx = M+3.6, cy = k.y-1.3;
+        if(i<steps.length-1){ draw(s.status==='done'?C.sage:C.line); doc.setLineWidth(.6); doc.line(cx, cy+3.8, cx, cy+rowH-3.8); }
+        if(s.status==='done'){ fill(C.sage); doc.circle(cx,cy,3.3,'F'); k.check(cx,cy,C.white); }
+        else if(s.status==='current'){ fill(accent); doc.circle(cx,cy,3.3,'F'); fill(C.white); doc.circle(cx,cy,1.15,'F'); }
+        else { fill(C.white); draw(C.line); doc.setLineWidth(.6); doc.circle(cx,cy,3.3,'FD'); color(C.ink3); font('bold',6.5); doc.text(String(i+1), cx, cy+0.95, {align:'center'}); }
+        const label = pdfSafe(s.label);
+        color(s.status==='pending'?C.ink3:C.ink); font(s.status==='pending'?'normal':'bold',10); doc.text(label, M+11, k.y);
+        if(s.status==='current'){ const lw = doc.getTextWidth(label); k.badge('En cours', M+13+lw, k.y-0.3, accent, C.tint); }
+        if(s.dueDate){ color(C.ink3); font('normal',8.5); doc.text(new Date(s.dueDate).toLocaleDateString('fr-FR'), W-M, k.y, {align:'right'}); }
+        if(note.length){ color(C.ink3); font('italic',8.5); note.forEach((l,j)=>doc.text(l, M+11, k.y+4.7+j*3.8)); }
+        k.y += rowH;
+      });
+      k.y += 2;
+    };
+    k.checklist = items=>{
+      items.forEach(t=>{
+        font('normal',9.5);
+        const lines = doc.splitTextToSize(pdfSafe(t.label), W-2*M-10);
+        const h = lines.length*4.3+3; k.ensure(h);
+        if(t.done){ fill(C.sage); doc.roundedRect(M,k.y-3.4,4.2,4.2,1,1,'F'); k.check(M+2.1,k.y-1.4,C.white,.75); }
+        else { draw(C.ink3); doc.setLineWidth(.4); doc.roundedRect(M,k.y-3.4,4.2,4.2,1,1,'S'); }
+        color(t.done?C.ink3:C.ink); font('normal',9.5); doc.text(lines, M+7.5, k.y);
+        k.y += h;
+      });
+      k.y += 2;
+    };
+    // cols : [{label, w, align}] ; cellule = texte, ou { text, bold, color, badge:[kind,status] }
+    k.table = (cols, rows)=>{
+      const tw = cols.reduce((s,c)=>s+c.w,0);
+      const head = ()=>{
+        fill(C.surf); doc.roundedRect(M,k.y,tw,8,1.6,1.6,'F');
+        font('bold',7.6); color(C.ink3); let x = M;
+        cols.forEach(c=>{ const tx = c.align==='right'? x+c.w-3 : c.align==='center'? x+c.w/2 : x+3; doc.text(pdfSafe(c.label).toUpperCase(), tx, k.y+5.3, {align:c.align||'left', charSpace:.3}); x += c.w; });
+        k.y += 9;
+      };
+      k.ensure(20); head();
+      rows.forEach(r=>{
+        font('normal',9.5);
+        const lines = r.map((cell,ci)=>{ if(cell && cell.badge) return ['']; const t = cell && typeof cell==='object' ? cell.text : cell; return doc.splitTextToSize(pdfSafe(t==null?'':t), cols[ci].w-6); });
+        const rh = 5 + Math.max(...lines.map(l=>l.length))*4.3;
+        if(k.y+rh > H-22){ k.newPage(); head(); }
+        let x = M;
+        r.forEach((cell,ci)=>{
+          const c = cols[ci]; const ty = k.y+5.4;
+          const tx = c.align==='right'? x+c.w-3 : c.align==='center'? x+c.w/2 : x+3;
+          if(cell && cell.badge){ k.statusBadge(cell.badge[0], cell.badge[1], c.align==='right'? x+c.w-3 : x+3, ty, c.align==='right'?'right':null); }
+          else { font(cell&&cell.bold?'bold':'normal', 9.5); color((cell&&cell.color)||C.ink); doc.text(lines[ci], tx, ty, {align:c.align||'left'}); }
+          x += c.w;
+        });
+        k.y += rh;
+        draw(C.line); doc.setLineWidth(.25); doc.line(M, k.y-1.3, M+tw, k.y-1.3);
+      });
+      k.y += 4;
+    };
+    k.callout = (title, text, fg, bg)=>{
+      font('normal',9);
+      const lines = doc.splitTextToSize(pdfSafe(text), W-2*M-24);
+      const h = 13 + lines.length*4.1;
+      k.ensure(h+4);
+      fill(bg); doc.roundedRect(M,k.y,W-2*M,h,2.5,2.5,'F');
+      fill(fg); doc.circle(M+8.5, k.y+h/2, 4.2,'F'); k.check(M+8.5,k.y+h/2,C.white,1.1);
+      color(fg); font('bold',10.5); doc.text(pdfSafe(title), M+17, k.y+7.8);
+      color(C.ink2); font('normal',9); doc.text(lines, M+17, k.y+12.8);
+      k.y += h+6;
+    };
+    k.infoGrid = pairs=>{
+      const colW = (W-2*M-8)/3;
+      for(let i=0;i<pairs.length;i+=3){
+        k.ensure(15);
+        pairs.slice(i,i+3).forEach((pv,j)=>{
+          const x = M+j*(colW+4);
+          font('normal',7.6); color(C.ink3); doc.text(pdfSafe(pv[0]).toUpperCase(), x, k.y, {charSpace:.3});
+          font('bold',10); color(C.ink); doc.text(doc.splitTextToSize(pdfSafe(pv[1]||'—'), colW)[0], x, k.y+5.4);
+        });
+        k.y += 14;
+      }
+    };
+    k.fieldCard = (label, value)=>{
+      font('normal',9.5);
+      const empty = !String(value||'').trim();
+      const lines = doc.splitTextToSize(pdfSafe(empty?'Non renseigné':value), W-2*M-12);
+      const chunk = 34;
+      for(let start=0; start<lines.length || start===0; start+=chunk){
+        const part = lines.slice(start, start+chunk);
+        const h = (start===0?12:6) + part.length*4.3;
+        k.ensure(h+4);
+        fill(C.surf); doc.roundedRect(M,k.y,W-2*M,h,2.2,2.2,'F');
+        let ty = k.y+6.2;
+        if(start===0){ color(C.ink2); font('bold',8.5); doc.text(doc.splitTextToSize(pdfSafe(label), W-2*M-12)[0], M+6, ty); ty += 5.6; }
+        color(empty?C.ink3:C.ink); font(empty?'italic':'normal',9.5); doc.text(part, M+6, ty);
+        k.y += h+4;
+        if(lines.length<=chunk) break;
+      }
+    };
+    k.star = (cx,cy,r,filled,col)=>{
+      const pts=[]; for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5; const rr = i%2 ? r*.45 : r; pts.push([cx+rr*Math.cos(a), cy+rr*Math.sin(a)]); }
+      const segs = pts.slice(1).map((p,i)=>[p[0]-pts[i][0], p[1]-pts[i][1]]);
+      fill(col); draw(col); doc.setLineWidth(.3);
+      doc.lines(segs, pts[0][0], pts[0][1], [1,1], filled?'FD':'S', true);
+    };
+    k.finish = filename=>{
+      const n = doc.internal.getNumberOfPages();
+      for(let p=1;p<=n;p++){
+        doc.setPage(p);
+        draw(C.line); doc.setLineWidth(.3); doc.line(M,H-14,W-M,H-14);
+        font('normal',7.5); color(C.ink3);
+        doc.text(doc.splitTextToSize(pdfSafe(o.footer||('Flow · '+(o.title||''))),140)[0], M, H-9);
+        doc.text('Page '+p+' / '+n, W-M, H-9, {align:'right'});
+      }
+      if(filename) doc.save(filename);
+      return doc;
+    };
+    return k;
+  }
+  const pdfSlug = s => String(s||'document').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/gi,'_').replace(/^_|_$/g,'').toLowerCase() || 'document';
+
+  // ── 1. Résumé / bilan de projet (client) ──
   function exportClientProjectPDF(){
     const project = getUserProjects(me.id).find(p=>p.id===window._clientActiveProjectId)||getUserProject(me.id);
     if(!project){ toast('Aucun projet à exporter.','error'); return; }
     if(!window.jspdf){ toast('Chargement du PDF en cours…','info'); return; }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ format:'a4', unit:'mm' });
-    const W=210, pad=18;
-    let y=pad;
-    // En-tête
-    doc.setFillColor(217,119,87); doc.rect(0,0,W,14,`F`);
-    doc.setTextColor(255,255,255); doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('Flow — Rapport de projet', pad, 9.5);
-    doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.text(new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}), W-pad, 9.5, {align:'right'});
-    y=22;
-    // Titre projet
-    doc.setTextColor(30,20,10); doc.setFontSize(16); doc.setFont('helvetica','bold');
-    doc.text(project.name, pad, y); y+=7;
-    // Status
-    const statusLabel={'pending':'En attente','in_progress':'En cours','done':'Terminé'}[project.status]||project.status;
-    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(100,80,60);
-    doc.text(`Statut : ${statusLabel}${project.dueDate?' · Livraison : '+new Date(project.dueDate).toLocaleDateString('fr-FR'):''}`, pad, y); y+=5;
-    if(project.description){ doc.setTextColor(80,60,40); doc.text(doc.splitTextToSize(project.description,W-2*pad), pad, y); y+=doc.splitTextToSize(project.description,W-2*pad).length*4+3; }
-    // Bandeau "certificat de fin de projet" — uniquement pour les projets terminés
-    if(project.status==='done'){
-      y+=2;
-      doc.setFillColor(238,247,239); doc.setDrawColor(147,181,148);
-      doc.roundedRect(pad, y, W-2*pad, 18, 2, 2, 'FD');
-      doc.setTextColor(70,130,90); doc.setFontSize(10); doc.setFont('helvetica','bold');
-      doc.text('✓ Projet livré et terminé', pad+6, y+7);
-      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(80,110,90);
-      const createdLbl = project.createdAt ? new Date(project.createdAt).toLocaleDateString('fr-FR') : '—';
-      doc.text(`Démarré le ${createdLbl} · Ce document atteste de l'achèvement du projet par l'équipe Flow.`, pad+6, y+13);
-      const ownReview = (db.reviews||[]).find(r=>r.projectId===project.id && r.clientId===me.id);
-      if(ownReview){ doc.setTextColor(217,160,80); doc.setFontSize(9); doc.text('★'.repeat(ownReview.rating)+'☆'.repeat(5-ownReview.rating), W-pad-6, y+9, {align:'right'}); }
-      y+=24;
+    const tl = project.timeline||[];
+    const done = tl.filter(s=>s.status==='done').length;
+    const pct = tl.length ? Math.round(done/tl.length*100) : 0;
+    const isDone = project.status==='done';
+    const st = PDF_STATUS.project[project.status]||['—'];
+    const k = createPdfKit({
+      kicker: isDone ? 'Bilan de fin de projet' : 'Résumé de projet',
+      title: project.name,
+      subtitle: `Préparé pour ${(me.firstName||me.username)}${me.lastName?' '+me.lastName:''}`,
+      accent: pdfAccent(project),
+      footer: `Flow · ${project.name} · généré le ${new Date().toLocaleDateString('fr-FR')}`,
+    });
+    k.header();
+    k.kpis([
+      { ring:pct, value:pct+' %', label:'Avancement' },
+      { value:`${done} / ${tl.length}`, label:'Étapes terminées' },
+      { value: project.dueDate ? new Date(project.dueDate).toLocaleDateString('fr-FR') : 'À définir', label:'Livraison prévue' },
+      { value: st[0], label:'Statut', color: k.tone(st[1]||'ink') },
+    ]);
+    if(isDone){
+      k.callout('Projet livré et terminé', `Projet démarré le ${pdfDate(project.createdAt)}. Ce document atteste de l'achèvement du projet par l'équipe Flow. Merci pour votre confiance !`, PDF_C.sage, PDF_C.sageTint);
+      const review = (db.reviews||[]).find(r=>r.projectId===project.id && r.clientId===me.id);
+      if(review){
+        k.section('Votre avis');
+        for(let i=0;i<5;i++) k.star(k.M+3+i*7, k.y-1.5, 2.8, i<review.rating, i<review.rating?PDF_C.peach:PDF_C.line);
+        k.y += 6;
+        if(review.comment) k.para('"'+review.comment+'"', { style:'italic' });
+      }
     }
-    // Barre de progression
-    const tl=project.timeline||[];
-    const pct=tl.length>0?Math.round(tl.filter(s=>s.status==='done').length/tl.length*100):0;
-    y+=2;
-    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(30,20,10); doc.text(`Avancement : ${pct}%`, pad, y); y+=4;
-    doc.setFillColor(230,220,210); doc.roundedRect(pad, y, W-2*pad, 4, 2, 2, 'F');
-    if(pct>0){ doc.setFillColor(217,119,87); doc.roundedRect(pad, y, (W-2*pad)*pct/100, 4, 2, 2, 'F'); } y+=9;
-    // Timeline
-    if(tl.length>0){
-      doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(30,20,10); doc.text('Étapes du projet', pad, y); y+=5;
-      tl.forEach((s,i)=>{
-        const statusIcon = s.status==='done'?'✓':s.status==='current'?'▶':'○';
-        const clr = s.status==='done'?[76,190,124]:s.status==='current'?[217,119,87]:[160,140,120];
-        doc.setTextColor(...clr); doc.setFontSize(8); doc.setFont('helvetica','bold');
-        doc.text(statusIcon, pad, y);
-        doc.setTextColor(30,20,10); doc.setFont('helvetica', s.status==='pending'?'normal':'bold');
-        doc.text(s.label+(s.status==='current'?' (en cours)':''), pad+6, y);
-        if(s.dueDate){ doc.setTextColor(130,110,90); doc.setFont('helvetica','normal'); doc.text(new Date(s.dueDate).toLocaleDateString('fr-FR'), W-pad, y, {align:'right'}); }
-        y+=5;
-        if(y>270){ doc.addPage(); y=20; }
+    if(project.description){ k.section('Le projet'); k.para(project.description); }
+    if(project.deliverable){ k.section('Livraison'); k.para(`Fichiers livrés : ${project.deliverable.name} — le ${pdfDate(project.deliverable.deliveredAt)}.`); }
+    if(tl.length){ k.section('Étapes du projet', `${done} / ${tl.length}`); k.timeline(tl); }
+    const docs = getProjectDocs(project.id);
+    if(docs.length){
+      k.section('Documents', String(docs.length));
+      k.table([{label:'Document',w:104},{label:'Envoyé le',w:36},{label:'Statut',w:34,align:'right'}],
+        docs.map(d=>[ {text:d.name,bold:true}, d.sentAt?new Date(d.sentAt).toLocaleDateString('fr-FR'):'—', {badge:['doc',d.status]} ]));
+    }
+    const mks = getMockups(project);
+    if(mks.length){
+      k.section('Maquettes', String(mks.length));
+      k.table([{label:'Maquette',w:104},{label:'Commentaires',w:36,align:'center'},{label:'Statut',w:34,align:'right'}],
+        mks.map(m=>[ {text:m.name,bold:true}, String(m.pins.length), {badge:['mockup',m.status]} ]));
+    }
+    k.finish(`${isDone?'bilan':'resume'}_${pdfSlug(project.name)}.pdf`);
+  }
+
+  // ── 2. Rapport de projet (admin, menu ⋯ → Rapport PDF) ──
+  function generateClientReport(userId){
+    const u = db.users.find(x=>x.id===userId);
+    const p = getUserProject(userId);
+    if(!u||!p) return;
+    if(!window.jspdf){ toast('jsPDF non chargé','error'); return; }
+    const tl = p.timeline||[];
+    const done = tl.filter(s=>s.status==='done').length;
+    const pct = tl.length ? Math.round(done/tl.length*100) : 0;
+    const docs = getProjectDocs(p.id);
+    const reviewed = docs.filter(d=>d.status==='reviewed').length;
+    const days = p.dueDate ? Math.ceil((new Date(p.dueDate)-new Date())/86400000) : null;
+    const clientName = `${u.firstName||''} ${u.lastName||''}`.trim() || u.username;
+    const k = createPdfKit({
+      kicker:'Rapport de projet',
+      title:p.name,
+      subtitle:`Client : ${clientName}${u.email?' · '+u.email:''}`,
+      accent:pdfAccent(p),
+      footer:`Flow · Rapport ${p.name} · ${new Date().toLocaleDateString('fr-FR')}`,
+    });
+    k.header();
+    k.kpis([
+      { ring:pct, value:pct+' %', label:'Avancement' },
+      { value:`${done} / ${tl.length}`, label:'Étapes terminées' },
+      { value:`${reviewed} / ${docs.length}`, label:'Documents validés' },
+      { value: days===null ? 'À définir' : p.status==='done' ? 'Livré' : days<0 ? `${-days} j de retard` : `J-${days}`, label:'Échéance', color: days!==null && days<0 && p.status!=='done' ? PDF_C.danger : PDF_C.ink },
+    ]);
+    k.infoGrid([
+      ['Statut', (PDF_STATUS.project[p.status]||['—'])[0]],
+      ['Démarré le', pdfDate(p.createdAt)],
+      ['Livraison prévue', pdfDate(p.dueDate)],
+    ]);
+    if(p.description){ k.section('Le projet'); k.para(p.description); }
+    if(tl.length){ k.section('Étapes du projet', `${done} / ${tl.length}`); k.timeline(tl); }
+    if(docs.length){
+      k.section('Documents', `${reviewed} validé(s) sur ${docs.length}`);
+      k.table([{label:'Document',w:84},{label:'Envoyé le',w:30},{label:'Rempli le',w:28},{label:'Statut',w:32,align:'right'}],
+        docs.map(d=>[ {text:d.name,bold:true}, d.sentAt?new Date(d.sentAt).toLocaleDateString('fr-FR'):'—', d.filledAt?new Date(d.filledAt).toLocaleDateString('fr-FR'):'—', {badge:['doc',d.status]} ]));
+    }
+    const ctasks = p.clientTasks||[];
+    if(ctasks.length){ k.section('À faire côté client', `${ctasks.filter(t=>t.done).length} / ${ctasks.length}`); k.checklist(ctasks); }
+    const mks = getMockups(p);
+    if(mks.length){
+      k.section('Maquettes', String(mks.length));
+      k.table([{label:'Maquette',w:104},{label:'Commentaires',w:36,align:'center'},{label:'Statut',w:34,align:'right'}],
+        mks.map(m=>[ {text:m.name,bold:true}, String(m.pins.length), {badge:['mockup',m.status]} ]));
+    }
+    k.finish(`rapport_${pdfSlug(u.username)}_${pdfSlug(p.name)}.pdf`);
+    logActivity('report_generated','Rapport généré pour '+u.username);
+    saveDB();
+    toast('Rapport PDF généré !','success');
+  }
+
+  // ── 3. Export d'un document rempli ──
+  function exportDocumentPDF(d){
+    if(!window.jspdf){ toast('jsPDF non chargé','error'); return; }
+    const proj = db.projects.find(p=>p.id===d.projectId);
+    const client = proj ? db.users.find(u=>u.id===proj.clientId) : db.users.find(u=>u.id===d.clientId);
+    const k = createPdfKit({
+      kicker:'Document',
+      title:d.name,
+      subtitle:[proj?proj.name:'', client?((`${client.firstName||''} ${client.lastName||''}`).trim()||client.username):''].filter(Boolean).join(' · '),
+      accent:pdfAccent(proj),
+      footer:`Flow · ${d.name}`,
+    });
+    k.header();
+    const filledCount = (d.fields||[]).filter(f=>String(f.value||'').trim()).length;
+    k.infoGrid([
+      ['Statut', (PDF_STATUS.doc[d.status]||[d.status||'—'])[0]],
+      ['Envoyé le', d.sentAt?new Date(d.sentAt).toLocaleDateString('fr-FR'):'—'],
+      ['Rempli le', d.filledAt?new Date(d.filledAt).toLocaleDateString('fr-FR'):'—'],
+    ]);
+    if(d.adminComment && d.status==='reviewed') k.callout('Commentaire de l\'équipe', d.adminComment, PDF_C.sky, PDF_C.skyTint);
+    k.section('Réponses', `${filledCount} / ${(d.fields||[]).length} champs remplis`);
+    (d.fields||[]).forEach(f=>k.fieldCard(f.label, f.value));
+    k.finish(pdfSlug(d.name)+'.pdf');
+    toast('PDF exporté !','success');
+  }
+
+  // ── 4. Devis / facture ──
+  function buildInvoicePDF(o){
+    const money = n=>{ const [i,dd] = (n||0).toFixed(2).split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+','+dd+' €'; };
+    const issuer = o.issuer||{};
+    const issued = new Date();
+    const limit = new Date(); limit.setDate(limit.getDate()+30);
+    const k = createPdfKit({
+      kicker: o.docType,
+      title: o.title,
+      subtitle: `N° ${o.num} · émis le ${pdfDate(issued)}`,
+      accent: o.accent,
+      aside: { label: o.isFacture ? 'Total à payer' : 'Montant TTC', value: money(o.ttc) },
+      footer: `${issuer.legalName||'Flow Agence'} · ${o.docType} N° ${o.num}`,
+    });
+    k.header();
+    const { doc, M, W, C } = k;
+    // Émetteur / destinataire
+    const colW = (W-2*M-6)/2;
+    const issuerLines = [
+      [issuer.siret?'SIRET '+issuer.siret:'', issuer.vat?'TVA '+issuer.vat:''].filter(Boolean).join(' · '),
+      issuer.address||'', issuer.email||'',
+    ].filter(Boolean);
+    const client = o.client;
+    const clientName = client ? ((`${client.firstName||''} ${client.lastName||''}`).trim()||client.username) : 'Client libre';
+    const clientLines = [client&&client.email||'', client&&client.phone||''].filter(Boolean);
+    const boxH = 14 + Math.max(issuerLines.length, clientLines.length, 1)*4.4;
+    [[o.isFacture?'Émis par':'Proposé par', issuer.legalName||'Flow Agence', issuerLines],
+     [o.isFacture?'Facturé à':'Adressé à', clientName, clientLines]].forEach(([lbl,name,lines],i)=>{
+      const x = M+i*(colW+6);
+      k.fill(C.surf); doc.roundedRect(x,k.y,colW,boxH,2.5,2.5,'F');
+      k.font('bold',7.6); k.color(C.ink3); doc.text(pdfSafe(lbl).toUpperCase(), x+6, k.y+6.5, {charSpace:.4});
+      k.font('bold',11); k.color(C.ink); doc.text(doc.splitTextToSize(pdfSafe(name), colW-12)[0], x+6, k.y+12.5);
+      k.font('normal',8.6); k.color(C.ink2); lines.forEach((l,j)=>doc.text(doc.splitTextToSize(pdfSafe(l), colW-12)[0], x+6, k.y+17.8+j*4.4));
+    });
+    k.y += boxH+8;
+    k.infoGrid([
+      ['Numéro', o.num],
+      ['Date d\'émission', issued.toLocaleDateString('fr-FR')],
+      [o.isFacture?'Échéance':'Valable jusqu\'au', limit.toLocaleDateString('fr-FR')],
+    ]);
+    // Lignes
+    k.section('Détail');
+    k.table([{label:'Description',w:94},{label:'Qté',w:18,align:'center'},{label:'PU HT',w:30,align:'right'},{label:'Total HT',w:32,align:'right'}],
+      o.lines.map(l=>[ {text:l.desc}, String(l.qty), money(l.price), {text:money(l.qty*l.price), bold:true} ]));
+    // Totaux
+    const bw = 84, bx = W-M-bw;
+    k.ensure(36);
+    const row = (lbl,val)=>{ k.font('normal',9.5); k.color(C.ink2); doc.text(pdfSafe(lbl), bx+4, k.y); doc.text(pdfSafe(val), W-M-4, k.y, {align:'right'}); k.y += 6.5; };
+    row('Total HT', money(o.ht));
+    if(o.tvaRate>0) row(`TVA (${(o.tvaRate*100).toFixed(o.tvaRate*100%1===0?0:1)} %)`, money(o.tva));
+    else { k.font('normal',8); k.color(C.ink3); doc.text('TVA non applicable — art. 293 B du CGI', W-M-4, k.y, {align:'right'}); k.y += 6.5; }
+    k.fill(k.accent); doc.roundedRect(bx, k.y-4.8, bw, 12, 2.2, 2.2, 'F');
+    k.font('bold',11); k.color(C.white);
+    doc.text(o.isFacture?'TOTAL À PAYER':'TOTAL TTC', bx+5, k.y+2.8);
+    doc.text(money(o.ttc), W-M-5, k.y+2.8, {align:'right'});
+    k.y += 16;
+    if(o.notes){ k.section('Notes'); k.para(o.notes, { size:9.5 }); }
+    if(o.isFacture){
+      k.section('Conditions de paiement');
+      k.para('Paiement à réception, sauf échéance indiquée ci-dessus. Tout retard de paiement entraîne, conformément à la loi, des pénalités au taux légal en vigueur ainsi qu\'une indemnité forfaitaire de 40 € pour frais de recouvrement. Aucun escompte n\'est accordé pour paiement anticipé.', { size:8.5, color:C.ink3 });
+    } else {
+      // Bon pour accord
+      k.ensure(40); k.y += 2;
+      const sw = (W-2*M-6)/2;
+      [['Bon pour accord','Date, nom et signature du client'],['Pour '+(issuer.legalName||'Flow Agence'),'Date et signature']].forEach(([t,s],i)=>{
+        const x = M+i*(sw+6);
+        k.draw(C.line); doc.setLineWidth(.4); doc.roundedRect(x,k.y,sw,30,2.5,2.5,'S');
+        k.font('bold',9); k.color(C.ink); doc.text(pdfSafe(t), x+5, k.y+6.5);
+        k.font('normal',7.8); k.color(C.ink3); doc.text(pdfSafe(s), x+5, k.y+11);
       });
+      k.y += 34;
     }
-    // Documents
-    const docs=getProjectDocs(project.id);
-    if(docs.length>0){
-      y+=4;
-      doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(30,20,10); doc.text('Documents', pad, y); y+=5;
-      docs.forEach(d=>{
-        const sl={'pending':'En attente','filled':'Rempli','reviewed':'Validé'}[d.status]||d.status;
-        doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(60,50,40);
-        doc.text(`• ${d.name} — ${sl}`, pad, y); y+=4;
-      });
-    }
-    // Pied de page
-    doc.setFontSize(7); doc.setTextColor(150,130,110);
-    doc.text(`Flow — Rapport généré le ${new Date().toLocaleString('fr-FR')}`, W/2, 292, {align:'center'});
-    doc.save(`rapport_${project.name.replace(/\s+/g,'_')}.pdf`);
+    return k.finish(null);
   }
 
   // ─── Client: Documents ──────────────────────────
@@ -7065,31 +7498,7 @@ DOCUMENTS
     ()=>{
       const btn=document.getElementById('doc-validate');
       if(btn) btn.addEventListener('click',()=>confirmValidateDoc(docId));
-      document.getElementById('doc-export-pdf').addEventListener('click',()=>{
-        if(!window.jspdf){ toast('jsPDF non chargé','error'); return; }
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
-        const statusLabels = {pending:'En attente',filled:'Rempli',reviewed:'Validé'};
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(18); pdf.setTextColor(217,119,87);
-        pdf.text('Flow — Document', 20, 18);
-        pdf.setTextColor(30,20,15); pdf.setFontSize(14);
-        pdf.text(doc.name, 20, 28);
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(120,100,80);
-        pdf.text('Envoyé le: '+(doc.sentAt||'—')+'  |  Statut: '+(statusLabels[doc.status]||doc.status), 20, 36);
-        pdf.setDrawColor(217,119,87); pdf.setLineWidth(0.5); pdf.line(20, 40, 190, 40);
-        let y = 50;
-        doc.fields.forEach(f=>{
-          pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(50,35,25);
-          const labelLines = pdf.splitTextToSize(f.label, 170);
-          pdf.text(labelLines, 20, y); y += labelLines.length*5+3;
-          pdf.setFont('helvetica','normal'); pdf.setTextColor(80,60,45);
-          const valLines = pdf.splitTextToSize(f.value||'(non rempli)', 165);
-          pdf.text(valLines, 25, y); y += valLines.length*5+8;
-          if(y>275){ pdf.addPage(); y=20; }
-        });
-        pdf.save(doc.name.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.pdf');
-        toast('PDF exporté !','success');
-      });
+      document.getElementById('doc-export-pdf').addEventListener('click',()=>exportDocumentPDF(doc));
     });
   }
 
@@ -7412,98 +7821,6 @@ DOCUMENTS
   }
 
   // ─── Generate Client Report (PDF) ───────────────
-  function generateClientReport(userId){
-    const u = db.users.find(x=>x.id===userId);
-    const p = getUserProject(userId);
-    if(!u||!p) return;
-    if(!window.jspdf){ toast('jsPDF non chargé','error'); return; }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const tl = p.timeline||[];
-    const done = tl.filter(s=>s.status==='done');
-    const pct = tl.length>0 ? Math.round(done.length/tl.length*100) : 0;
-    const docs = getProjectDocs(p.id);
-    const docsPending = docs.filter(d=>d.status==='pending').length;
-    const docsFilled = docs.filter(d=>d.status==='filled').length;
-    const docsReviewed = docs.filter(d=>d.status==='reviewed').length;
-
-    // Header
-    doc.setFillColor(217,119,87);
-    doc.rect(0,0,210,28,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(22);
-    doc.setFont('helvetica','bold');
-    doc.text('flow', 14, 18);
-    doc.setFontSize(11);
-    doc.setFont('helvetica','normal');
-    doc.text('Rapport de projet', 40, 18);
-    doc.text(new Date().toLocaleDateString('fr-FR'), 170, 18);
-
-    // Client & project
-    doc.setTextColor(26,19,14);
-    doc.setFontSize(16);
-    doc.setFont('helvetica','bold');
-    doc.text((u.firstName||'')+' '+(u.lastName||u.username), 14, 42);
-    doc.setFontSize(11);
-    doc.setFont('helvetica','normal');
-    doc.setTextColor(100,80,60);
-    doc.text('Projet : '+p.name, 14, 52);
-    if(p.dueDate) doc.text('Livraison prévue : '+new Date(p.dueDate).toLocaleDateString('fr-FR'), 14, 60);
-
-    // Progress bar
-    const y1 = p.dueDate?70:62;
-    doc.setTextColor(26,19,14);
-    doc.setFontSize(12);
-    doc.setFont('helvetica','bold');
-    doc.text('Progression globale : '+pct+'%', 14, y1);
-    doc.setDrawColor(220,200,180);
-    doc.setFillColor(240,230,220);
-    doc.roundedRect(14, y1+4, 182, 8, 2, 2, 'F');
-    if(pct>0){
-      doc.setFillColor(217,119,87);
-      doc.roundedRect(14, y1+4, Math.round(182*pct/100), 8, 2, 2, 'F');
-    }
-
-    // Timeline
-    let y = y1+22;
-    doc.setFontSize(12);
-    doc.setFont('helvetica','bold');
-    doc.setTextColor(26,19,14);
-    doc.text('Étapes du projet', 14, y); y+=8;
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(10);
-    tl.forEach(s=>{
-      const mark = s.status==='done'?'✓':s.status==='current'?'▶':'○';
-      const col = s.status==='done'?[80,150,80]:s.status==='current'?[217,119,87]:[150,140,130];
-      doc.setTextColor(...col);
-      doc.text(mark+' '+s.label+(s.dueDate?' ('+new Date(s.dueDate).toLocaleDateString('fr-FR')+')':''), 18, y);
-      y+=7;
-      if(y>270){ doc.addPage(); y=20; }
-    });
-
-    // Documents
-    y+=6;
-    doc.setFontSize(12);
-    doc.setFont('helvetica','bold');
-    doc.setTextColor(26,19,14);
-    doc.text('Documents', 14, y); y+=8;
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(10);
-    doc.setTextColor(60,60,60);
-    doc.text('En attente : '+docsPending, 18, y); y+=7;
-    doc.text('Remplis : '+docsFilled, 18, y); y+=7;
-    doc.text('Validés : '+docsReviewed, 18, y); y+=12;
-
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(180,160,140);
-    doc.text('Généré par Flow — '+new Date().toLocaleString('fr-FR'), 14, 285);
-
-    doc.save('rapport_'+u.username+'_'+p.name.replace(/\s+/g,'_')+'.pdf');
-    logActivity('report_generated','Rapport généré pour '+u.username);
-    saveDB();
-    toast('Rapport PDF généré !','success');
-  }
 
   // ════════════════════════════════════════════════
   //  FINANCE
@@ -8704,10 +9021,6 @@ Règles :
       });
       document.getElementById('dv-gen').addEventListener('click',()=>{
         if(!window.jspdf){ toast('jsPDF non chargé','error'); return; }
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
-        const PW=210, PH=297, MX=18;
-
         const docType = document.getElementById('dv-type').value||'Devis';
         const isFacture = docType==='Facture';
         const cid     = document.getElementById('dv-client').value;
@@ -8723,160 +9036,9 @@ Règles :
         const ht=lines.reduce((s,l)=>s+l.qty*l.price,0);
         const tva=ht*tvaRate, ttc=ht+tva;
 
-        // Formatage monétaire SANS espace insécable Unicode : la police
-        // Helvetica intégrée à jsPDF ne possède pas ce glyphe et l'affiche
-        // comme un caractère cassé ("/"). On utilise une espace normale.
-        const money = n => {
-          const fixed = (n||0).toFixed(2).replace('.', ',');
-          const [intPart, decPart] = fixed.split(',');
-          return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + decPart + ' €';
-        };
-
-        // Couleur du PDF : reprend la couleur du projet du client si définie,
-        // sinon le corail Flow par défaut. Variante "deep" assombrie de 25%
-        // pour les titres, afin de garder un bon contraste sur fond blanc.
-        function hexToRgb(hex){
-          const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'');
-          return m ? [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)] : null;
-        }
-        const clientProject = client ? db.projects.find(p=>p.clientId===client.id && p.color) : null;
-        const baseRgb = (clientProject && hexToRgb(clientProject.color)) || [217,119,87];
-        const CORAL = baseRgb;
-        const CORAL_DEEP = baseRgb.map(c=>Math.round(c*0.7));
-        const INK=[26,19,14], INK_3=[120,103,90], INK_4=[165,150,138], PAPER=[250,247,243], LINE=[228,217,206];
-
-        // ── En-tête : logo Flow (serif, fidèle à l'identité du site) ──────
-        pdf.setTextColor(...CORAL);
-        pdf.setFont('times','italic'); pdf.setFontSize(26);
-        pdf.text('flow', MX, 26);
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(...INK_3);
-        pdf.text('Agence web', MX, 32);
-
-        // Bloc émetteur (mentions légales minimales)
-        pdf.setFontSize(7.6); pdf.setTextColor(...INK_3);
-        const issuerCfg = (db.companyInfo)||{};
-        const issuer = [
-          issuerCfg.legalName || 'Flow Agence',
-          [issuerCfg.siret?('SIRET '+issuerCfg.siret):'', issuerCfg.vat?('TVA '+issuerCfg.vat):''].filter(Boolean).join(' · '),
-          issuerCfg.address || '',
-          issuerCfg.email || '',
-        ].filter(Boolean);
-        issuer.forEach((line,i)=> pdf.text(line, MX, 40 + i*4));
-
-        // Bloc type/numéro/date, aligné à droite
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.setTextColor(...INK);
-        pdf.text(docType.toUpperCase(), PW-MX, 22, {align:'right'});
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(8.5); pdf.setTextColor(...INK_3);
-        pdf.text('N° '+num, PW-MX, 28, {align:'right'});
-        pdf.text('Date d\'émission : '+new Date().toLocaleDateString('fr-FR'), PW-MX, 33, {align:'right'});
-        if(isFacture){
-          const due = new Date(); due.setDate(due.getDate()+30);
-          pdf.text('Échéance : '+due.toLocaleDateString('fr-FR'), PW-MX, 38, {align:'right'});
-        } else {
-          const valid = new Date(); valid.setDate(valid.getDate()+30);
-          pdf.text('Valable jusqu\'au : '+valid.toLocaleDateString('fr-FR'), PW-MX, 38, {align:'right'});
-        }
-
-        pdf.setDrawColor(...CORAL); pdf.setLineWidth(.6);
-        pdf.line(MX, 58, PW-MX, 58);
-
-        // ── Bloc client ──────────────────────────────────────────
-        let y = 68;
-        pdf.setTextColor(...INK_4); pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5);
-        pdf.text(isFacture?'FACTURÉ À':'ADRESSÉ À', MX, y);
-        y += 6;
-        pdf.setTextColor(...INK); pdf.setFont('helvetica','bold'); pdf.setFontSize(11.5);
-        pdf.text(client ? ((client.firstName||'')+' '+(client.lastName||'')).trim()||client.username : 'Client libre', MX, y);
-        if(client){
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(...INK_3);
-          if(client.email){ y += 5.5; pdf.text(client.email, MX, y); }
-        }
-
-        // ── Objet ────────────────────────────────────────────────
-        y += 12;
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(12.5); pdf.setTextColor(...CORAL_DEEP);
-        pdf.splitTextToSize(title, PW-2*MX).forEach(l=>{ pdf.text(l, MX, y); y+=6; });
-
-        // ── Tableau des lignes ───────────────────────────────────
-        y += 6;
-        const colDesc=MX+4, colQty=128, colPU=152, colTot=PW-MX-4;
-        pdf.setFillColor(...INK); pdf.rect(MX, y-6.5, PW-2*MX, 9.5, 'F');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(255,255,255);
-        pdf.text('DESCRIPTION', colDesc, y);
-        pdf.text('QTÉ', colQty, y, {align:'center'});
-        pdf.text('PU HT', colPU, y, {align:'right'});
-        pdf.text('TOTAL HT', colTot, y, {align:'right'});
-        y += 9.5;
-
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(9.5);
-        lines.forEach((l,i)=>{
-          if(y>250){ pdf.addPage(); y=28; }
-          const rowH = 10;
-          if(i%2===0){ pdf.setFillColor(...PAPER); pdf.rect(MX, y-6.5, PW-2*MX, rowH, 'F'); }
-          pdf.setTextColor(...INK);
-          const descLines = pdf.splitTextToSize(l.desc, colQty-colDesc-8);
-          pdf.text(descLines[0]||'', colDesc, y);
-          pdf.setTextColor(...INK_3);
-          pdf.text(String(l.qty), colQty, y, {align:'center'});
-          pdf.text(money(l.price), colPU, y, {align:'right'});
-          pdf.setFont('helvetica','bold'); pdf.setTextColor(...INK);
-          pdf.text(money(l.qty*l.price), colTot, y, {align:'right'});
-          pdf.setFont('helvetica','normal');
-          y += rowH;
-        });
-        pdf.setDrawColor(...LINE); pdf.setLineWidth(.3);
-        pdf.line(MX, y-4, PW-MX, y-4);
-
-        // ── Totaux ───────────────────────────────────────────────
-        y += 6;
-        pdf.setFontSize(9.5); pdf.setTextColor(...INK_3); pdf.setFont('helvetica','normal');
-        pdf.text('Total HT', 150, y, {align:'right'}); pdf.text(money(ht), colTot, y, {align:'right'});
-        y += 6.5;
-        const tvaLabel = tvaRate>0 ? 'TVA ('+(tvaRate*100).toFixed(tvaRate*100%1===0?0:1)+' %)' : 'TVA non applicable — art. 293B du CGI';
-        pdf.text(tvaLabel, 150, y, {align:'right'}); if(tvaRate>0) pdf.text(money(tva), colTot, y, {align:'right'});
-        y += 10;
-        pdf.setFillColor(...CORAL); pdf.roundedRect(112, y-7.5, PW-MX-112, 12, 1.5, 1.5, 'F');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(11.5); pdf.setTextColor(255,255,255);
-        pdf.text(isFacture?'TOTAL À PAYER':'TOTAL TTC', 150, y, {align:'right'});
-        pdf.text(money(ttc), colTot, y, {align:'right'});
-
-        // ── Notes ────────────────────────────────────────────────
-        y += 16;
-        if(y>260){ pdf.addPage(); y=28; }
-        if(notes){
-          pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(...INK_4);
-          pdf.text('NOTES', MX, y);
-          y += 5;
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(...INK_3);
-          pdf.splitTextToSize(notes, PW-2*MX).forEach(line=>{ pdf.text(line, MX, y); y+=4.6; });
-          y += 4;
-        }
-
-        // ── Mentions légales (facture uniquement) ─────────────────
-        if(isFacture){
-          if(y>255){ pdf.addPage(); y=28; }
-          pdf.setDrawColor(...LINE); pdf.line(MX, y, PW-MX, y);
-          y += 6;
-          pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); pdf.setTextColor(...INK_4);
-          pdf.text('CONDITIONS & MENTIONS LÉGALES', MX, y);
-          y += 5;
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(7.6); pdf.setTextColor(...INK_4);
-          [
-            'Paiement à réception, sauf échéance indiquée ci-dessus. Tout retard de paiement entraîne, conformément à la loi,',
-            'des pénalités au taux légal en vigueur ainsi qu\'une indemnité forfaitaire de 40 € pour frais de recouvrement.',
-            'Aucun escompte n\'est accordé pour paiement anticipé.',
-          ].forEach(l=>{ pdf.text(l, MX, y); y += 3.8; });
-        }
-
-        // ── Pied de page sur toutes les pages ─────────────────────
-        const pageCount = pdf.internal.getNumberOfPages();
-        for(let p=1;p<=pageCount;p++){
-          pdf.setPage(p);
-          pdf.setDrawColor(...LINE); pdf.line(MX, 280, PW-MX, 280);
-          pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(...INK_4);
-          pdf.text((issuerCfg.legalName||'Flow Agence')+' · '+num, MX, 286);
-          pdf.text('Page '+p+'/'+pageCount, PW-MX, 286, {align:'right'});
-        }
+        const clientProject = client ? (db.projects.find(p=>p.clientId===client.id && p.color) || db.projects.find(p=>p.clientId===client.id)) : null;
+        const issuerCfg = db.companyInfo||{};
+        const pdf = buildInvoicePDF({ docType, isFacture, client, num, title, notes, tvaRate, lines, ht, tva, ttc, issuer:issuerCfg, accent:pdfAccent(clientProject) });
 
         // ── Sauvegarde dans l'historique Flow ───────────────────
         if(!Array.isArray(db.invoices)) db.invoices=[];
