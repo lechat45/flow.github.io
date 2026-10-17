@@ -1249,6 +1249,67 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .mk-mini span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mk-mini:hover { border-color: var(--coral); }
 
+/* ── Accueil client ── */
+.ch-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.ch-crumb { font-size: 13px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .02em; margin-bottom: 8px; }
+.ch-crumb span { margin: 0 8px; }
+.ch-head h1 { font-size: 2rem !important; margin: 0; }
+.ch-lead { margin: 8px 0 0; color: var(--ink-3); }
+.ch-hero { position: relative; overflow: hidden; background: var(--rubis-bg); color: #fff; border-radius: 20px; padding: 40px 44px; display: flex; align-items: center; gap: 32px; flex-wrap: wrap; margin-bottom: 24px; min-height: 260px; }
+.ch-deco { position: absolute; right: 0; bottom: 0; width: 60%; max-width: 640px; height: 100%; pointer-events: none; }
+.ch-hero-main { position: relative; flex: 1 1 420px; min-width: 0; }
+.ch-kicker { font-size: 14px; letter-spacing: .03em; text-transform: uppercase; color: rgba(255,255,255,.78); }
+.ch-title { color: #fff; font-family: var(--font-display); font-size: 34px !important; font-weight: 700 !important; margin: 10px 0 0; line-height: 1.15; }
+.ch-step { display: inline-flex; align-items: center; gap: 10px; margin-top: 16px; padding: 10px 16px; border-radius: 22px; background: rgba(255,255,255,.1); font-size: 14.5px; max-width: 100%; }
+.ch-step strong { color: #fff; }
+.ch-prog { margin-top: 26px; max-width: 600px; }
+.ch-prog-top { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.ch-prog-n { margin-left: 10px; }
+.ch-prog-track { height: 8px; border-radius: 4px; background: rgba(255,255,255,.22); margin-top: 12px; overflow: hidden; }
+.ch-prog-track > i { display: block; height: 100%; border-radius: 4px; background: var(--coral); }
+.ch-tiles { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; flex: 1 1 480px; max-width: 680px; }
+@media (max-width: 640px) { .ch-tiles { grid-template-columns: minmax(0, 1fr); } .ch-hero { padding: 28px 22px; } .ch-title { font-size: 26px !important; } }
+.ch-tile { padding: 18px 20px; border-radius: 12px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(6px); }
+.ch-tile .k { font-size: 12.5px; text-transform: uppercase; letter-spacing: .02em; color: rgba(255,255,255,.82); }
+.ch-tile .v { margin-top: 8px; font-size: 20px; font-weight: 700; }
+.ch-tile .n { margin-top: 2px; font-size: 12.5px; color: rgba(255,255,255,.75); }
+.ch-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); gap: 24px; align-items: stretch; }
+@media (max-width: 1100px) { .ch-grid { grid-template-columns: minmax(0, 1fr); } }
+.ch-wide { grid-column: 1 / -1; }
+.ch-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-sm); padding: 28px 32px; min-width: 0; }
+.ch-card-h { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.ch-card-h h2 { margin: 0; font-size: 21px !important; }
+.ch-ic { display: flex; color: var(--coral); }
+.ch-ic.ok { color: var(--ink); }
+.ch-text { color: var(--ink-3); margin: 0 0 14px; }
+.ch-chip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 13px; font-size: 13px; font-weight: 600; background: var(--coral-tint); color: var(--coral-soft); }
+.ch-chip.ok { background: rgba(47,125,79,.12); color: var(--sage); }
+.ch-card-h .ch-chip { margin-left: auto; }
+.ch-assist { background: var(--rubis-bg); color: #fff; border-radius: 18px; padding: 24px 28px; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+.ch-assist-h { display: flex; align-items: center; gap: 14px; }
+.ch-assist-h h2 { color: #fff; margin: 0; font-size: 20px !important; }
+.ch-assist-h .sub { font-size: 13.5px; color: rgba(255,255,255,.78); margin-top: 2px; }
+.ch-assist .rubis-gem { width: 44px; height: 44px; border-radius: 12px; }
+.ch-assist .rubis-ask { margin-top: 0; height: 44px; }
+.ch-steps { list-style: none; margin: 4px 0 0; padding: 0; }
+.ch-st { display: flex; gap: 18px; position: relative; padding-bottom: 18px; }
+.ch-st:last-child { padding-bottom: 0; }
+.ch-st:not(:last-child)::before { content: ''; position: absolute; left: 17px; top: 38px; bottom: 2px; width: 2px; background: var(--border-hi); }
+.ch-st-done:not(:last-child)::before { background: rgba(47,125,79,.35); }
+.ch-dot { width: 36px; height: 36px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; background: var(--surface-1); border: 1.5px solid var(--border-hi); color: var(--ink-3); position: relative; z-index: 1; }
+.ch-st-done .ch-dot { background: rgba(47,125,79,.12); border-color: transparent; color: var(--sage); }
+.ch-st-cur .ch-dot { border-color: var(--coral); color: var(--coral); box-shadow: 0 0 0 4px var(--coral-tint); }
+.ch-st-body { flex: 1; min-width: 0; padding-top: 6px; }
+.ch-st-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.ch-st-l { font-weight: 600; font-size: 16px; }
+.ch-st-todo .ch-st-l { font-weight: 400; color: var(--ink-3); }
+.ch-st-cur .ch-st-l, .ch-st-cur .ch-st-s { color: var(--coral-soft); }
+.ch-st-s { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.ch-st-c { margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 0; border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 12.5px; cursor: pointer; }
+.ch-st-c:hover { color: var(--coral-soft); text-decoration: underline; }
+.ch-drop { width: 100%; min-height: 96px; margin-top: 18px; border-radius: 12px; border: 1.5px dashed rgba(var(--fg-rgb),.2); background: var(--surface-3); color: var(--ink-2); font: inherit; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
+.ch-drop:hover { border-color: var(--coral); background: var(--coral-tint); color: var(--coral-soft); }
+
 /* ── Suivi de projet (carte repliable) ── */
 .trk2 { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); margin-bottom: 14px; overflow: hidden; position: relative; }
 .trk2::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--proj, var(--coral)); }
@@ -1383,7 +1444,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.4';
+  const APP_VERSION = '3.5';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1882,7 +1943,10 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   function showWhatsNew(){
     const isAdminLike = me && (me.role==='admin'||me.role==='controller');
 
-    const commonItems = [
+    const commonItems = me && me.role==='client' ? [
+      ['🏠','Nouvelle page d\'accueil : votre projet, ce qu\'on attend de vous, les étapes et vos fichiers en un coup d\'œil'],
+      ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
+    ] : [
       ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
     ];
     const adminItems = [
@@ -5321,32 +5385,43 @@ DOCUMENTS
       </section>`;
     })();
 
-    return `<div class="fade-up">
+    const stepState = s => s.status==='done' ? 'Terminée' : s.status==='current' ? 'En cours' : 'À venir';
+    const siteUrl = project.websiteUrl && safeUrl(project.websiteUrl);
+
+    return `<div class="fade-up ch">
+      <div class="ch-head">
+        <div style="min-width:0;">
+          <nav class="ch-crumb" aria-label="Fil d'Ariane">Espace client <span aria-hidden="true">/</span> Projet</nav>
+          <h1>Bonjour ${firstName}, voici votre projet</h1>
+          <p class="ch-lead">Retrouvez ici les avancées et les prochaines étapes de votre site.</p>
+        </div>
+        <div class="home-actions">
+          <button id="btn-client-pdf" class="btn btn-ghost">${ic('file','',16)} ${project.status==='done'?'Bilan de fin de projet':'Résumé PDF'}</button>
+          ${siteUrl?`<a href="${esc(siteUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">${ic('globe','',16)} Voir le site</a>`:''}
+        </div>
+      </div>
+
       ${projectSelector}
 
-      <section class="client-hero" aria-labelledby="proj-title">
-        <svg class="deco" aria-hidden="true" viewBox="0 0 400 240">
-          <path d="M0 220 C 120 120, 220 100, 420 40" fill="none" stroke="#c4502c" stroke-width="34" stroke-linecap="round"/>
-          <path d="M40 250 C 160 160, 260 150, 440 110" fill="none" stroke="#f2b38a" stroke-width="18" stroke-linecap="round"/>
+      <section class="ch-hero" aria-labelledby="proj-title">
+        <svg class="ch-deco" aria-hidden="true" viewBox="0 0 520 300" preserveAspectRatio="xMaxYMax meet">
+          <path d="M120 330 C 260 160, 380 110, 560 70" fill="none" stroke="#c4502c" stroke-width="30" stroke-linecap="round"/>
+          <path d="M220 340 C 330 230, 430 190, 560 170" fill="none" stroke="#f2b38a" stroke-width="20" stroke-linecap="round" opacity=".75"/>
         </svg>
-        <div style="position:relative;flex:1 1 340px;min-width:0;">
-          <div class="hello">Bonjour ${firstName}, voici votre projet</div>
-          <h1 id="proj-title">${esc(project.name)}</h1>
-          ${current?`<div class="hero-step">${ic('arrowright','',14)}<span>Étape en cours : <strong>${esc(current.label)}</strong>${nextStep?` <span style="opacity:.7;">· ensuite ${esc(nextStep.label)}</span>`:''}</span></div>`:''}
-          <div class="prog">
-            <div style="display:flex;justify-content:space-between;font-size:13px;"><span>Avancement · ${doneSteps}/${tl.length} étapes</span><span style="font-weight:600;">${pct} %</span></div>
-            <div class="prog-track"><i style="width:${pct}%;${pct===100?'background:#6ccb8f;':''}"></i></div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;">
-            <button class="btn btn-primary btn-sm" onclick="goTab('discussion')">${ic('chat','',14)} Poser une question</button>
-            <button id="btn-client-pdf" class="btn btn-ghost btn-sm">${ic('file','',14)} ${project.status==='done'?'Bilan de fin de projet':'Résumé PDF'}</button>
-            ${project.websiteUrl&&safeUrl(project.websiteUrl)?`<a href="${esc(safeUrl(project.websiteUrl))}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">${ic('globe','',14)} Voir le site</a>`:''}
+        <div class="ch-hero-main">
+          <div class="ch-kicker">Votre projet</div>
+          <h2 class="ch-title" id="proj-title">${esc(project.name)}</h2>
+          ${current?`<div class="ch-step">${ic('arrowright','',16)}<span>Étape en cours : <strong>${esc(current.label)}</strong>${nextStep?` · ensuite ${esc(nextStep.label)}`:''}</span></div>`
+            : project.status==='done' ? `<div class="ch-step">${ic('check','',16)}<span><strong>Projet terminé</strong> · merci pour votre confiance</span></div>` : ''}
+          <div class="ch-prog">
+            <div class="ch-prog-top"><span><strong>Avancement</strong> <strong class="ch-prog-n">${doneSteps}/${tl.length} étapes</strong></span><strong>${pct} %</strong></div>
+            <div class="ch-prog-track" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Avancement du projet"><i style="width:${pct}%;${pct===100?'background:#6ccb8f;':''}"></i></div>
           </div>
         </div>
-        <div class="hero-tiles">
-          <div class="tile"><div class="k">Prochaine échéance</div><div class="v">${dueValue}</div>${dueNote?`<div class="k" style="margin-top:2px;">${dueNote}</div>`:''}</div>
-          <div class="tile"><div class="k">Statut</div><div class="v">${statusLabel}</div></div>
-          <div class="tile"><div class="k">À faire de votre côté</div><div class="v">${todoCount}</div></div>
+        <div class="ch-tiles">
+          <div class="ch-tile"><div class="k">Prochaine échéance</div><div class="v">${project.dueDate?dueValue:'À planifier'}</div>${dueNote?`<div class="n">${dueNote}</div>`:''}</div>
+          <div class="ch-tile"><div class="k">Statut</div><div class="v">${statusLabel}</div></div>
+          <div class="ch-tile"><div class="k">À faire de votre côté</div><div class="v">${todoCount} action${todoCount>1?'s':''}</div></div>
         </div>
       </section>
 
@@ -5356,72 +5431,82 @@ DOCUMENTS
       ${pausedBanner}
       ${reviewCard}
 
-      <div class="client-layout">
-        <div class="client-main">
-          <section class="fl-card" aria-labelledby="todo-t" style="margin-bottom:20px;">
-            <div class="fl-card-head">${ic('checkc','',18)}<h2 id="todo-t">Ce qu'on attend de vous</h2>${todoCount?`<span class="chip" style="background:var(--coral-tint);color:var(--coral-soft);">${todoCount}</span>`:''}</div>
-            ${todoCount===0 ? `
-              <div style="display:flex;align-items:center;gap:12px;padding:6px 0;">
-                <span class="file-ic" style="background:rgba(47,125,79,.12);color:var(--sage);">${ic('check','',18)}</span>
-                <div><div style="font-weight:600;">Tout est à jour</div><div class="fl-meta">Votre équipe vous préviendra ici si elle a besoin de quelque chose.</div></div>
-              </div>` : `
-              ${mockupsToReview.map(m=>`
-                <div class="fl-row">
-                  <span class="file-ic" style="width:34px;height:34px;overflow:hidden;padding:0;"><img src="${m.data}" alt="" style="width:100%;height:100%;object-fit:cover;"></span>
-                  <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(m.name)}</div><div class="fl-meta">Maquette à valider${m.pins.length?` · ${m.pins.length} commentaire(s)`:''}</div></div>
-                  <button class="btn btn-primary btn-sm btn-open-mockup" data-pid="${project.id}" data-mid="${m.id}">Examiner</button>
-                </div>`).join('')}
-              ${docsToFill.map(d=>`
-                <div class="fl-row">
-                  <span class="file-ic" style="width:34px;height:34px;">${ic('clipboard','',16)}</span>
-                  <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(d.name)}</div><div class="fl-meta">Document à compléter</div></div>
-                  <button class="btn btn-primary btn-sm" onclick="goTab('documents')">Remplir</button>
-                </div>`).join('')}
-              ${openTasks.map(({t,i})=>`
-                <label class="ctodo">
-                  <input type="checkbox" class="ctk-check" data-i="${i}" />
-                  <span style="flex:1;min-width:0;">${esc(t.label)}${t.note?`<span class="fl-meta" style="display:block;">${esc(t.note)}</span>`:''}</span>
-                </label>`).join('')}`}
-          </section>
-
-          <section class="fl-card" aria-labelledby="steps-t">
-            <div class="fl-card-head">${ic('list','',18)}<h2 id="steps-t">Étapes du projet</h2><span class="fl-meta">${doneSteps} / ${tl.length}</span></div>
-            ${renderFullTimeline(tl, project.id)}
-          </section>
-        </div>
-
-        <aside class="client-side">
-          <section class="rubis-card" aria-labelledby="ask-t">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span class="rubis-gem">${ic('sparkle','',18)}</span>
-              <div><h2 id="ask-t">Assistant projet</h2><div class="sub">Une question sur votre projet ? Réponse immédiate.</div></div>
-            </div>
-            <form class="rubis-ask" id="home-qa-form" onsubmit="return false;">
-              <input id="home-qa-input" placeholder="Ex. : quand sera livré mon site ?" aria-label="Question pour l'assistant" maxlength="500" />
-              <button type="submit" aria-label="Envoyer la question">${ic('arrowright','',14)}</button>
-            </form>
-          </section>
-
-          <section class="fl-card" aria-labelledby="files-t">
-            <div class="fl-card-head">${ic('upload','',18)}<h2 id="files-t">Mes fichiers</h2><button class="fl-link" onclick="goTab('client-files')">Tout voir</button></div>
-            ${files.length ? files.map(f=>`
+      <div class="ch-grid">
+        <section class="ch-card" aria-labelledby="todo-t">
+          ${todoCount===0 ? `
+            <div class="ch-card-h"><span class="ch-ic ok">${ic('check','',20)}</span><h2 id="todo-t">Tout est à jour</h2></div>
+            <p class="ch-text">Votre équipe vous préviendra ici si elle a besoin de quelque chose.</p>
+            <span class="ch-chip ok">Aucune action requise</span>` : `
+            <div class="ch-card-h"><span class="ch-ic">${ic('checkc','',20)}</span><h2 id="todo-t">Ce qu'on attend de vous</h2><span class="ch-chip">${todoCount} action${todoCount>1?'s':''}</span></div>
+            ${mockupsToReview.map(m=>`
               <div class="fl-row">
-                <span class="file-ic" style="width:34px;height:34px;">${ic('file','',16)}</span>
-                <div style="flex:1;min-width:0;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(f.name)}</div><div class="fl-meta">Déposé le ${new Date(f.uploadedAt).toLocaleDateString('fr-FR')}</div></div>
-              </div>`).join('') : '<div class="fl-empty">Aucun fichier déposé pour le moment.</div>'}
-            <button class="drop-btn" onclick="goTab('client-files')">${ic('plus','',16)} Déposer un fichier</button>
-          </section>
+                <span class="file-ic" style="width:36px;height:36px;overflow:hidden;padding:0;"><img src="${m.data}" alt="" style="width:100%;height:100%;object-fit:cover;"></span>
+                <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(m.name)}</div><div class="fl-meta">Maquette à valider${m.pins.length?` · ${m.pins.length} commentaire(s)`:''}</div></div>
+                <button class="btn btn-primary btn-sm btn-open-mockup" data-pid="${project.id}" data-mid="${m.id}">Examiner</button>
+              </div>`).join('')}
+            ${docsToFill.map(d=>`
+              <div class="fl-row">
+                <span class="file-ic" style="width:36px;height:36px;">${ic('clipboard','',16)}</span>
+                <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(d.name)}</div><div class="fl-meta">Document à compléter</div></div>
+                <button class="btn btn-primary btn-sm" onclick="goTab('documents')">Remplir</button>
+              </div>`).join('')}
+            ${openTasks.map(({t,i})=>`
+              <label class="ctodo">
+                <input type="checkbox" class="ctk-check" data-i="${i}" />
+                <span style="flex:1;min-width:0;">${esc(t.label)}${t.note?`<span class="fl-meta" style="display:block;">${esc(t.note)}</span>`:''}</span>
+              </label>`).join('')}`}
+        </section>
 
-          ${project.faq&&project.faq.length?`
-          <section class="fl-card" aria-labelledby="faq-t">
-            <div class="fl-card-head">${ic('question','',18)}<h2 id="faq-t">Questions fréquentes</h2></div>
-            ${project.faq.map(f=>`
-              <details class="faq-item">
-                <summary><span class="q">${esc(f.q)}</span>${ic('chevdown','',14)}</summary>
-                <div class="a">${esc(f.a||'—')}</div>
-              </details>`).join('')}
-          </section>`:''}
-        </aside>
+        <section class="ch-assist" aria-labelledby="ask-t">
+          <div class="ch-assist-h">
+            <span class="rubis-gem">${ic('sparkle','',18)}</span>
+            <div><h2 id="ask-t">Assistant projet</h2><div class="sub">Une question ? Obtenez une réponse rapide.</div></div>
+          </div>
+          <form class="rubis-ask" id="home-qa-form" onsubmit="return false;">
+            <input id="home-qa-input" placeholder="Ex. : quand sera livré mon site ?" aria-label="Question pour l'assistant" maxlength="500" />
+            <button type="submit" aria-label="Envoyer la question">${ic('arrowright','',14)}</button>
+          </form>
+        </section>
+
+        <section class="ch-card" aria-labelledby="steps-t">
+          <div class="ch-card-h"><h2 id="steps-t">Étapes du projet</h2><span class="fl-meta" style="margin-left:auto;">${doneSteps} / ${tl.length}</span></div>
+          ${tl.length===0 ? '<div class="fl-empty">Aucune étape définie pour le moment.</div>' : `
+          <ol class="ch-steps">
+            ${tl.map((s,i)=>{
+              const n = (s.comments||[]).length;
+              return `<li class="ch-st ch-st-${s.status==='done'?'done':s.status==='current'?'cur':'todo'}">
+                <span class="ch-dot">${s.status==='done'?ic('check','',16):i+1}</span>
+                <div class="ch-st-body">
+                  <div class="ch-st-top"><span class="ch-st-l">${esc(s.label)}</span>${s.dueDate?`<span class="fl-meta">${new Date(s.dueDate).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>`:''}</div>
+                  <div class="ch-st-s">${stepState(s)}</div>
+                  ${s.note?`<div class="fl-meta" style="font-style:italic;margin-top:2px;">${esc(s.note)}</div>`:''}
+                  <button class="ch-st-c btn-step-comments" data-pid="${project.id}" data-sid="${s.id}">${ic('chat','',13)} ${n?n+' commentaire'+(n>1?'s':''):'Commenter'}</button>
+                </div>
+              </li>`;
+            }).join('')}
+          </ol>`}
+        </section>
+
+        <section class="ch-card" aria-labelledby="files-t">
+          <div class="ch-card-h"><h2 id="files-t">Mes fichiers</h2><button class="fl-link" style="margin-left:auto;" onclick="goTab('client-files')">Tout voir ${ic('arrowright','',14)}</button></div>
+          ${files.length ? files.map(f=>`
+            <div class="fl-row">
+              <span class="file-ic" style="width:34px;height:34px;">${ic('file','',16)}</span>
+              <div style="flex:1;min-width:0;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(f.name)}</div><div class="fl-meta">Déposé le ${new Date(f.uploadedAt).toLocaleDateString('fr-FR')}</div></div>
+            </div>`).join('') : '<p class="ch-text">Vos documents partagés apparaîtront ici.</p>'}
+          <button class="ch-drop" onclick="goTab('client-files')">${ic('plus','',16)} Déposer un fichier</button>
+          <div class="fl-meta" style="margin-top:10px;">Tous formats · 6 Mo maximum par fichier</div>
+        </section>
+
+        ${project.faq&&project.faq.length?`
+        <section class="ch-card ch-wide" aria-labelledby="faq-t">
+          <div class="ch-card-h"><h2 id="faq-t">Questions fréquentes</h2></div>
+          ${project.faq.map(f=>`
+            <details class="faq-item">
+              <summary><span class="q">${esc(f.q)}</span>${ic('chevdown','',14)}</summary>
+              <div class="a">${esc(f.a||'—')}</div>
+            </details>`).join('')}
+        </section>`:''}
       </div>
     </div>`;
   }
