@@ -1465,7 +1465,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.6';
+  const APP_VERSION = '3.7';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1971,8 +1971,8 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
       ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
     ];
     const adminItems = [
+      ['🔑','Clés Groq : bouton « Tester les clés », nettoyage automatique du copier-coller et bascule vers un autre modèle si Groq retire le modèle habituel'],
       ['📁','Nouvel onglet « Projets » : tous vos projets au même endroit, avec recherche, tri, modification rapide, archivage et suppression'],
-      ['📋','Le suivi de chaque projet est refait : vue compacte repliable, documents, tâches et éléments partagés côte à côte'],
     ];
 
     const items = [
@@ -9453,7 +9453,12 @@ Règles :
             </div>`;
           }).join('')}
           <p class="fl-meta" style="margin:4px 0 12px;">Les clés ne sont jamais réaffichées ici, mais restent lisibles dans le code de la page : ne les partagez pas.</p>
-          <button id="btn-save-ai-config" class="btn btn-primary">${ic('save','',16)} Enregistrer les clés</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="btn-save-ai-config" class="btn btn-primary">${ic('save','',16)} Enregistrer les clés</button>
+            ${keysSet?`<button id="btn-test-ai-keys" class="btn btn-ghost">${ic('checkc','',16)} Tester les clés</button>
+            <button id="btn-clear-ai-keys" class="btn btn-ghost" style="color:var(--danger);">${ic('trash','',16)} Retirer</button>`:''}
+          </div>
+          <div id="ai-keys-test" style="margin-top:10px;">${window._aiKeyTestHtml||''}</div>
         </section>
       </div>
 
@@ -9500,12 +9505,19 @@ Règles :
       if(!Array.isArray(db.aiConfig.groqKeys)) db.aiConfig.groqKeys = [];
       const existing = db.aiConfig.groqKeys.slice(0,3);
       let changed = false;
+      // Nettoyage du copier-coller : espaces, retours à la ligne, guillemets
+      const clean = v => String(v||'').replace(/\s+/g,'').replace(/^["'`]+|["'`,;]+$/g,'');
+      const bad = [];
       const next = [0,1,2].map(i=>{
         const input = document.getElementById('ai-groq-key-'+(i+1));
-        const val = input ? input.value.trim() : '';
-        if(val){ changed = true; return val; }
+        const val = clean(input ? input.value : '');
+        if(val){
+          if(!/^gsk_[A-Za-z0-9]{20,}$/.test(val)){ bad.push(i+1); return existing[i] || ''; }
+          changed = true; return val;
+        }
         return existing[i] || '';
       }).filter(k=>k);
+      if(bad.length){ toast(`Clé ${bad.join(' et ')} ignorée : une clé Groq commence par « gsk_ » suivi de lettres et chiffres.`,'error',6000); if(!changed) return; }
       if(next.length===0){
         toast('Veuillez entrer au moins une clé API Groq.','error'); return;
       }
@@ -9515,6 +9527,39 @@ Règles :
       if('geminiKey' in db.aiConfig) delete db.aiConfig.geminiKey;
       saveDB();
       toast(changed?`${next.length} clé(s) Groq enregistrée(s) ✓`:'Aucune modification — clés existantes conservées.', changed?'success':'info');
+      if(changed) refreshAdminTab();
+    });
+
+    // Vérifie chaque clé auprès de Groq (liste des modèles : ne consomme pas de quota de génération)
+    document.getElementById('btn-test-ai-keys')?.addEventListener('click', async ()=>{
+      const box = document.getElementById('ai-keys-test');
+      const keys = getGroqKeyPool();
+      if(!box || !keys.length) return;
+      box.innerHTML = '<div class="fl-meta">Vérification en cours…</div>';
+      const results = await Promise.all(keys.map(async (k,i)=>{
+        try{
+          const r = await fetch('https://api.groq.com/openai/v1/models',{ headers:{ 'Authorization':'Bearer '+k } });
+          if(r.ok) return [i, 'ok', 'Fonctionne'];
+          if(r.status===401) return [i, 'bad', 'Clé invalide ou désactivée'];
+          if(r.status===429) return [i, 'warn', 'Quota atteint pour le moment'];
+          return [i, 'warn', 'Réponse inattendue ('+r.status+')'];
+        }catch(_){ return [i, 'warn', 'Groq injoignable (réseau)']; }
+      }));
+      const col = { ok:'var(--sage)', bad:'var(--danger)', warn:'var(--peach)' };
+      // Gardé en mémoire : l'écran peut se rafraîchir juste après (synchronisation)
+      window._aiKeyTestHtml = results.map(([i,s,txt])=>`
+        <div class="fl-row"><span class="fl-dot" style="background:${col[s]};"></span>
+          <span style="flex:1;">Clé ${i+1} <span class="fl-meta">…${esc(keys[i].slice(-4))}</span></span>
+          <strong style="color:${col[s]};font-size:13px;">${txt}</strong></div>`).join('');
+      const out = document.getElementById('ai-keys-test');
+      if(out) out.innerHTML = window._aiKeyTestHtml;
+    });
+
+    document.getElementById('btn-clear-ai-keys')?.addEventListener('click',()=>{
+      confirmAction('Retirer toutes les clés Groq ? Rubis et l\'assistant client ne fonctionneront plus tant qu\'aucune clé n\'est enregistrée.', ()=>{
+        db.aiConfig.groqKeys = []; db.aiConfig.groqKey = '';
+        saveDB(); toast('Clés Groq retirées.','info'); refreshAdminTab();
+      }, {label:'Retirer'});
     });
 
     // #6 — Rapport hebdomadaire IA
@@ -11134,21 +11179,44 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
     throw lastErr;
   }
 
+  // ── Modèle Groq : choix automatique si le modèle habituel est retiré ──
+  const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+  const GROQ_MODEL_PREFS = ['llama-3.3-70b-versatile','llama-3.1-70b-versatile','openai/gpt-oss-120b','llama-3.1-8b-instant'];
+  let _groqModel = GROQ_MODEL_PREFS[0];
+  async function _groqPickModel(key){
+    try{
+      const r = await fetch('https://api.groq.com/openai/v1/models',{ headers:{ 'Authorization':'Bearer '+key } });
+      if(!r.ok) return null;
+      const ids = ((await r.json()).data||[]).map(m=>m.id);
+      return GROQ_MODEL_PREFS.find(m=>ids.includes(m))
+        || ids.find(id=>/llama|gpt-oss|qwen|mixtral|gemma/i.test(id) && !/guard|whisper|tts|vision|prompt/i.test(id))
+        || null;
+    }catch(_){ return null; }
+  }
+  // Appel de chat Groq : si le modèle n'existe plus, on en choisit un autre et on réessaie une fois
+  async function _groqChat(key, payload){
+    const send = model => fetch(GROQ_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
+      body: JSON.stringify({ model, ...payload }),
+    });
+    let resp = await send(_groqModel);
+    if(resp.status===400 || resp.status===404){
+      const txt = await resp.clone().text().catch(()=> '');
+      if(/model/i.test(txt) && /(decommission|not.?found|does not exist|not supported|no longer)/i.test(txt)){
+        const m = await _groqPickModel(key);
+        if(m && m!==_groqModel){ _groqModel = m; console.info('[Flow] Modèle Groq remplacé par', m); resp = await send(m); }
+      }
+    }
+    return resp;
+  }
+
   async function groqPost(apiKey, messages, maxTokens=500){
     return _withGroqFailover(apiKey, key => _groqPostOnce(key, messages, maxTokens));
   }
 
   async function _groqPostOnce(apiKey, messages, maxTokens=500){
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages,
-        max_tokens: maxTokens,
-        temperature: 0.65
-      })
-    });
+    const resp = await _groqChat(apiKey, { messages, max_tokens: maxTokens, temperature: 0.65 });
     if(resp.status===429) throw new Error('RATE_LIMIT_429');
     if(resp.status===401) throw new Error('INVALID_KEY');
     if(resp.status===503) throw new Error('RATE_LIMIT_503');
@@ -11165,14 +11233,7 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
   }
 
   async function _groqPostStreamOnce(apiKey, messages, onChunk, maxTokens=700){
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        messages, max_tokens:maxTokens, temperature:0.65, stream:true
-      })
-    });
+    const resp = await _groqChat(apiKey, { messages, max_tokens:maxTokens, temperature:0.65, stream:true });
     if(resp.status===429) throw new Error('RATE_LIMIT_429');
     if(resp.status===401) throw new Error('INVALID_KEY');
     if(resp.status===503) throw new Error('RATE_LIMIT_503');
@@ -11319,11 +11380,7 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
   }
 
   async function _groqPostWithToolsOnce(apiKey, messages){
-    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages,tools:RUBIS_TOOLS_WEB,tool_choice:'auto',max_tokens:1200,temperature:0.3})
-    });
+    const resp = await _groqChat(apiKey, { messages, tools:RUBIS_TOOLS_WEB, tool_choice:'auto', max_tokens:1200, temperature:0.3 });
     if(resp.status===429||resp.status===503) throw new Error('RATE_LIMIT_429');
     if(resp.status===401) throw new Error('GROQ_AUTH_401');
     if(!resp.ok) throw new Error('HTTP_'+resp.status);
