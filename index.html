@@ -88,6 +88,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <!-- Puter.js : génération d'images IA gratuite côté client (modèle "user-pays" —
        chaque utilisateur admin se connecte une fois avec un compte Puter gratuit,
@@ -1209,6 +1210,51 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .cf-name { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cf-actions { display: flex; gap: 6px; justify-content: flex-end; padding: 6px 10px 10px; }
 
+/* ── Maquettes ── */
+.modal-box.modal-md { max-width: 560px; }
+.modal-box.modal-wide { max-width: 1180px; width: min(1180px, 96vw); padding: 20px; }
+.mk-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.mk-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; }
+@media (max-width: 900px) { .mk-body { grid-template-columns: minmax(0, 1fr); } }
+.mk-stage-wrap { min-width: 0; }
+.mk-hint { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-3); margin-bottom: 8px; }
+.mk-stage { position: relative; border-radius: 10px; overflow: hidden; background: var(--surface-3); border: 1px solid var(--border); cursor: crosshair; max-height: 70vh; overflow-y: auto; }
+.mk-stage.is-locked { cursor: default; }
+.mk-stage img { display: block; width: 100%; height: auto; user-select: none; }
+.mk-pin {
+  position: absolute; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50% 50% 50% 4px;
+  background: var(--coral); color: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-family: inherit;
+}
+.mk-pin.is-team { background: var(--sky); }
+.mk-pin.is-resolved { background: #8a8a8a; opacity: .75; }
+.mk-pin.is-draft { background: var(--ink); animation: none; }
+.mk-pin.is-active { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 0 4px var(--coral-glow), 0 2px 8px rgba(0,0,0,.3); z-index: 2; }
+.mk-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; max-height: 74vh; }
+.mk-note { display: flex; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--surface-3); font-size: 13px; color: var(--ink-2); }
+.mk-side-h { font-weight: 600; display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.mk-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; min-height: 80px; }
+.mk-cmt { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); }
+.mk-cmt.is-active { border-color: var(--coral); box-shadow: 0 0 0 1px var(--coral); }
+.mk-cmt.is-resolved .mk-cmt-t { color: var(--ink-3); text-decoration: line-through; }
+.mk-num { width: 24px; height: 24px; flex: none; border-radius: 50%; background: var(--coral); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.mk-num.is-team { background: var(--sky); }
+.mk-cmt-meta { font-size: 12px; color: var(--ink-3); }
+.mk-cmt-t { font-size: 13.5px; line-height: 1.45; word-break: break-word; }
+.mk-draft { padding: 10px; border-radius: 8px; border: 1px solid var(--coral); background: var(--coral-tint); }
+.mk-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; padding-top: 6px; border-top: 1px solid var(--border); }
+.mk-tile { text-align: left; padding: 0; cursor: pointer; font: inherit; color: var(--ink); }
+.mk-tile:hover { border-color: var(--coral); box-shadow: var(--shadow-md); }
+.mk-mini { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin-top: 6px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-1); color: var(--ink); font: inherit; font-size: 12.5px; cursor: pointer; text-align: left; }
+.mk-mini span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mk-mini:hover { border-color: var(--coral); }
+
+/* ── Sécurité ── */
+.sec-steps { counter-reset: st; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.sec-steps li { counter-increment: st; display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; }
+.sec-steps li::before { content: counter(st); grid-row: 1 / 3; width: 26px; height: 26px; border-radius: 50%; background: var(--coral); color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+.sec-rules { max-height: 260px; overflow: auto; padding: 12px 14px; border-radius: 8px; background: var(--surface-3); border: 1px solid var(--border); font-family: 'DM Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.5; white-space: pre; }
+
 /* ── Connexion ── */
 #login-page { background: #f4ede9; color: #1a1a1a; padding: 0; flex-direction: column; align-items: stretch; justify-content: flex-start; overflow: auto; }
 :root[data-theme="dark"] #login-page { background: #1f1916; color: #f5f2f0; }
@@ -1294,7 +1340,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.2';
+  const APP_VERSION = '3.3';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1397,6 +1443,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     chevdown:'M6 9l6 6 6-6',
     send:'M22 2 11 13 M22 2l-7 20-4-9-9-4z',
     pause:'M8 5v14 M16 5v14',
+    shield:'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M9 12l2 2 4-4',
   };
   // Formes pleines (pastilles de couleur, étoile pleine)
   const ICON_FILLED = {
@@ -1453,7 +1500,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     '📜':'file','🏢':'building','☀':'sun','⏱':'clock','🧭':'compass','🔄':'refresh','📍':'pin','🔥':'flame',
     '📐':'ruler','🙁':'sad','💎':'rubis','🌡':'thermo','🙂':'happy','⌨':'keyboard','📂':'folder','📥':'download',
     '⬛':'columns','🗂':'folder','📉':'trenddown','⬆':'arrowup','📞':'call','☰':'list','📈':'trendup','⏸':'pause',
-    '🏠':'home','👋':null,
+    '🏠':'home','🛡':'shield','👋':null,
   };
   const _emojiKeys = Object.keys(EMOJI_ICONS).sort((a,b)=>b.length-a.length);
   const EMOJI_RE = new RegExp('(?:'+_emojiKeys.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')\\uFE0F?','gu');
@@ -1575,6 +1622,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   function saveDB(){
     normalizeDB();
     saveLocalDB();
+    if(typeof publishPublicData==='function') publishPublicData();
     const nextJSON = JSON.stringify(db);
     if(nextJSON === _lastSavedJSON){ setSyncState('ok'); return; }
     setSyncState('syncing');
@@ -1677,6 +1725,8 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
       if(!Array.isArray(p.faq)) p.faq=[];
       if(!Array.isArray(p.siteHistory)) p.siteHistory=[];
       if(!Array.isArray(p.clientFiles)) p.clientFiles=[];          // fichiers partagés par le client
+      if(!Array.isArray(p.mockups)) p.mockups=[];                  // maquettes à valider (Firebase supprime les listes vides)
+      p.mockups.forEach(m=>{ if(!Array.isArray(m.pins)) m.pins=[]; });
     });
     db.documents.forEach(d=>{
       if(!Array.isArray(d.fields)) d.fields=[];
@@ -1790,17 +1840,14 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     const isAdminLike = me && (me.role==='admin'||me.role==='controller');
 
     const commonItems = me && me.role==='client' ? [
-      ['📋','« Mes documents » regroupés : à remplir, en validation, validés'],
-      ['✅','« À faire » avec votre progression, et les tâches terminées rangées à part'],
-      ['📤','« Mes fichiers » : déposez plusieurs fichiers d\'un coup et voyez l\'aperçu des images'],
-      ['👤','Nouveau profil façon Paramètres Windows, avec le mode sombre et votre email'],
+      ['🖼','Nouvel onglet « Maquettes » : cliquez sur l\'image pour laisser vos remarques, puis validez ou demandez des modifications'],
+      ['🔐','Connexion sécurisée : votre mot de passe n\'est plus stocké dans Flow'],
     ] : [
-      ['👤','Nouveau profil façon Paramètres Windows, avec un interrupteur pour le mode sombre'],
+      ['🔐','Connexion sécurisée par Firebase : les mots de passe ne sont plus stockés dans la base'],
     ];
     const adminItems = [
-      ['👥','« Utilisateurs » en cartes, avec des filtres par rôle et le projet de chaque client'],
-      ['💰','« Finance » repensée : objectif du mois en anneau, évolution sur 12 mois, prévision et tableau des entrées'],
-      ['💎','Rubis et l\'Assistant IA harmonisés avec le nouveau design, avec des suggestions de questions'],
+      ['🖼','Envoyez des maquettes depuis « Suivi et documents » : le client les commente directement sur l\'image'],
+      ['🛡','Nouveau panneau « Sécurité des comptes » dans Utilisateurs, avec les étapes pour verrouiller la base'],
     ];
 
     const items = [
@@ -2013,21 +2060,257 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     }
     if(changed) saveDB();
   }
-  async function loginAsync(username, password){
-    const u = db.users.find(u=>u.username.toLowerCase()===username.toLowerCase());
-    if(!u) return false;
-    const ok = await verifyPwd(password, u.password);
-    if(!ok) return false;
-    // Upgrade automatique vers le hachage le plus fort disponible (PBKDF2) à
-    // chaque connexion réussie tant que l'ancien format est encore en place.
-    if(u.password && !u.password.startsWith('pbkdf2:')){
-      u.password = await hashPwdStrong(password);
-      saveDB();
+  // ═══════════════════════════════════════════════
+  //  AUTHENTIFICATION FIREBASE
+  //  Les mots de passe ne sont plus stockés (même hachés) dans la base :
+  //  Firebase Authentication les vérifie. Chaque compte Flow est relié à un
+  //  compte Firebase (u.authUid) dont l'adresse technique est dérivée du nom
+  //  d'utilisateur. Le rôle de chaque compte est recopié dans /roles/{uid},
+  //  que les règles de sécurité de la base utilisent pour autoriser l'accès.
+  //  Migration douce : un compte « ancien » est sécurisé automatiquement à sa
+  //  première connexion réussie après la mise à jour.
+  // ═══════════════════════════════════════════════
+  const fbauth = (window.firebase && firebase.auth) ? firebase.auth() : null;
+  if(fbauth){ try{ fbauth.setPersistence(firebase.auth.Auth.Persistence.SESSION); }catch(_){} }
+  let _secondaryAuthInst = null;
+  // Instance secondaire : permet à un admin de créer le compte d'un autre
+  // utilisateur sans être lui-même déconnecté.
+  function secondaryAuth(){
+    if(!fbauth) return null;
+    if(!_secondaryAuthInst){
+      const app = firebase.apps.find(a=>a.name==='flow-secondary') || firebase.initializeApp(firebaseConfig,'flow-secondary');
+      _secondaryAuthInst = app.auth();
+      try{ _secondaryAuthInst.setPersistence(firebase.auth.Auth.Persistence.NONE); }catch(_){}
     }
+    return _secondaryAuthInst;
+  }
+  function authEmailFor(username){
+    const hex = Array.from(new TextEncoder().encode(String(username||'').trim().toLowerCase())).map(b=>b.toString(16).padStart(2,'0')).join('');
+    return 'u'+hex+'@flow.invalid';
+  }
+  const AUTH_READY = new Promise(res=>{
+    if(!fbauth) return res(null);
+    const off = fbauth.onAuthStateChanged(u=>{ off(); res(u); });
+    setTimeout(()=>res(fbauth.currentUser), 4000);
+  });
+  function isSecured(u){ return !!(u && u.authUid); }
+  function writeRole(u){ return u && u.authUid ? fbdb.ref('roles/'+u.authUid).set(u.role) : Promise.resolve(); }
+  function removeRole(authUid){ return authUid ? fbdb.ref('roles/'+authUid).remove() : Promise.resolve(); }
+  // Toujours appliqué à la version actuelle du compte : la synchronisation en
+  // temps réel peut avoir remplacé les données pendant une opération en cours.
+  function markSecured(u, authUid){
+    const t = db.users.find(x=>x.id===u.id) || u;
+    t.authUid = authUid; t.authMigrated = true; delete t.password;
+    return t;
+  }
+
+  // Empreintes publiées dans le code source (comptes de démarrage) : un mot de
+  // passe qui y correspond est connu de tous et doit être changé.
+  async function isPublicPassword(pwd){
+    const known = new Set(Object.values(_SEED_PASSWORDS));
+    return known.has(await hashPwd(pwd));
+  }
+
+  // Recharge la base distante (après connexion, quand la lecture est réservée
+  // aux comptes authentifiés).
+  async function loadRemoteDB(){
+    const snap = await fbdb.ref('flow').once('value');
+    const remote = snap.val();
+    if(remote && remote.users){
+      db = remote;
+      const preStr = JSON.stringify(db);
+      normalizeDB();
+      const postStr = JSON.stringify(db);
+      saveLocalDB();
+      if(postStr !== preStr){ fbdb.ref('flow').set(db).catch(()=>{}); }
+      _lastSavedJSON = postStr;
+      setSyncState('ok');
+      startRealtimeSync();
+    }
+  }
+
+  function finishLogin(u){
     me = u; sessionStorage.setItem('flow_uid', u.id);
     logActivity('login', 'Connexion de ' + u.username);
-    return true;
   }
+
+  // Résultat : 'ok' | 'fail' | 'norole' | { newpw: utilisateur }
+  async function loginAsync(username, password){
+    const uname = String(username||'').trim();
+    if(fbauth){
+      try{
+        const cred = await fbauth.signInWithEmailAndPassword(authEmailFor(uname), password);
+        try{ await loadRemoteDB(); }catch(_){}
+        const u = db.users.find(x=>x.authUid===cred.user.uid) || db.users.find(x=>x.username.toLowerCase()===uname.toLowerCase());
+        if(!u){ await fbauth.signOut(); return 'norole'; } // demande d'inscription pas encore acceptée
+        const needsUpdate = (u.authUid!==cred.user.uid || !!u.password);
+        const su = needsUpdate ? markSecured(u, cred.user.uid) : u;
+        if(needsUpdate){ writeRole(su).catch(()=>{}); saveDB(); }
+        finishLogin(su);
+        return 'ok';
+      }catch(err){
+        const code = (err&&err.code)||'';
+        if(!/user-not-found|invalid-credential|invalid-login-credentials|wrong-password|invalid-email|user-disabled/.test(code)) console.warn('[Flow] Firebase Auth :', code||err);
+        if(code==='auth/user-disabled') return 'fail';
+        if(code==='auth/too-many-requests') return 'fail';
+      }
+    }
+    // Compte pas encore sécurisé : vérification avec l'ancienne empreinte
+    const u = db.users.find(x=>x.username.toLowerCase()===uname.toLowerCase());
+    if(!u || !u.password) return 'fail';
+    if(!(await verifyPwd(password, u.password))) return 'fail';
+    if(!fbauth){
+      if(!u.password.startsWith('pbkdf2:')){ u.password = await hashPwdStrong(password); saveDB(); }
+      finishLogin(u); return 'ok';
+    }
+    // Mot de passe trop faible pour Firebase ou connu publiquement : à changer
+    if(validatePasswordStrength(password) || await isPublicPassword(password)) return { newpw:u };
+    try{
+      const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(u.username), password);
+      const su = markSecured(u, cred.user.uid);
+      try{ await writeRole(su); }catch(_){ await fbauth.signOut(); return 'norole'; }
+      saveDB(); finishLogin(su); return 'ok';
+    }catch(e){
+      if(e && e.code==='auth/email-already-in-use') return 'fail'; // déjà sécurisé : c'est l'ancien mot de passe
+      finishLogin(u); return 'ok'; // service indisponible : on laisse entrer comme avant
+    }
+  }
+
+  // Fenêtre « choisissez un nouveau mot de passe » (première connexion
+  // sécurisée d'un compte au mot de passe trop faible ou public)
+  function openChooseNewPasswordModal(u, onDone){
+    showModal(`
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <span class="file-ic">${ic('lock','',18)}</span>
+        <div><h2 style="margin:0;">Choisissez un nouveau mot de passe</h2><div class="fl-meta">Votre compte passe à la connexion sécurisée</div></div>
+      </div>
+      <p class="fl-meta" style="margin-bottom:14px;color:var(--ink-2);">Votre mot de passe actuel est trop court ou trop connu pour protéger votre compte. Choisissez-en un nouveau : <strong>8 caractères minimum, avec une majuscule, une minuscule et un chiffre</strong>.</p>
+      <div style="margin-bottom:10px;"><label class="label" for="np-1">Nouveau mot de passe</label><input id="np-1" class="glass-input" type="password" autocomplete="new-password" spellcheck="false" /></div>
+      <div style="margin-bottom:12px;"><label class="label" for="np-2">Confirmer</label><input id="np-2" class="glass-input" type="password" autocomplete="new-password" spellcheck="false" /></div>
+      <div id="np-msg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:.85rem;"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="closeModal()" class="btn btn-ghost">Annuler</button>
+        <button id="np-ok" class="btn btn-primary">${ic('lock','',16)} Sécuriser mon compte</button>
+      </div>`,
+    ()=>{
+      const go = async ()=>{
+        const a = document.getElementById('np-1').value, b = document.getElementById('np-2').value;
+        const msg = document.getElementById('np-msg'), btn = document.getElementById('np-ok');
+        const err = validatePasswordStrength(a);
+        if(err){ showMsg(msg, err, 'error'); return; }
+        if(a!==b){ showMsg(msg, 'Les deux mots de passe ne correspondent pas.', 'error'); return; }
+        if(await isPublicPassword(a)){ showMsg(msg, 'Ce mot de passe est connu publiquement, choisissez-en un autre.', 'error'); return; }
+        btn.disabled = true;
+        try{
+          const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(u.username), a);
+          const su = markSecured(u, cred.user.uid);
+          try{ await writeRole(su); }catch(_){}
+          saveDB(); finishLogin(su);
+          closeModal(); toast('Compte sécurisé. Utilisez ce nouveau mot de passe désormais.', 'success', 5000);
+          onDone && onDone();
+        }catch(e){
+          btn.disabled = false;
+          showMsg(msg, e && e.code==='auth/email-already-in-use'
+            ? 'Ce compte est déjà sécurisé : reconnectez-vous avec son mot de passe, ou demandez à un administrateur de le réinitialiser.'
+            : 'Impossible de joindre le service de connexion. Réessayez dans un instant.', 'error');
+        }
+      };
+      document.getElementById('np-ok').addEventListener('click', go);
+      document.getElementById('np-2').addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+      document.getElementById('np-1').focus();
+    });
+  }
+
+  // Création d'un compte sécurisé pour un autre utilisateur (admin)
+  async function createAuthAccountFor(username, password){
+    const sec = secondaryAuth();
+    if(!sec) throw new Error('auth-unavailable');
+    const cred = await sec.createUserWithEmailAndPassword(authEmailFor(username), password);
+    const authUid = cred.user.uid;
+    try{ await sec.signOut(); }catch(_){}
+    return authUid;
+  }
+  function authErrorText(e){
+    const c = (e&&e.code)||'';
+    if(c==='auth/email-already-in-use') return 'Un compte de connexion existe déjà pour ce nom d\'utilisateur. Supprimez-le d\'abord dans la console Firebase (Authentication), puis réessayez.';
+    if(c==='auth/weak-password') return 'Mot de passe trop faible (6 caractères minimum pour Firebase).';
+    if(c==='auth/operation-not-allowed') return 'La connexion par e-mail et mot de passe n\'est pas activée dans la console Firebase (Authentication → Méthode de connexion).';
+    return 'Le service de connexion est indisponible pour le moment.';
+  }
+
+  // ─── Demandes d'inscription stockées hors de la base principale ───
+  // (un inscrit n'a pas encore le droit de lire ni d'écrire les données Flow)
+  let _signupReqs = {};
+  let _signupRef = null;
+  function startSignupListener(){
+    if(_signupRef || !me || me.role==='client' || !canReviewRequests()) return;
+    _signupRef = fbdb.ref('signupRequests');
+    _signupRef.on('value', snap=>{
+      _signupReqs = snap.val() || {};
+      refreshTopbar();
+      if(activeTab==='home' || activeTab==='users') refreshAdminTab();
+      checkPendingSignupsPopup();
+    }, ()=>{ _signupRef = null; });
+  }
+  function stopSignupListener(){
+    if(_signupRef){ try{ _signupRef.off(); }catch(_){} _signupRef = null; }
+    _signupReqs = {};
+  }
+  function pendingList(){
+    return [
+      ...(db.pendingUsers||[]),
+      ...Object.entries(_signupReqs||{}).map(([authUid,r])=>({ ...r, id:authUid, authUid, viaAuth:true })),
+    ];
+  }
+
+  // ─── Données publiques (portfolio, liens de présentation) ───
+  // Copie limitée et sans donnée sensible, lisible sans connexion, pour que
+  // ces pages continuent de fonctionner une fois la base principale verrouillée.
+  let _lastPublicJSON = '';
+  function buildPublicSnapshot(){
+    const live = db.projects.filter(p=>!p.archived);
+    return {
+      portfolio: live.filter(p=>p.portfolioPublic).map(p=>({ name:p.name, portfolioDescription:p.portfolioDescription||'', status:p.status||'' })),
+      present: Object.fromEntries(live.filter(p=>p.presentShared).map(p=>[p.id, {
+        name:p.name, description:p.description||'',
+        timeline:(p.timeline||[]).map(s=>({ id:s.id||'', label:s.label||'', status:s.status||'', dueDate:s.dueDate||null, note:s.note||'' })),
+      }])),
+    };
+  }
+  function publishPublicData(){
+    if(!me || me.role==='client') return;
+    const snap = buildPublicSnapshot();
+    const json = JSON.stringify(snap);
+    if(json===_lastPublicJSON) return;
+    _lastPublicJSON = json;
+    fbdb.ref('public').set({ ...snap, updatedAt:new Date().toISOString() }).catch(()=>{ _lastPublicJSON=''; });
+  }
+
+  // Règles de sécurité à publier dans la console Firebase (Realtime Database → Règles)
+  const FIREBASE_RULES = `{
+  "rules": {
+    "flow": {
+      ".read":  "auth != null && root.child('roles').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()"
+    },
+    "roles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || (root.child('roles').child(auth.uid).val() === 'controller' && newData.val() === 'client'))"
+      }
+    },
+    "signupRequests": {
+      ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')"
+      }
+    },
+    "public": {
+      ".read": true,
+      ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')"
+    }
+  }
+}`;
 
   // ─── Firebase boot ──────────────────────────────
 
@@ -2134,22 +2417,33 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   // ?present=PROJECT_ID → mode présentation lecture seule d'un projet
   // Ces vues n'exposent jamais d'email, mot de passe, clé API ou donnée
   // financière — uniquement nom de projet, description et timeline.
+  // Les pages publiques lisent /public (copie sans donnée sensible, lisible
+  // sans connexion) ; à défaut, la base complète tant qu'elle reste ouverte.
+  function withPublicData(cb){
+    if(window._publicData!==undefined) return cb(window._publicData);
+    fbdb.ref('public').once('value')
+      .then(s=>{ window._publicData = s.val()||null; cb(window._publicData); })
+      .catch(()=>{ window._publicData = null; cb(null); });
+  }
   function renderPublicRouteIfAny(){
     const params = new URLSearchParams(window.location.search);
     if(params.get('portfolio')==='1'){
-      renderPublicPortfolio();
+      withPublicData(pub=>renderPublicPortfolio(pub&&pub.portfolio ? pub.portfolio : db.projects.filter(p=>p.portfolioPublic && !p.archived)));
       return true;
     }
     const presentId = params.get('present');
     if(presentId){
-      renderPublicPresentation(presentId);
+      withPublicData(pub=>{
+        const fromPub = pub && pub.present && pub.present[presentId];
+        renderPublicPresentation(fromPub || db.projects.find(x=>x.id===presentId) || null);
+      });
       return true;
     }
     return false;
   }
 
-  function renderPublicPortfolio(){
-    const projects = db.projects.filter(p=>p.portfolioPublic && !p.archived);
+  function renderPublicPortfolio(projects){
+    projects = projects || [];
     document.getElementById('app').innerHTML = `
       <div style="min-height:100vh;padding:48px 20px;max-width:900px;margin:0 auto;">
         <div style="text-align:center;margin-bottom:48px;">
@@ -2169,8 +2463,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
       </div>`;
   }
 
-  function renderPublicPresentation(projectId){
-    const p = db.projects.find(x=>x.id===projectId);
+  function renderPublicPresentation(p){
     const app = document.getElementById('app');
     if(!p){
       app.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--ink-4);">Projet introuvable ou lien expiré.</div>`;
@@ -2266,11 +2559,15 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     // re-rendue, mais l'app est utilisable en mode local dès le départ.
     setSyncState('syncing');
     if(!renderPublicRouteIfAny()){
-      migratePasswords().then(()=>{
+      // On attend que Firebase sache si une session est déjà ouverte avant de
+      // décider d'afficher la connexion ou l'application.
+      Promise.all([migratePasswords(), AUTH_READY]).then(([, authUser])=>{
         checkSession();
         render();
         if(me && (me.role==='admin'||me.role==='controller')) requestNotifPermission();
         checkVersion();
+        // Session déjà ouverte : (re)charger les données réservées aux comptes connectés
+        if(authUser) loadRemoteDB().then(()=>{ if(me){ me = db.users.find(u=>u.id===me.id)||me; render(); } }).catch(()=>{});
       });
     }
 
@@ -2295,12 +2592,18 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
           render();
         }
       })
-      .catch(()=>{
+      .catch(err=>{
+        // Base verrouillée et personne de connecté : normal, les données
+        // seront chargées juste après la connexion.
+        if(err && /permission/i.test(err.code||err.message||'')){ setSyncState('ok'); return; }
         setSyncState('error');
         toast('Firebase hors ligne — mode local activé','error');
       });
   }
+  let _rtStarted = false;
   function startRealtimeSync(){
+    if(_rtStarted) return;
+    _rtStarted = true;
     prevFilledDocIds = new Set(db.documents.filter(d=>d.status==='filled').map(d=>d.id));
 
     // F3 — Offline banner
@@ -2342,13 +2645,16 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
         });
         prevFilledDocIds = new Set(nowFilled.map(d=>d.id));
       }
-      if(me){ me = db.users.find(u=>u.id===me.id)||me; clearTimeout(_refreshTimer); _refreshTimer=setTimeout(()=>{ if(me.role==='client') refreshClientTab(); else { refreshAdminTab(); refreshTopbar(); checkPendingSignupsPopup(); } },500); }
-    });
+      if(me){ me = db.users.find(u=>u.id===me.id)||me; clearTimeout(_refreshTimer); _refreshTimer=setTimeout(()=>{ if(!me) return; if(me.role==='client') refreshClientTab(); else { refreshAdminTab(); refreshTopbar(); checkPendingSignupsPopup(); } },500); }
+    }, ()=>{ _rtStarted = false; }); // accès refusé (base verrouillée) : on réessaiera après connexion
   }
 
   function logout(){
+    clearTimeout(_refreshTimer);
     me = null;
     sessionStorage.removeItem('flow_uid');
+    stopSignupListener();
+    if(fbauth && fbauth.currentUser) fbauth.signOut().catch(()=>{});
     activeTab = 'home';
     // Purger les états globaux qui pourraient fuiter entre sessions
     window._adminView            = undefined;
@@ -2364,6 +2670,10 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   function checkSession(){
     const id = sessionStorage.getItem('flow_uid');
     if(id){ me = db.users.find(u=>u.id===id)||null; }
+    // Un compte sécurisé n'est reconnu que si la session Firebase correspond
+    if(me && me.authUid && fbauth && (!fbauth.currentUser || fbauth.currentUser.uid!==me.authUid)){
+      me = null; sessionStorage.removeItem('flow_uid');
+    }
   }
 
   // ─── Router / Top-level render ──────────────────
@@ -2511,18 +2821,33 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
         const btn = document.getElementById('reg-submit');
         btn.disabled = true; btn.textContent = '…';
-        const hashed = await hashPwdStrong(pw);
-        if(!db.pendingUsers) db.pendingUsers = [];
-        db.pendingUsers.push({
-          id: uid(),
-          username: un,
-          firstName: fn,
-          lastName: ln,
-          email: em,
-          password: hashed,
-          requestedAt: new Date().toISOString()
-        });
-        saveDB();
+        if(fbauth){
+          // Connexion sécurisée : l'inscrit crée son compte Firebase, puis sa
+          // demande est rangée dans /signupRequests (il n'a pas encore accès
+          // aux données Flow tant qu'un admin ne l'a pas accepté).
+          try{
+            const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(un), pw);
+            await fbdb.ref('signupRequests/'+cred.user.uid).set({ username:un, firstName:fn, lastName:ln, email:em, requestedAt:new Date().toISOString() });
+            await fbauth.signOut();
+          }catch(e){
+            btn.disabled = false; btn.textContent = 'Envoyer la demande';
+            showMsg(msg, e && e.code==='auth/email-already-in-use' ? 'Ce nom d\'utilisateur est déjà utilisé.' : authErrorText(e), 'error');
+            return;
+          }
+        } else {
+          const hashed = await hashPwdStrong(pw);
+          if(!db.pendingUsers) db.pendingUsers = [];
+          db.pendingUsers.push({
+            id: uid(),
+            username: un,
+            firstName: fn,
+            lastName: ln,
+            email: em,
+            password: hashed,
+            requestedAt: new Date().toISOString()
+          });
+          saveDB();
+        }
         // Les admins connectés reçoivent la fenêtre de validation en temps réel ;
         // Discord prévient ceux qui ne sont pas devant l'app.
         sendDiscordNotif('Nouvelle demande d\'inscription', '**@'+un+'** souhaite créer un compte sur Flow.', 0xd9480f);
@@ -2591,29 +2916,48 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         wireLogin(); return;
       }
 
-      if(!target){
+      // Sans Firebase Authentication, un compte inconnu de la base locale est
+      // forcément invalide. Avec, le compte peut n'exister qu'à distance
+      // (base verrouillée tant qu'on n'est pas connecté) : on laisse vérifier.
+      if(!target && !fbauth){
         const newAttempts = attempts+1;
         localStorage.setItem('flow_attempts', newAttempts);
         if(newAttempts>=5){ localStorage.setItem('flow_lock', Date.now()+5*60*1000); }
         document.getElementById('app').innerHTML = renderLogin(GENERIC_FAIL);
         wireLogin(); return;
       }
-      const ok = await loginAsync(u,p);
-      if(!ok){
-        target.failedAttempts = (target.failedAttempts||0)+1;
-        if(target.failedAttempts>=5){ target.lockUntil = Date.now()+5*60*1000; target.failedAttempts=0; }
+      const result = await loginAsync(u,p);
+      const onSuccess = ()=>{
+        const acc = me;
+        if(acc){ acc.failedAttempts = 0; acc.lockUntil = 0; }
+        localStorage.removeItem('flow_attempts'); localStorage.removeItem('flow_lock');
         saveDB();
+        render();
+        checkVersion();
+      };
+      if(result && result.newpw){
+        btn.disabled = false; btn.innerHTML = ic('arrowright','',18);
+        openChooseNewPasswordModal(result.newpw, onSuccess);
+        return;
+      }
+      if(result==='norole'){
+        document.getElementById('app').innerHTML = renderLogin('Votre compte n\'est pas encore activé : un administrateur doit d\'abord accepter votre inscription.');
+        wireLogin(); return;
+      }
+      if(result!=='ok'){
+        const acc = target || db.users.find(x=>x.username.toLowerCase()===u.toLowerCase());
+        if(acc){
+          acc.failedAttempts = (acc.failedAttempts||0)+1;
+          if(acc.failedAttempts>=5){ acc.lockUntil = Date.now()+5*60*1000; acc.failedAttempts=0; }
+          if(!fbauth || (fbauth.currentUser)) saveDB();
+        }
         const newAttempts = attempts+1;
         localStorage.setItem('flow_attempts', newAttempts);
         if(newAttempts>=5){ localStorage.setItem('flow_lock', Date.now()+5*60*1000); }
         document.getElementById('app').innerHTML = renderLogin(GENERIC_FAIL);
         wireLogin(); return;
       }
-      target.failedAttempts = 0; target.lockUntil = 0;
-      localStorage.removeItem('flow_attempts'); localStorage.removeItem('flow_lock');
-      saveDB();
-      render();
-      checkVersion();
+      onSuccess();
     };
     document.getElementById('li-btn').addEventListener('click',doLogin);
     document.getElementById('li-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
@@ -2764,6 +3108,10 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     base.splice(2,0,{ id:'client-checklist', icon:iconRequests(), label:'À faire' });
     // "Mes fichiers" — déployé à tous les clients.
     base.splice(3,0,{ id:'client-files', icon:iconUpload(), label:'Mes fichiers' });
+    // "Maquettes" — affiché dès que l'équipe a envoyé au moins une maquette.
+    if(me && getMockups(getUserProject(me.id)).length){
+      base.splice(base.findIndex(t=>t.id==='documents')+1,0,{ id:'mockups', icon:navIc('image'), label:'Maquettes' });
+    }
     return base;
   }
   function markAIRequestsSeen(){
@@ -2773,7 +3121,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
   // ── Barre du haut commune (style Windows 11) ──
   function pendingSignupCount(){
-    return (me && me.role!=='client' && canReviewRequests()) ? (db.pendingUsers||[]).length : 0;
+    return (me && me.role!=='client' && canReviewRequests()) ? pendingList().length : 0;
   }
   function renderTopbar(){
     const isClient = me.role==='client';
@@ -2888,6 +3236,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     document.getElementById('btn-logout').addEventListener('click',logout);
     wireAdminTabContent();
+    startSignupListener();
+    publishPublicData();
     setTimeout(checkPendingSignupsPopup, 500);
   }
 
@@ -3310,7 +3660,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     const overdueNow = db.projects.filter(p=>p.dueDate&&p.status!=='done'&&new Date(p.dueDate)<new Date()).length;
     const pendingInvoices = (db.invoices||[]).filter(i=>i.type==='Facture'&&i.paymentStatus==='pending');
     const pendingInvoicesTotal = pendingInvoices.reduce((s,i)=>s+(i.ttc||0),0);
-    const newRequests = (db.pendingUsers||[]).length;
+    const newRequests = pendingList().length;
     const lines = [
       `📁 ${newProjects} nouveau(x) projet(s) · ✅ ${completedProjects} terminé(s) cette semaine`,
       `📋 ${docsFilled} document(s) rempli(s) · ⚠️ ${docsPendingOld} en attente depuis 7j+`,
@@ -3649,6 +3999,109 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   }
 
   // ─── Tab: Admin Users ───────────────────────────
+  // ─── Panneau « Sécurité des comptes » (Utilisateurs, admin) ───
+  function renderSecurityPanel(){
+    if(me.role!=='admin') return '';
+    const total = db.users.length;
+    const secured = db.users.filter(isSecured);
+    const todo = db.users.filter(u=>!isSecured(u));
+    const pct = total ? Math.round(secured.length/total*100) : 0;
+    const allDone = todo.length===0;
+    return `<section class="fl-card" style="margin-bottom:20px;${allDone?'':'border-color:rgba(168,101,15,.35);'}">
+      <div class="fl-card-head" style="flex-wrap:wrap;">
+        ${ic('lock','',18)}<h2>Sécurité des comptes</h2>
+        <span class="chip" style="${allDone?'background:rgba(47,125,79,.12);color:var(--sage);':'background:rgba(168,101,15,.12);color:var(--peach);'}">${secured.length} / ${total} sécurisés</span>
+        <button id="btn-fb-rules" class="btn btn-ghost btn-sm">${ic('info','',14)} Étapes et règles Firebase</button>
+      </div>
+      <div class="mini-bar" style="max-width:none;height:6px;"><i style="width:${pct}%;background:${allDone?'var(--sage)':'var(--peach)'};"></i></div>
+      <p class="fl-meta" style="margin:8px 0 ${todo.length?'8':'0'}px;">${allDone
+        ? 'Tous les comptes utilisent la connexion sécurisée. Si ce n\'est pas déjà fait, publiez les règles Firebase pour verrouiller la base.'
+        : 'Chaque compte est sécurisé automatiquement à sa prochaine connexion. Pour ceux qui ne se connectent pas souvent, donnez un mot de passe provisoire. Verrouillez la base seulement quand tout le monde est sécurisé.'}</p>
+      ${todo.map(u=>`
+        <div class="fl-row">
+          ${avatar(u)}
+          <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(u.username)}</div><div class="fl-meta">${roleLabel(u.role)} · pas encore sécurisé</div></div>
+          <button class="btn btn-ghost btn-sm btn-temp-pw" data-uid="${u.id}">${ic('lock','',14)} Mot de passe provisoire</button>
+        </div>`).join('')}
+    </section>`;
+  }
+
+  function genTempPassword(){
+    const a='ABCDEFGHJKLMNPQRSTUVWXYZ', b='abcdefghijkmnpqrstuvwxyz', d='23456789';
+    const pick = s=>s[crypto.getRandomValues(new Uint32Array(1))[0]%s.length];
+    let out = pick(a)+pick(b)+pick(d);
+    for(let i=0;i<7;i++) out += pick(a+b+d);
+    return out.split('').sort(()=>crypto.getRandomValues(new Uint8Array(1))[0]-128).join('');
+  }
+
+  function openTempPasswordModal(userId){
+    const u = db.users.find(x=>x.id===userId);
+    if(!u) return;
+    const pw = genTempPassword();
+    showModal(`
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <span class="file-ic">${ic('lock','',18)}</span>
+        <div style="flex:1;min-width:0;"><h2 style="margin:0;">Mot de passe provisoire</h2><div class="fl-meta">@${esc(u.username)}</div></div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <p class="fl-meta" style="color:var(--ink-2);margin-bottom:12px;">Ce mot de passe sécurise le compte immédiatement. Transmettez-le à la personne par un moyen privé : elle pourra le changer depuis son profil.</p>
+      <label class="label" for="tp-pw">Mot de passe</label>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input id="tp-pw" class="glass-input" value="${pw}" spellcheck="false" style="font-family:'DM Mono',ui-monospace,monospace;" />
+        <button id="tp-regen" class="btn btn-ghost" aria-label="Générer un autre mot de passe">${ic('refresh','',16)}</button>
+      </div>
+      <div id="tp-msg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:.85rem;"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="closeModal()" class="btn btn-ghost">Annuler</button>
+        <button id="tp-ok" class="btn btn-primary">${ic('check','',16)} Sécuriser le compte</button>
+      </div>`,
+    ()=>{
+      document.getElementById('tp-regen').addEventListener('click',()=>{ document.getElementById('tp-pw').value = genTempPassword(); });
+      document.getElementById('tp-ok').addEventListener('click',()=>{
+        const val = document.getElementById('tp-pw').value;
+        const msg = document.getElementById('tp-msg');
+        const err = validatePasswordStrength(val);
+        if(err){ showMsg(msg, err, 'error'); return; }
+        const btn = document.getElementById('tp-ok'); btn.disabled = true;
+        createAuthAccountFor(u.username, val).then(authUid=>{
+          const su = markSecured(u, authUid);
+          writeRole(su).catch(()=>{});
+          logActivity('account_secured', 'Compte sécurisé par mot de passe provisoire : @'+u.username);
+          saveDB();
+          navigator.clipboard?.writeText(val).catch(()=>{});
+          closeModal(); toast('Compte sécurisé. Mot de passe copié : transmettez-le à @'+u.username+'.','success',6000);
+          refreshAdminTab();
+        }).catch(e=>{ btn.disabled = false; showMsg(msg, authErrorText(e), 'error'); });
+      });
+    });
+  }
+
+  function openFirebaseRulesModal(){
+    const steps = [
+      ['Activer la connexion par e-mail', 'Console Firebase → Authentication → Méthode de connexion → « Adresse e-mail/Mot de passe » → Activer. (À faire avant tout le reste.)'],
+      ['Mettre le site à jour', 'Publiez cette version de Flow sur GitHub Pages.'],
+      ['Faire sécuriser tous les comptes', 'Chacun se connecte une fois (les mots de passe trop courts ou publics devront être changés), ou recevez un mot de passe provisoire depuis ce panneau.'],
+      ['Verrouiller la base', 'Quand le compteur affiche tous les comptes sécurisés : Realtime Database → Règles → remplacez tout par les règles ci-dessous → Publier.'],
+      ['Partager à nouveau les liens de présentation', 'Après le verrouillage, seuls les projets dont vous recopiez le « Lien de présentation » restent visibles publiquement (le portfolio, lui, est mis à jour automatiquement).'],
+    ];
+    showModal(`
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <span class="file-ic">${ic('lock','',18)}</span>
+        <div style="flex:1;min-width:0;"><h2 style="margin:0;">Verrouiller la base Firebase</h2><div class="fl-meta">À faire une seule fois, dans l'ordre</div></div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <ol class="sec-steps">${steps.map(([t,d])=>`<li><strong>${t}</strong><span class="fl-meta">${d}</span></li>`).join('')}</ol>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px;"><span class="label" style="margin:0;">Règles à coller</span><button id="rules-copy" class="btn btn-ghost btn-sm">${ic('clipboard','',14)} Copier</button></div>
+      <pre class="sec-rules">${esc(FIREBASE_RULES)}</pre>
+      <p class="fl-meta" style="margin-top:8px;">Ces règles réservent les données aux comptes acceptés et empêchent un client de se donner un rôle d'administrateur. Les clés de l'assistant IA restent lisibles par les comptes connectés : pour les cacher complètement, il faudra un petit serveur intermédiaire.</p>`,
+    ()=>{
+      document.getElementById('rules-copy').addEventListener('click',()=>{
+        navigator.clipboard?.writeText(FIREBASE_RULES).then(()=>toast('Règles copiées.','success')).catch(()=>toast('Copie impossible : sélectionnez le texte à la main.','info'));
+      });
+    });
+    document.querySelector('.modal-box')?.classList.add('modal-md');
+  }
+
   function renderAdminUsers(){
     const isAdmin = me.role==='admin';
     const users = db.users;
@@ -3662,7 +4115,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     return `<div class="fade-up">
       <div class="home-head">
         <div>
-          <p class="home-date">${users.length} compte${users.length>1?'s':''} enregistré${users.length>1?'s':''}${(db.pendingUsers||[]).length?` · <button class="fl-link" onclick="openPendingSignupsModal()">${(db.pendingUsers||[]).length} demande(s) d'inscription</button>`:''}</p>
+          <p class="home-date">${users.length} compte${users.length>1?'s':''} enregistré${users.length>1?'s':''}${pendingList().length?` · <button class="fl-link" onclick="openPendingSignupsModal()">${pendingList().length} demande(s) d'inscription</button>`:''}</p>
           <h1>Utilisateurs</h1>
         </div>
         <div class="home-actions">
@@ -3681,6 +4134,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             <span class="doc-tile-l">${t.label}</span>
           </button>`).join('')}
       </div>
+
+      ${renderSecurityPanel()}
 
       <div class="doc-toolbar">
         <label class="tb-search" style="max-width:420px;cursor:text;">
@@ -3705,7 +4160,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         ${avatar(u)}
         <div style="flex:1;min-width:0;">
           <div class="user-card-name">${esc(fullName||u.username)}${u.id===me.id?' <span class="chip">Vous</span>':''}</div>
-          <div class="fl-meta">@${esc(u.username)}</div>
+          <div class="fl-meta">@${esc(u.username)}${canEdit?(isSecured(u)?' · <span style="color:var(--sage);">sécurisé</span>':' · <span style="color:var(--peach);">non sécurisé</span>'):''}</div>
         </div>
         ${roleBadge(u.role)}
       </div>
@@ -3744,6 +4199,8 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
   }
 
   function wireAdminUsers(){
+    document.getElementById('btn-fb-rules')?.addEventListener('click', openFirebaseRulesModal);
+    document.querySelectorAll('.btn-temp-pw').forEach(b=>b.addEventListener('click',()=>openTempPasswordModal(b.dataset.uid)));
     const btnNew = document.getElementById('btn-new-user');
     if(btnNew) btnNew.addEventListener('click',()=>openCreateUserModal());
     const btnCSV = document.getElementById('btn-export-csv');
@@ -3937,6 +4394,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
               ${project.status==='done'?`<button class="kebab-item btn-ai-newsletter" data-pid="${project.id}" data-uid="${u.id}">${ic('sparkle','',16)} Newsletter de fin de projet</button>`:''}
               <button class="kebab-item btn-dup-project" data-pid="${project.id}">${ic('clipboard','',16)} Dupliquer</button>
               <button class="kebab-item btn-save-template" data-pid="${project.id}">${ic('save','',16)} Sauver comme modèle</button>
+              <button class="kebab-item btn-send-mockup" data-pid="${project.id}">${ic('image','',16)} Envoyer une maquette</button>
               <button class="kebab-item btn-deliver-files" data-pid="${project.id}">${ic('box','',16)} ${project.deliverable?'Remplacer la livraison':'Livrer les fichiers'}</button>
               <button class="kebab-item btn-link-site" data-pid="${project.id}">${ic('globe','',16)} ${project.siteHtml?'Remplacer le site lié':'Lier le fichier site'}</button>
               <div class="kebab-divider"></div>
@@ -3986,6 +4444,19 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
             </div>
             <div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-manage-client-tasks" data-pid="${project.id}">${ctasks.length?'Gérer':'Ajouter'}</button></div>
           </div>`:''}
+          ${(()=>{
+            const mks = getMockups(project);
+            if(!mks.length && !canEdit) return '';
+            const toCheck = mks.filter(m=>m.status==='changes').length;
+            return `<div class="trk-line">
+              <span class="trk-line-ic">${ic('image','',16)}</span>
+              <div style="flex:1;min-width:0;">
+                <div class="trk-line-t">Maquettes <span class="fl-meta">${mks.length}${toCheck?` · ${toCheck} avec retours`:''}</span></div>
+                ${mks.slice(0,4).map(m=>`<button class="mk-mini btn-open-mockup" data-pid="${project.id}" data-mid="${m.id}"><span>${esc(m.name)}</span>${mockupChip(m.status)}</button>`).join('')}
+              </div>
+              ${canEdit?`<div class="trk-line-btns"><button class="btn btn-ghost btn-sm btn-send-mockup" data-pid="${project.id}">${ic('plus','',14)} Envoyer</button></div>`:''}
+            </div>`;
+          })()}
           ${cfiles.length?`
           <div class="trk-line">
             <span class="trk-line-ic">${ic('upload','',16)}</span>
@@ -4043,6 +4514,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
 
   function wireAdminDocuments(){
     document.getElementById('btn-all-client-files')?.addEventListener('click',openAllClientFilesModal);
+    wireMockupButtons();
     // Kebab menu toggle — portail body pour échapper à tous les containing blocks
     document.querySelectorAll('.kebab-btn').forEach(btn=>{
       btn.addEventListener('click',(e)=>{
@@ -4125,6 +4597,9 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     });
     document.querySelectorAll('.btn-share-present').forEach(b=>{
       b.addEventListener('click',()=>{
+        // Le projet est ajouté aux données publiques (nom, description, étapes)
+        const sharedP = db.projects.find(x=>x.id===b.dataset.pid);
+        if(sharedP && !sharedP.presentShared){ sharedP.presentShared = true; saveDB(); }
         const url = window.location.origin + window.location.pathname + '?present=' + encodeURIComponent(b.dataset.pid);
         navigator.clipboard?.writeText(url).then(()=>toast('Lien de présentation copié ✓ (lecture seule, sans connexion)','success')).catch(()=>{
           showModal(`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><h2 style="font-size:1rem;font-weight:700;">🔗 Lien de présentation</h2><button onclick="closeModal()" class="btn btn-ghost btn-sm">✕</button></div><input class="glass-input" value="${esc(url)}" readonly onclick="this.select()" />`,()=>{});
@@ -4494,7 +4969,7 @@ DOCUMENTS
         <div class="set-grid">
           <div><label class="label" for="${P}-fn">Prénom</label><input id="${P}-fn" class="glass-input" value="${esc(me.firstName||'')}" autocomplete="given-name" /></div>
           <div><label class="label" for="${P}-ln">Nom</label><input id="${P}-ln" class="glass-input" value="${esc(me.lastName||'')}" autocomplete="family-name" /></div>
-          <div><label class="label" for="${P}-un">Nom d'utilisateur</label><input id="${P}-un" class="glass-input" value="${esc(me.username)}" autocomplete="username" /></div>
+          <div><label class="label" for="${P}-un">Nom d'utilisateur</label><input id="${P}-un" class="glass-input" value="${esc(me.username)}" autocomplete="username" ${isSecured(me)?'readonly':''} />${isSecured(me)?'<div class="fl-meta" style="margin-top:4px;">Identifiant de connexion : il ne peut pas être changé.</div>':''}</div>
           <div><label class="label" for="${P}-em">Email</label><input id="${P}-em" class="glass-input" type="email" value="${esc(me.email||'')}" autocomplete="email" /></div>
           <div style="grid-column:1/-1;"><label class="label" for="${P}-ph">Photo de profil (adresse de l'image)</label><input id="${P}-ph" class="glass-input" placeholder="https://…" value="${esc(me.photo||'')}" /></div>
         </div>
@@ -4551,6 +5026,18 @@ DOCUMENTS
     return renderProfilePage({ prefix:'p', admin:true, discord:(me.role==='admin'||me.role==='controller'), themeId:'btn-toggle-theme' });
   }
 
+  // Changement de mot de passe : via Firebase pour un compte sécurisé
+  function changeOwnPassword(u, np, msg, apply){
+    if(isSecured(u) && fbauth && fbauth.currentUser){
+      fbauth.currentUser.updatePassword(np).then(apply).catch(e=>{
+        showMsg(msg, e && e.code==='auth/requires-recent-login'
+          ? 'Par sécurité, déconnectez-vous puis reconnectez-vous avant de changer de mot de passe.'
+          : authErrorText(e), 'error');
+      });
+    } else {
+      hashPwdStrong(np).then(h=>{ u.password=h; apply(); });
+    }
+  }
   function wireAdminProfile(){
     const btnTheme = document.getElementById('btn-toggle-theme');
     if(btnTheme) btnTheme.addEventListener('click',()=>{
@@ -4581,7 +5068,7 @@ DOCUMENTS
       const u = db.users.find(u=>u.id===me.id);
       u.firstName=fn; u.lastName=ln; u.username=un; u.email=em; u.photo=ph||null; u.discordWebhook=discord||'';
       const applyProfileSave=()=>{ me=u; saveDB(); toast('Profil mis à jour !','success'); showMsg(msg,'Profil mis à jour avec succès !','success'); document.getElementById('app').innerHTML=renderAdminShell(); wireAdmin(); };
-      if(np){ hashPwdStrong(np).then(h=>{ u.password=h; applyProfileSave(); }); } else { applyProfileSave(); }
+      if(np){ changeOwnPassword(u, np, msg, applyProfileSave); } else { applyProfileSave(); }
     });
 
     // Sauvegarde & Restauration — export/import JSON complet de la base
@@ -4684,6 +5171,7 @@ DOCUMENTS
     if(activeTab==='discussion')        return renderClientDiscussion();
     if(activeTab==='client-checklist')  return renderClientChecklist();
     if(activeTab==='client-files')      return renderClientFiles();
+    if(activeTab==='mockups')           return renderClientMockups();
     if(activeTab==='profile')           return renderClientProfile();
     return '';
   }
@@ -4721,6 +5209,7 @@ DOCUMENTS
     if(activeTab==='discussion'){ wireClientDiscussionQA(); const m=document.getElementById('qa-messages'); if(m) m.scrollTop=m.scrollHeight; }
     if(activeTab==='client-checklist') wireClientChecklist();
     if(activeTab==='client-files')      wireClientFiles();
+    if(activeTab==='mockups')           wireMockupButtons();
     if(activeTab==='profile')      wireClientProfile();
     renderMobileTabbar('client');
   }
@@ -4804,7 +5293,8 @@ DOCUMENTS
     const tasks = Array.isArray(project.clientTasks) ? project.clientTasks : [];
     const openTasks = tasks.map((t,i)=>({t,i})).filter(x=>!x.t.done);
     const docsToFill = getProjectDocs(project.id).filter(d=>d.status==='pending');
-    const todoCount = openTasks.length + docsToFill.length;
+    const mockupsToReview = getMockups(project).filter(m=>m.status==='pending');
+    const todoCount = openTasks.length + docsToFill.length + mockupsToReview.length;
 
     // Fichiers récents
     const files = [...(project.clientFiles||[])].sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt)).slice(0,3);
@@ -4877,6 +5367,12 @@ DOCUMENTS
                 <span class="file-ic" style="background:rgba(47,125,79,.12);color:var(--sage);">${ic('check','',18)}</span>
                 <div><div style="font-weight:600;">Tout est à jour</div><div class="fl-meta">Votre équipe vous préviendra ici si elle a besoin de quelque chose.</div></div>
               </div>` : `
+              ${mockupsToReview.map(m=>`
+                <div class="fl-row">
+                  <span class="file-ic" style="width:34px;height:34px;overflow:hidden;padding:0;"><img src="${m.data}" alt="" style="width:100%;height:100%;object-fit:cover;"></span>
+                  <div style="flex:1;min-width:0;"><div style="font-weight:600;">${esc(m.name)}</div><div class="fl-meta">Maquette à valider${m.pins.length?` · ${m.pins.length} commentaire(s)`:''}</div></div>
+                  <button class="btn btn-primary btn-sm btn-open-mockup" data-pid="${project.id}" data-mid="${m.id}">Examiner</button>
+                </div>`).join('')}
               ${docsToFill.map(d=>`
                 <div class="fl-row">
                   <span class="file-ic" style="width:34px;height:34px;">${ic('clipboard','',16)}</span>
@@ -5067,6 +5563,7 @@ DOCUMENTS
   }
 
   function wireClientHome(){
+    wireMockupButtons();
     // Carte « Assistant projet » : la question part directement dans Discussion
     const homeQa = document.getElementById('home-qa-form');
     if(homeQa) homeQa.addEventListener('submit',e=>{
@@ -5227,6 +5724,246 @@ DOCUMENTS
   }
 
   // ─── Client: Documents ──────────────────────────
+  // ═══════════════════════════════════════════════
+  //  MAQUETTES — validation visuelle avec commentaires épinglés
+  //  project.mockups = [{ id, name, data (image), note, createdAt, sentBy,
+  //    status:'pending'|'changes'|'approved', decidedAt, decidedBy,
+  //    pins:[{ id, n, x, y (en %), text, author, role, createdAt, resolved }] }]
+  // ═══════════════════════════════════════════════
+  const MOCKUP_MAX = 3 * 1024 * 1024;
+  const MOCKUP_STATUS = {
+    pending:  ['À valider',              'var(--coral-soft)', 'var(--coral-tint)'],
+    changes:  ['Modifications demandées','var(--peach)',      'rgba(168,101,15,.12)'],
+    approved: ['Validée',                'var(--sage)',       'rgba(47,125,79,.12)'],
+  };
+  function mockupChip(status){
+    const s = MOCKUP_STATUS[status]||MOCKUP_STATUS.pending;
+    return `<span class="chip" style="background:${s[2]};color:${s[1]};">${s[0]}</span>`;
+  }
+  function getMockups(p){ return (p && Array.isArray(p.mockups)) ? p.mockups : []; }
+
+  function openSendMockupModal(projectId){
+    const p = db.projects.find(x=>x.id===projectId);
+    if(!p) return;
+    showModal(`
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <span class="file-ic">${ic('image','',18)}</span>
+        <div style="flex:1;min-width:0;"><h2 style="margin:0;">Envoyer une maquette</h2><div class="fl-meta">${esc(p.name)}</div></div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <div style="margin-bottom:12px;"><label class="label" for="mk-name">Nom de la maquette</label><input id="mk-name" class="glass-input" placeholder="Ex. : Page d'accueil — version 2" /></div>
+      <div style="margin-bottom:12px;"><label class="label" for="mk-note">Message pour le client (optionnel)</label><textarea id="mk-note" class="glass-input" style="min-height:64px;" placeholder="Ex. : Voici la nouvelle page d'accueil, cliquez sur l'image pour laisser vos remarques."></textarea></div>
+      <label id="mk-drop" class="cf-drop" style="padding:22px 16px;margin-bottom:12px;">
+        <span class="qa-empty-ic" style="width:48px;height:48px;">${ic('upload','',22)}</span>
+        <div style="font-weight:600;margin-top:8px;" id="mk-file-label">Choisir une image</div>
+        <div class="fl-meta">PNG, JPG ou WebP · 3 Mo maximum</div>
+        <input id="mk-file" type="file" accept="image/png,image/jpeg,image/webp" style="display:none;" />
+      </label>
+      <div id="mk-msg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:.85rem;"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="closeModal()" class="btn btn-ghost">Annuler</button>
+        <button id="mk-send" class="btn btn-primary">${ic('send','',16)} Envoyer au client</button>
+      </div>`,
+    ()=>{
+      const fileInput = document.getElementById('mk-file');
+      let fileData = null;
+      fileInput.addEventListener('change',()=>{
+        const f = fileInput.files[0];
+        const msg = document.getElementById('mk-msg');
+        if(!f) return;
+        if(!/^image\/(png|jpeg|webp)$/.test(f.type)){ showMsg(msg,'Formats acceptés : PNG, JPG ou WebP.','error'); return; }
+        if(f.size > MOCKUP_MAX){ showMsg(msg,`Image trop lourde (${(f.size/1048576).toFixed(1)} Mo). Limite : 3 Mo.`,'error'); return; }
+        const r = new FileReader();
+        r.onload = e=>{
+          fileData = e.target.result;
+          document.getElementById('mk-file-label').textContent = f.name;
+          const nameEl = document.getElementById('mk-name');
+          if(!nameEl.value.trim()) nameEl.value = f.name.replace(/\.[^.]+$/,'');
+        };
+        r.readAsDataURL(f);
+      });
+      document.getElementById('mk-send').addEventListener('click',()=>{
+        const msg = document.getElementById('mk-msg');
+        const name = document.getElementById('mk-name').value.trim();
+        if(!fileData){ showMsg(msg,'Choisissez d\'abord une image.','error'); return; }
+        if(!name){ showMsg(msg,'Donnez un nom à la maquette.','error'); return; }
+        if(!Array.isArray(p.mockups)) p.mockups = [];
+        p.mockups.unshift({ id:uid(), name, data:fileData, note:document.getElementById('mk-note').value.trim(),
+          createdAt:new Date().toISOString(), sentBy:me.username, status:'pending', pins:[] });
+        if(p.clientId) pushNotification(p.clientId, 'Nouvelle maquette à valider', `« ${name} » est prête : cliquez sur l'image pour laisser vos remarques, puis validez-la.`, 'info');
+        logActivity('mockup_sent','Maquette envoyée : '+name+' ('+p.name+')');
+        saveDB(); closeModal(); toast('Maquette envoyée au client.','success');
+        if(me.role==='client') refreshClientTab(true); else refreshAdminTab();
+      });
+    });
+    document.querySelector('.modal-box')?.classList.add('modal-md');
+  }
+
+  function openMockupViewer(projectId, mockupId, focusPin){
+    const p = db.projects.find(x=>x.id===projectId);
+    const m = getMockups(p).find(x=>x.id===mockupId);
+    if(!p || !m) return;
+    const isClient = me.role==='client';
+    const locked = m.status==='approved';
+    const open = m.pins.filter(x=>!x.resolved).length;
+    showModal(`
+      <div class="mk-head">
+        <span class="file-ic">${ic('image','',18)}</span>
+        <div style="flex:1;min-width:0;">
+          <h2 style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(m.name)}</h2>
+          <div class="fl-meta">${esc(p.name)} · envoyée le ${new Date(m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}${m.decidedAt?` · ${m.status==='approved'?'validée':'retour'} le ${new Date(m.decidedAt).toLocaleDateString('fr-FR')}`:''}</div>
+        </div>
+        ${mockupChip(m.status)}
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <div class="mk-body">
+        <div class="mk-stage-wrap">
+          ${!locked?`<div class="mk-hint">${ic('pin','',14)} Cliquez sur l'image pour ajouter un commentaire à cet endroit</div>`:''}
+          <div class="mk-stage ${locked?'is-locked':''}" id="mk-stage">
+            <img src="${m.data}" alt="${esc(m.name)}" id="mk-img" draggable="false">
+            ${m.pins.map(pin=>`<button class="mk-pin ${pin.resolved?'is-resolved':''} ${pin.role==='client'?'':'is-team'}" data-pin="${pin.id}" style="left:${pin.x}%;top:${pin.y}%;" aria-label="Commentaire ${pin.n}">${pin.n}</button>`).join('')}
+          </div>
+        </div>
+        <aside class="mk-side">
+          ${m.note?`<div class="mk-note">${ic('chat','',14)}<span>${esc(m.note)}</span></div>`:''}
+          <div class="mk-side-h">Commentaires <span class="fl-meta">${open} ouvert${open>1?'s':''} · ${m.pins.length} au total</span></div>
+          <div id="mk-new"></div>
+          <div class="mk-list">
+            ${m.pins.length===0?`<div class="fl-empty">Aucun commentaire. ${locked?'':'Cliquez sur l\'image pour en ajouter un.'}</div>`:m.pins.map(pin=>`
+              <div class="mk-cmt ${pin.resolved?'is-resolved':''}" data-pin="${pin.id}" id="mk-cmt-${pin.id}">
+                <span class="mk-num ${pin.role==='client'?'':'is-team'}">${pin.n}</span>
+                <div style="flex:1;min-width:0;">
+                  <div class="mk-cmt-meta"><strong>${esc(pin.author)}</strong> · ${new Date(pin.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${pin.resolved?' · traité':''}</div>
+                  <div class="mk-cmt-t">${esc(pin.text)}</div>
+                </div>
+                ${!isClient&&!locked?`<button class="btn btn-ghost btn-sm mk-resolve" data-pin="${pin.id}" title="${pin.resolved?'Rouvrir':'Marquer comme traité'}" aria-label="${pin.resolved?'Rouvrir':'Marquer comme traité'}">${ic(pin.resolved?'undo':'check','',14)}</button>`:''}
+              </div>`).join('')}
+          </div>
+          <div class="mk-actions">
+            ${isClient && !locked ? `
+              <button id="mk-changes" class="btn btn-ghost">${ic('edit','',16)} Demander des modifications</button>
+              <button id="mk-approve" class="btn btn-primary">${ic('check','',16)} Valider la maquette</button>` : ''}
+            ${isClient && locked ? `<div class="fl-meta" style="color:var(--sage);">${ic('checkc','',14)} Vous avez validé cette maquette. Merci !</div>` : ''}
+            ${!isClient ? `
+              <button id="mk-delete" class="btn btn-ghost" style="color:var(--danger);">${ic('trash','',16)} Supprimer</button>
+              ${m.status!=='pending'?`<button id="mk-reopen" class="btn btn-ghost">${ic('refresh','',16)} Remettre « à valider »</button>`:''}` : ''}
+          </div>
+        </aside>
+      </div>`,
+    ()=>wireMockupViewer(p, m, focusPin));
+    document.querySelector('.modal-box')?.classList.add('modal-wide');
+  }
+
+  function wireMockupViewer(p, m, focusPin){
+    const isClient = me.role==='client';
+    const locked = m.status==='approved';
+    const reopen = (pinId)=>openMockupViewer(p.id, m.id, pinId);
+    const afterChange = ()=>{ saveDB(); if(isClient) refreshClientTab(true); else refreshAdminTab(); };
+    const notifyTeam = (title, body)=>{ if(isClient) pushNotification('admins', title, body, 'info'); else if(p.clientId) pushNotification(p.clientId, title, body, 'info'); };
+
+    // Survol / clic : relie l'épingle et son commentaire
+    const highlight = id=>{
+      document.querySelectorAll('.mk-pin, .mk-cmt').forEach(el=>el.classList.toggle('is-active', el.dataset.pin===id));
+      document.getElementById('mk-cmt-'+id)?.scrollIntoView({block:'nearest'});
+    };
+    document.querySelectorAll('.mk-pin').forEach(b=>b.addEventListener('click',e=>{ e.stopPropagation(); highlight(b.dataset.pin); }));
+    document.querySelectorAll('.mk-cmt').forEach(c=>c.addEventListener('mouseenter',()=>highlight(c.dataset.pin)));
+    if(focusPin) highlight(focusPin);
+
+    // Nouveau commentaire épinglé
+    const stage = document.getElementById('mk-stage');
+    if(stage && !locked) stage.addEventListener('click',e=>{
+      const img = document.getElementById('mk-img');
+      const r = img.getBoundingClientRect();
+      if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom) return;
+      const x = Math.round((e.clientX-r.left)/r.width*1000)/10;
+      const y = Math.round((e.clientY-r.top)/r.height*1000)/10;
+      const n = (m.pins.reduce((mx,pn)=>Math.max(mx,pn.n),0))+1;
+      stage.querySelector('.mk-pin.is-draft')?.remove();
+      stage.insertAdjacentHTML('beforeend', `<span class="mk-pin is-draft" style="left:${x}%;top:${y}%;">${n}</span>`);
+      document.getElementById('mk-new').innerHTML = `
+        <div class="mk-draft">
+          <label class="label" for="mk-draft-t">Commentaire n°${n}</label>
+          <textarea id="mk-draft-t" class="glass-input" style="min-height:70px;" maxlength="600" placeholder="Ex. : Le bouton serait plus visible en couleur"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+            <button class="btn btn-ghost btn-sm" id="mk-draft-cancel">Annuler</button>
+            <button class="btn btn-primary btn-sm" id="mk-draft-ok">Ajouter</button>
+          </div>
+        </div>`;
+      const ta = document.getElementById('mk-draft-t'); ta.focus();
+      document.getElementById('mk-draft-cancel').addEventListener('click',()=>{ document.getElementById('mk-new').innerHTML=''; stage.querySelector('.mk-pin.is-draft')?.remove(); });
+      const add = ()=>{
+        const text = ta.value.trim();
+        if(!text){ ta.focus(); return; }
+        const pin = { id:uid(), n, x, y, text, author:me.firstName||me.username, role:me.role, createdAt:new Date().toISOString(), resolved:false };
+        m.pins.push(pin);
+        afterChange(); reopen(pin.id);
+      };
+      document.getElementById('mk-draft-ok').addEventListener('click',add);
+      ta.addEventListener('keydown',ev=>{ if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)){ ev.preventDefault(); add(); } });
+    });
+
+    // Admin : marquer un commentaire comme traité / le rouvrir
+    document.querySelectorAll('.mk-resolve').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();
+      const pin = m.pins.find(x=>x.id===b.dataset.pin); if(!pin) return;
+      pin.resolved = !pin.resolved; afterChange(); reopen(pin.id);
+    }));
+
+    // Client : valider ou demander des modifications
+    document.getElementById('mk-approve')?.addEventListener('click',()=>{
+      confirmAction(`Valider la maquette « ${m.name} » ? Votre équipe pourra passer à la suite.`, ()=>{
+        m.status='approved'; m.decidedAt=new Date().toISOString(); m.decidedBy=me.username;
+        notifyTeam('Maquette validée', `@${me.username} a validé « ${m.name} » (${p.name}).`);
+        logActivity('mockup_approved','Maquette validée : '+m.name);
+        afterChange(); toast('Maquette validée, merci !','success'); reopen();
+      }, {label:'Valider', danger:false});
+    });
+    document.getElementById('mk-changes')?.addEventListener('click',()=>{
+      if(!m.pins.some(x=>!x.resolved && x.role==='client')){ toast('Ajoutez d\'abord au moins un commentaire sur l\'image.','info'); return; }
+      m.status='changes'; m.decidedAt=new Date().toISOString(); m.decidedBy=me.username;
+      notifyTeam('Modifications demandées', `@${me.username} demande des modifications sur « ${m.name} » (${m.pins.filter(x=>!x.resolved).length} commentaire(s)).`);
+      afterChange(); toast('Vos remarques ont été transmises à votre équipe.','success'); reopen();
+    });
+
+    // Admin : supprimer ou remettre à valider
+    document.getElementById('mk-delete')?.addEventListener('click',()=>{
+      confirmAction(`Supprimer la maquette « ${m.name} » et ses commentaires ?`, ()=>{
+        p.mockups = getMockups(p).filter(x=>x.id!==m.id);
+        afterChange(); toast('Maquette supprimée.','info');
+      }, {label:'Supprimer'});
+    });
+    document.getElementById('mk-reopen')?.addEventListener('click',()=>{
+      m.status='pending'; m.decidedAt=null;
+      notifyTeam('Maquette à revoir', `« ${m.name} » a été mise à jour : vous pouvez la consulter à nouveau.`);
+      afterChange(); reopen();
+    });
+  }
+
+  // Onglet client « Maquettes »
+  function renderClientMockups(){
+    const project = getUserProject(me.id);
+    const list = getMockups(project);
+    return `<div class="fade-up">
+      <div class="home-head"><div><p class="home-date">Cliquez sur une maquette pour la commenter et la valider</p><h1>Maquettes</h1></div></div>
+      ${list.length===0 ? `<div class="fl-card cl-empty"><span class="qa-empty-ic">${ic('image','',28)}</span><h2>Aucune maquette pour le moment</h2><p class="fl-meta">Votre équipe vous enverra ici les maquettes à valider.</p></div>` : `
+      <div class="cf-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));">
+        ${list.map(m=>`
+          <button class="cf-tile mk-tile btn-open-mockup" data-pid="${project.id}" data-mid="${m.id}">
+            <div class="cf-thumb" style="height:160px;"><img src="${m.data}" alt="" loading="lazy"></div>
+            <div class="cf-info" style="padding-bottom:12px;">
+              <div class="cf-name">${esc(m.name)}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;">${mockupChip(m.status)}<span class="fl-meta">${m.pins.length} commentaire${m.pins.length>1?'s':''}</span></div>
+            </div>
+          </button>`).join('')}
+      </div>`}
+    </div>`;
+  }
+  function wireMockupButtons(){
+    document.querySelectorAll('.btn-open-mockup').forEach(b=>b.addEventListener('click',()=>openMockupViewer(b.dataset.pid, b.dataset.mid)));
+    document.querySelectorAll('.btn-send-mockup').forEach(b=>b.addEventListener('click',()=>openSendMockupModal(b.dataset.pid)));
+  }
+
   function renderClientDocuments(){
     const project = getUserProject(me.id);
     const docs = project ? getProjectDocs(project.id) : [];
@@ -5460,7 +6197,7 @@ DOCUMENTS
       if(em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ showMsg(msg,'L\'adresse email ne semble pas valide.','error'); return; }
       u.firstName=fn; u.lastName=ln; u.username=un; u.photo=ph||null; u.email=em;
       const applyClientProfileSave=()=>{ me=u; saveDB(); toast('Profil mis à jour !','success'); showMsg(msg,'Profil mis à jour !','success'); document.getElementById('app').innerHTML=renderClientShell(); wireClient(); };
-      if(np){ hashPwdStrong(np).then(h=>{ u.password=h; applyClientProfileSave(); }); } else { applyClientProfileSave(); }
+      if(np){ changeOwnPassword(u, np, msg, applyClientProfileSave); } else { applyClientProfileSave(); }
     });
   }
 
@@ -5546,12 +6283,22 @@ DOCUMENTS
         if(!canCreateRole(me.role,role)){ showMsg(msg,'Vous n\'avez pas la permission de créer ce type de compte.','error'); return; }
         if(db.users.some(u=>u.username.toLowerCase()===un.toLowerCase())){ showMsg(msg,'Ce pseudo est déjà utilisé.','error'); return; }
 
-        hashPwdStrong(pw).then(hashedPw=>{
-          const newUser = { id:uid(), username:un, password:hashedPw, role, firstName:fn, lastName:ln, email:em, phone, sector, photo:null, projectId:null, createdAt:new Date().toISOString() };
+        const finalize = extra=>{
+          const newUser = { id:uid(), username:un, role, firstName:fn, lastName:ln, email:em, phone, sector, photo:null, projectId:null, createdAt:new Date().toISOString(), ...extra };
           db.users.push(newUser);
+          if(newUser.authUid) writeRole(newUser).catch(()=>{});
           logActivity('user_created', 'Compte créé : ' + newUser.username);
           saveDB(); toast('Compte créé !','success'); closeModal(); refreshAdminTab();
-        });
+        };
+        if(fbauth){
+          // Compte de connexion sécurisé créé directement (sans déconnecter l'admin)
+          const saveBtn = document.getElementById('nu-save'); saveBtn.disabled = true;
+          createAuthAccountFor(un, pw)
+            .then(authUid=>finalize({ authUid, authMigrated:true }))
+            .catch(e=>{ saveBtn.disabled = false; showMsg(msg, authErrorText(e), 'error'); });
+        } else {
+          hashPwdStrong(pw).then(hashedPw=>finalize({ password:hashedPw }));
+        }
       });
     });
   }
@@ -5570,7 +6317,7 @@ DOCUMENTS
       </div>
       <div style="margin-bottom:14px;"><label class="label">Prénom</label><input id="eu-fn" class="glass-input" value="${esc(u.firstName||'')}" /></div>
       <div style="margin-bottom:14px;"><label class="label">Nom</label><input id="eu-ln" class="glass-input" value="${esc(u.lastName||'')}" /></div>
-      <div style="margin-bottom:14px;"><label class="label">Pseudo</label><input id="eu-un" class="glass-input" value="${esc(u.username)}" /></div>
+      <div style="margin-bottom:14px;"><label class="label">Pseudo</label><input id="eu-un" class="glass-input" value="${esc(u.username)}" ${isSecured(u)?'readonly aria-describedby="eu-un-hint"':''} />${isSecured(u)?'<div id="eu-un-hint" class="fl-meta" style="margin-top:4px;">Le nom d\'utilisateur d\'un compte sécurisé ne peut pas être changé (il sert d\'identifiant de connexion).</div>':''}</div>
       <div style="margin-bottom:14px;"><label class="label">Email</label><input id="eu-em" class="glass-input" value="${esc(u.email||'')}" /></div>
       <div style="margin-bottom:14px;"><label class="label">Téléphone</label><input id="eu-phone" class="glass-input" placeholder="+33 6 00 00 00 00" value="${esc(u.phone||'')}" /></div>
       <div style="margin-bottom:14px;"><label class="label">Secteur d'activité</label><input id="eu-sector" class="glass-input" placeholder="Ex : Restauration, E-commerce…" value="${esc(u.sector||'')}" /></div>
@@ -5602,7 +6349,9 @@ DOCUMENTS
           ${projects.map(p=>`<option value="${p.id}" ${p.clientId===u.id?'selected':''}>${esc(p.name)}</option>`).join('')}
         </select>
       </div>`:''}
-      <div style="margin-bottom:20px;"><label class="label">Nouveau mot de passe (laisser vide)</label><input id="eu-pw" class="glass-input" spellcheck="false" type="password" /></div>
+      ${isSecured(u)
+        ? `<div class="set-row" style="margin-bottom:20px;"><span class="set-ic">${ic('lock','',18)}</span><div style="flex:1;min-width:0;"><div class="set-row-t">Compte sécurisé</div><div class="fl-meta">Le mot de passe est géré par l'utilisateur depuis son profil. En cas d'oubli : supprimez son compte dans la console Firebase (Authentication), puis donnez-lui un mot de passe provisoire depuis Utilisateurs → Sécurité.</div></div></div>`
+        : `<div style="margin-bottom:20px;"><label class="label">Nouveau mot de passe (laisser vide)</label><input id="eu-pw" class="glass-input" spellcheck="false" type="password" /><div class="fl-meta" style="margin-top:4px;">Remplir ce champ sécurise aussi le compte.</div></div>`}
       <div id="eu-msg" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:8px;font-size:.85rem;"></div>
       <div style="display:flex;gap:10px;">
         <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;justify-content:center;">Annuler</button>
@@ -5616,7 +6365,7 @@ DOCUMENTS
         const em=document.getElementById('eu-em').value.trim();
         const phone=document.getElementById('eu-phone')?.value.trim()||'';
         const sector=document.getElementById('eu-sector')?.value.trim()||'';
-        const pw=document.getElementById('eu-pw').value;
+        const pw=(document.getElementById('eu-pw')||{value:''}).value;
         const url=document.getElementById('eu-url').value.trim();
         const role=isAdmin?document.getElementById('eu-role').value:u.role;
         const projId=isAdmin?document.getElementById('eu-proj').value:'';
@@ -5641,9 +6390,16 @@ DOCUMENTS
               if(proj){ proj.clientId=u.id; if(url) proj.websiteUrl=url; }
             }
           }
+          if(isSecured(u)) writeRole(u).catch(()=>toast('Le rôle n\'a pas pu être mis à jour dans Firebase.','error'));
           saveDB(); toast('Utilisateur mis à jour !','success'); closeModal(); refreshAdminTab();
         };
-        if(pw){ hashPwdStrong(pw).then(h=>{ u.password=h; applyEdit(); }); } else { applyEdit(); }
+        if(pw && fbauth && !isSecured(u)){
+          // Le nouveau mot de passe crée directement le compte de connexion sécurisé
+          createAuthAccountFor(u.username, pw)
+            .then(authUid=>{ markSecured(u, authUid); applyEdit(); })
+            .catch(e=>showMsg(msg, authErrorText(e), 'error'));
+        } else if(pw && !isSecured(u)){ hashPwdStrong(pw).then(h=>{ u.password=h; applyEdit(); }); }
+        else { applyEdit(); }
       });
     });
   }
@@ -5665,6 +6421,12 @@ DOCUMENTS
     ()=>{
       document.getElementById('del-confirm').addEventListener('click',()=>{
         logActivity('user_deleted', 'Compte supprimé : ' + u.username);
+        if(isSecured(u)){
+          // Sans rôle, le compte de connexion n'a plus accès à rien. Il reste à
+          // le supprimer dans la console Firebase (Authentication) pour libérer le nom.
+          removeRole(u.authUid).catch(()=>{});
+          toast('Pensez à supprimer aussi ce compte dans la console Firebase (Authentication).','info',6000);
+        }
         db.users=db.users.filter(x=>x.id!==userId);
         db.projects.forEach(p=>{ if(p.clientId===userId) p.clientId=null; });
         saveDB(); closeModal(); refreshAdminTab();
@@ -6425,7 +7187,7 @@ DOCUMENTS
   // (remplace l'ancien onglet « Demandes »). La fenêtre s'ouvre toute seule
   // dès qu'une nouvelle demande arrive, et reste accessible depuis la cloche.
   function renderPendingSignupsBody(){
-    const pending = db.pendingUsers||[];
+    const pending = pendingList();
     const blocked = db.blockedAccounts||[];
     return `
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
@@ -6470,6 +7232,10 @@ DOCUMENTS
       </details>`:''}`;
   }
 
+  function removePendingRequest(req){
+    if(req.viaAuth){ fbdb.ref('signupRequests/'+req.authUid).remove().catch(()=>{}); delete _signupReqs[req.authUid]; }
+    else db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
+  }
   function _signupSeen(){
     if(!window._signupSeenSet){
       try{ window._signupSeenSet = new Set(JSON.parse(sessionStorage.getItem('flow_signup_seen')||'[]')); }
@@ -6479,7 +7245,7 @@ DOCUMENTS
   }
   function openPendingSignupsModal(){
     const seen = _signupSeen();
-    (db.pendingUsers||[]).forEach(u=>seen.add(u.id));
+    pendingList().forEach(u=>seen.add(u.id));
     try{ sessionStorage.setItem('flow_signup_seen', JSON.stringify([...seen])); }catch(_){}
     showModal(renderPendingSignupsBody(), wirePendingSignups);
   }
@@ -6489,40 +7255,43 @@ DOCUMENTS
     saveDB();
     refreshTopbar();
     if(activeTab==='home') refreshAdminTab();
-    if((db.pendingUsers||[]).length) openPendingSignupsModal(); else closeModal();
+    if(pendingList().length) openPendingSignupsModal(); else closeModal();
   }
   function wirePendingSignups(){
     const box = document.querySelector('.modal-box');
     if(!box) return;
     box.querySelectorAll('.ps-approve').forEach(btn=>btn.addEventListener('click',()=>{
-      const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
+      const req = pendingList().find(u=>u.id===btn.dataset.uid);
       if(!req) return;
       const roleEl = box.querySelector(`.ps-role[data-uid="${req.id}"]`);
       const role = roleEl ? roleEl.value : 'client';
       if(!canCreateRole(me.role, role)){ toast('Vous n\'avez pas la permission d\'attribuer ce rôle.','error'); return; }
-      db.users.push({ id:req.id, username:req.username, firstName:req.firstName||'', lastName:req.lastName||'', email:req.email||'', password:req.password, photo:null, role, internalNote:'' });
-      db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
+      const newU = { id:req.id, username:req.username, firstName:req.firstName||'', lastName:req.lastName||'', email:req.email||'', photo:null, role, internalNote:'', createdAt:new Date().toISOString() };
+      if(req.viaAuth){ newU.authUid = req.authUid; newU.authMigrated = true; } else { newU.password = req.password; }
+      db.users.push(newU);
+      if(newU.authUid) writeRole(newU).catch(()=>toast('Le rôle n\'a pas pu être enregistré dans Firebase : vérifiez les règles de sécurité.','error'));
+      removePendingRequest(req);
       logActivity('user_created','Compte approuvé : @'+req.username+' ('+role+')');
       toast('Compte @'+req.username+' accepté.','success');
       _afterSignupDecision();
     }));
     box.querySelectorAll('.ps-reject').forEach(btn=>btn.addEventListener('click',()=>{
-      const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
+      const req = pendingList().find(u=>u.id===btn.dataset.uid);
       if(!req) return;
       confirmAction('Refuser la demande de @'+req.username+' ?', ()=>{
-        db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
+        removePendingRequest(req);
         logActivity('request_rejected','Demande refusée : @'+req.username);
         toast('Demande refusée.','info');
         _afterSignupDecision();
       }, {label:'Refuser', danger:true});
     }));
     box.querySelectorAll('.ps-block').forEach(btn=>btn.addEventListener('click',()=>{
-      const req = (db.pendingUsers||[]).find(u=>u.id===btn.dataset.uid);
+      const req = pendingList().find(u=>u.id===btn.dataset.uid);
       if(!req) return;
       confirmAction('Bloquer @'+req.username+' ? Aucune future demande ne sera acceptée avec ce pseudo ou cet email.', ()=>{
         if(!db.blockedAccounts) db.blockedAccounts = [];
         db.blockedAccounts.push({ username:req.username, email:req.email||'', blockedAt:new Date().toISOString(), blockedBy:me.username });
-        db.pendingUsers = (db.pendingUsers||[]).filter(u=>u.id!==req.id);
+        removePendingRequest(req);
         logActivity('request_blocked','Compte bloqué : @'+req.username);
         toast('Compte bloqué.','info');
         _afterSignupDecision();
@@ -6540,7 +7309,7 @@ DOCUMENTS
   // (à la connexion, ou en temps réel via la synchronisation Firebase).
   function checkPendingSignupsPopup(){
     if(!me || me.role==='client' || !canReviewRequests()) return;
-    const pending = db.pendingUsers||[];
+    const pending = pendingList();
     const fresh = pending.filter(u=>!_signupSeen().has(u.id));
     if(!fresh.length) return;
     const ov = document.getElementById('modal-overlay');
