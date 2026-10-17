@@ -2104,12 +2104,10 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     return t;
   }
 
-  // Empreintes publiées dans le code source (comptes de démarrage) : un mot de
-  // passe qui y correspond est connu de tous et doit être changé.
-  async function isPublicPassword(pwd){
-    const known = new Set(Object.values(_SEED_PASSWORDS));
-    return known.has(await hashPwd(pwd));
-  }
+  // Firebase exige au moins 6 caractères. Le mot de passe tapé est donc
+  // envoyé avec un préfixe fixe : les mots de passe courts (ex. 5 caractères)
+  // restent utilisables tels quels, sans rien changer pour l'utilisateur.
+  function fbPw(pwd){ return 'flow:' + String(pwd||''); }
 
   // Recharge la base distante (après connexion, quand la lecture est réservée
   // aux comptes authentifiés).
@@ -2134,12 +2132,24 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     logActivity('login', 'Connexion de ' + u.username);
   }
 
-  // Résultat : 'ok' | 'fail' | 'norole' | { newpw: utilisateur }
+  // Connexion Firebase avec le mot de passe préfixé ; en secours, le mot de
+  // passe brut (comptes sécurisés par la version 3.3), aussitôt converti.
+  async function fbSignIn(email, password){
+    try{ return await fbauth.signInWithEmailAndPassword(email, fbPw(password)); }
+    catch(e){
+      if(String(password).length < 6) throw e;
+      const cred = await fbauth.signInWithEmailAndPassword(email, password);
+      cred.user.updatePassword(fbPw(password)).catch(()=>{});
+      return cred;
+    }
+  }
+
+  // Résultat : 'ok' | 'fail' | 'norole'
   async function loginAsync(username, password){
     const uname = String(username||'').trim();
     if(fbauth){
       try{
-        const cred = await fbauth.signInWithEmailAndPassword(authEmailFor(uname), password);
+        const cred = await fbSignIn(authEmailFor(uname), password);
         try{ await loadRemoteDB(); }catch(_){}
         const u = db.users.find(x=>x.authUid===cred.user.uid) || db.users.find(x=>x.username.toLowerCase()===uname.toLowerCase());
         if(!u){ await fbauth.signOut(); return 'norole'; } // demande d'inscription pas encore acceptée
@@ -2155,7 +2165,8 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
         if(code==='auth/too-many-requests') return 'fail';
       }
     }
-    // Compte pas encore sécurisé : vérification avec l'ancienne empreinte
+    // Compte pas encore sécurisé : vérification avec l'ancienne empreinte,
+    // puis création automatique du compte sécurisé avec le même mot de passe
     const u = db.users.find(x=>x.username.toLowerCase()===uname.toLowerCase());
     if(!u || !u.password) return 'fail';
     if(!(await verifyPwd(password, u.password))) return 'fail';
@@ -2163,10 +2174,8 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
       if(!u.password.startsWith('pbkdf2:')){ u.password = await hashPwdStrong(password); saveDB(); }
       finishLogin(u); return 'ok';
     }
-    // Mot de passe trop faible pour Firebase ou connu publiquement : à changer
-    if(validatePasswordStrength(password) || await isPublicPassword(password)) return { newpw:u };
     try{
-      const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(u.username), password);
+      const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(u.username), fbPw(password));
       const su = markSecured(u, cred.user.uid);
       try{ await writeRole(su); }catch(_){ await fbauth.signOut(); return 'norole'; }
       saveDB(); finishLogin(su); return 'ok';
@@ -2176,56 +2185,11 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     }
   }
 
-  // Fenêtre « choisissez un nouveau mot de passe » (première connexion
-  // sécurisée d'un compte au mot de passe trop faible ou public)
-  function openChooseNewPasswordModal(u, onDone){
-    showModal(`
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <span class="file-ic">${ic('lock','',18)}</span>
-        <div><h2 style="margin:0;">Choisissez un nouveau mot de passe</h2><div class="fl-meta">Votre compte passe à la connexion sécurisée</div></div>
-      </div>
-      <p class="fl-meta" style="margin-bottom:14px;color:var(--ink-2);">Votre mot de passe actuel est trop court ou trop connu pour protéger votre compte. Choisissez-en un nouveau : <strong>8 caractères minimum, avec une majuscule, une minuscule et un chiffre</strong>.</p>
-      <div style="margin-bottom:10px;"><label class="label" for="np-1">Nouveau mot de passe</label><input id="np-1" class="glass-input" type="password" autocomplete="new-password" spellcheck="false" /></div>
-      <div style="margin-bottom:12px;"><label class="label" for="np-2">Confirmer</label><input id="np-2" class="glass-input" type="password" autocomplete="new-password" spellcheck="false" /></div>
-      <div id="np-msg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:.85rem;"></div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
-        <button onclick="closeModal()" class="btn btn-ghost">Annuler</button>
-        <button id="np-ok" class="btn btn-primary">${ic('lock','',16)} Sécuriser mon compte</button>
-      </div>`,
-    ()=>{
-      const go = async ()=>{
-        const a = document.getElementById('np-1').value, b = document.getElementById('np-2').value;
-        const msg = document.getElementById('np-msg'), btn = document.getElementById('np-ok');
-        const err = validatePasswordStrength(a);
-        if(err){ showMsg(msg, err, 'error'); return; }
-        if(a!==b){ showMsg(msg, 'Les deux mots de passe ne correspondent pas.', 'error'); return; }
-        if(await isPublicPassword(a)){ showMsg(msg, 'Ce mot de passe est connu publiquement, choisissez-en un autre.', 'error'); return; }
-        btn.disabled = true;
-        try{
-          const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(u.username), a);
-          const su = markSecured(u, cred.user.uid);
-          try{ await writeRole(su); }catch(_){}
-          saveDB(); finishLogin(su);
-          closeModal(); toast('Compte sécurisé. Utilisez ce nouveau mot de passe désormais.', 'success', 5000);
-          onDone && onDone();
-        }catch(e){
-          btn.disabled = false;
-          showMsg(msg, e && e.code==='auth/email-already-in-use'
-            ? 'Ce compte est déjà sécurisé : reconnectez-vous avec son mot de passe, ou demandez à un administrateur de le réinitialiser.'
-            : 'Impossible de joindre le service de connexion. Réessayez dans un instant.', 'error');
-        }
-      };
-      document.getElementById('np-ok').addEventListener('click', go);
-      document.getElementById('np-2').addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
-      document.getElementById('np-1').focus();
-    });
-  }
-
   // Création d'un compte sécurisé pour un autre utilisateur (admin)
   async function createAuthAccountFor(username, password){
     const sec = secondaryAuth();
     if(!sec) throw new Error('auth-unavailable');
-    const cred = await sec.createUserWithEmailAndPassword(authEmailFor(username), password);
+    const cred = await sec.createUserWithEmailAndPassword(authEmailFor(username), fbPw(password));
     const authUid = cred.user.uid;
     try{ await sec.signOut(); }catch(_){}
     return authUid;
@@ -2826,7 +2790,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
           // demande est rangée dans /signupRequests (il n'a pas encore accès
           // aux données Flow tant qu'un admin ne l'a pas accepté).
           try{
-            const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(un), pw);
+            const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(un), fbPw(pw));
             await fbdb.ref('signupRequests/'+cred.user.uid).set({ username:un, firstName:fn, lastName:ln, email:em, requestedAt:new Date().toISOString() });
             await fbauth.signOut();
           }catch(e){
@@ -2935,11 +2899,6 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         render();
         checkVersion();
       };
-      if(result && result.newpw){
-        btn.disabled = false; btn.innerHTML = ic('arrowright','',18);
-        openChooseNewPasswordModal(result.newpw, onSuccess);
-        return;
-      }
       if(result==='norole'){
         document.getElementById('app').innerHTML = renderLogin('Votre compte n\'est pas encore activé : un administrateur doit d\'abord accepter votre inscription.');
         wireLogin(); return;
@@ -4080,7 +4039,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     const steps = [
       ['Activer la connexion par e-mail', 'Console Firebase → Authentication → Méthode de connexion → « Adresse e-mail/Mot de passe » → Activer. (À faire avant tout le reste.)'],
       ['Mettre le site à jour', 'Publiez cette version de Flow sur GitHub Pages.'],
-      ['Faire sécuriser tous les comptes', 'Chacun se connecte une fois (les mots de passe trop courts ou publics devront être changés), ou recevez un mot de passe provisoire depuis ce panneau.'],
+      ['Faire sécuriser tous les comptes', 'Chacun se connecte une fois avec son mot de passe habituel, ou reçoit un mot de passe provisoire depuis ce panneau.'],
       ['Verrouiller la base', 'Quand le compteur affiche tous les comptes sécurisés : Realtime Database → Règles → remplacez tout par les règles ci-dessous → Publier.'],
       ['Partager à nouveau les liens de présentation', 'Après le verrouillage, seuls les projets dont vous recopiez le « Lien de présentation » restent visibles publiquement (le portfolio, lui, est mis à jour automatiquement).'],
     ];
@@ -5029,7 +4988,7 @@ DOCUMENTS
   // Changement de mot de passe : via Firebase pour un compte sécurisé
   function changeOwnPassword(u, np, msg, apply){
     if(isSecured(u) && fbauth && fbauth.currentUser){
-      fbauth.currentUser.updatePassword(np).then(apply).catch(e=>{
+      fbauth.currentUser.updatePassword(fbPw(np)).then(apply).catch(e=>{
         showMsg(msg, e && e.code==='auth/requires-recent-login'
           ? 'Par sécurité, déconnectez-vous puis reconnectez-vous avant de changer de mot de passe.'
           : authErrorText(e), 'error');
