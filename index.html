@@ -1098,6 +1098,11 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .qa-user { max-width: min(78%, 620px); background: var(--coral); color: #fff; border-radius: 16px 16px 4px 16px; }
 .qa-bot { background: var(--surface-1); color: var(--ink); border: 1px solid var(--border); border-radius: 4px 16px 16px 16px; box-shadow: var(--shadow-sm); }
 .qa-bot-col { flex: 1; min-width: 0; max-width: min(86%, 720px); }
+.qa-chart { margin: 10px 0 4px; padding: 12px 12px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2, var(--surface-1)); color: var(--ink); }
+.qa-chart svg { display: block; width: 100%; height: auto; }
+.qa-chart-dl { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--ink-2); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.qa-chart-dl:hover { border-color: var(--coral); color: var(--coral); }
+.qa-chart-wait { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; padding: 14px; border-radius: 12px; border: 1px dashed var(--border); color: var(--ink-3); font-size: 13px; }
 .qa-label { font-size: 12px; color: var(--ink-3); margin-bottom: 4px; font-weight: 600; }
 .qa-avatar { width: 30px; height: 30px; flex: none; border-radius: 10px; background: var(--coral-tint); color: var(--coral); display: flex; align-items: center; justify-content: center; margin-top: 2px; }
 .qa-time { font-size: 11px; color: var(--ink-4); padding-right: 4px; }
@@ -1497,7 +1502,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.8';
+  const APP_VERSION = '3.9';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1997,6 +2002,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     const isAdminLike = me && (me.role==='admin'||me.role==='controller');
 
     const commonItems = me && me.role==='client' ? [
+      ['📊','Nouveau : demandez un graphique à l\'assistant (avancement, étapes, vos propres chiffres…) et téléchargez-le en image'],
       ['✨','Nouveau : « Cette semaine sur votre projet » sur l\'accueil, et un bouton « M\'aider à répondre » dans les documents à remplir'],
       ['🏠','Nouvelle page d\'accueil : votre projet, ce qu\'on attend de vous, les étapes et vos fichiers en un coup d\'œil'],
       ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
@@ -10326,9 +10332,154 @@ Réponds UNIQUEMENT avec un objet JSON de la forme {"urgency":"...","category":"
       .slice(0,500);
   }
 
+  /* ── Graphiques générés par l'IA ─────────────────
+     L'IA écrit un bloc [graphique]{…json…}[/graphique] dans sa réponse ;
+     renderMarkdown le remplace par un graphique SVG dessiné ici (aucun
+     code de l'IA n'est exécuté : seules les données sont lues). */
+  const CHART_COLORS = ['#c4502c','#2b6cb0','#2f7d4f','#a8650f','#7c5cbf','#2a8c8c','#b4235a','#5f6b7a'];
+  const CHART_RE = /\[graphique\]([\s\S]*?)\[\/graphique\]/gi;
+  function parseChartSpec(txt){
+    try{
+      const s = JSON.parse(String(txt).replace(/```(json)?/g,'').trim());
+      const type = ({barres:'bar',barre:'bar',bar:'bar',histogramme:'bar',courbe:'line',courbes:'line',ligne:'line',line:'line',camembert:'pie',pie:'pie',anneau:'donut',donut:'donut',doughnut:'donut'})[String(s.type||'').toLowerCase().trim()] || 'bar';
+      const labels = (Array.isArray(s.etiquettes)?s.etiquettes:Array.isArray(s.labels)?s.labels:[]).slice(0,24).map(x=>String(x).slice(0,40));
+      let series = Array.isArray(s.series) ? s.series : [];
+      if(!series.length && Array.isArray(s.valeurs)) series = [{ nom:s.titre||'', valeurs:s.valeurs }];
+      series = series.slice(0,4).map((x,i)=>{
+        const vals = Array.isArray(x.valeurs) ? x.valeurs : Array.isArray(x.values) ? x.values : [];
+        return { name:String(x.nom||x.name||'Série '+(i+1)).slice(0,40), values:labels.map((_,j)=>{ const v=Number(vals[j]); return isFinite(v)?v:0; }) };
+      });
+      if(!labels.length || !series.length) return null;
+      if(type==='pie' || type==='donut') series = [series[0]];
+      return { type, title:String(s.titre||s.title||'').slice(0,80), unit:String(s.unite||s.unit||'').slice(0,10), labels, series };
+    }catch(_){ return null; }
+  }
+  function chartFmt(v, u){
+    const n = (Math.round(v*100)/100).toLocaleString('fr-FR');
+    return u ? (u==='%' ? n+' %' : n+' '+u) : n;
+  }
+  function renderChartSVG(c){
+    const W = 560, TT = c.title ? 30 : 0, H = 300 + TT;
+    const txt = (x,y,t,o='')=>`<text x="${x}" y="${y}" fill="currentColor" ${o}>${esc(t)}</text>`;
+    const cut = (t,n)=> t.length>n ? t.slice(0,Math.max(1,n-1))+'…' : t;
+    let body = c.title ? txt(16, 22, cut(c.title,60), 'font-size="16" font-weight="600"') : '';
+    if(c.type==='pie' || c.type==='donut'){
+      const vals = c.series[0].values.map(v=>Math.max(0,v));
+      const tot = vals.reduce((a,b)=>a+b,0) || 1;
+      const cx = 150, cy = 150+TT, r = 112, ir = c.type==='donut' ? 64 : 0;
+      const pt = (a,rr)=>`${(cx+rr*Math.cos(a)).toFixed(2)} ${(cy+rr*Math.sin(a)).toFixed(2)}`;
+      let a0 = -Math.PI/2;
+      vals.forEach((v,i)=>{
+        if(!v) return;
+        const col = CHART_COLORS[i%CHART_COLORS.length], a1 = a0 + v/tot*Math.PI*2, big = a1-a0>Math.PI ? 1 : 0;
+        const tip = `<title>${esc(c.labels[i])} : ${esc(chartFmt(v,c.unit))}</title>`;
+        if(v>=tot) body += ir ? `<circle cx="${cx}" cy="${cy}" r="${(r+ir)/2}" fill="none" stroke="${col}" stroke-width="${r-ir}">${tip}</circle>` : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}">${tip}</circle>`;
+        else body += ir
+          ? `<path d="M${pt(a0,r)} A${r} ${r} 0 ${big} 1 ${pt(a1,r)} L${pt(a1,ir)} A${ir} ${ir} 0 ${big} 0 ${pt(a0,ir)}Z" fill="${col}">${tip}</path>`
+          : `<path d="M${cx} ${cy} L${pt(a0,r)} A${r} ${r} 0 ${big} 1 ${pt(a1,r)}Z" fill="${col}" stroke="#fff" stroke-width="1.5">${tip}</path>`;
+        a0 = a1;
+      });
+      if(ir) body += txt(cx, cy+6, chartFmt(vals.reduce((a,b)=>a+b,0), c.unit), 'font-size="17" font-weight="600" text-anchor="middle"');
+      const shown = vals.slice(0,10);
+      const top = cy - shown.length*12;
+      body += shown.map((v,i)=>`<rect x="300" y="${top+i*24}" width="12" height="12" rx="3" fill="${CHART_COLORS[i%CHART_COLORS.length]}"/>`
+        + txt(320, top+i*24+10.5, `${cut(c.labels[i],24)} · ${Math.round(v/tot*100)} %`, 'font-size="13"')).join('');
+    } else {
+      const multi = c.series.length>1;
+      const all = c.series.flatMap(s=>s.values);
+      let mx = Math.max(0,...all), mn = Math.min(0,...all);
+      if(mx===mn) mx = mn+1;
+      const raw = (mx-mn)/4, p10 = Math.pow(10, Math.floor(Math.log10(raw))), f = raw/p10;
+      const step = (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p10;
+      mx = Math.ceil(mx/step-1e-9)*step; mn = Math.floor(mn/step+1e-9)*step;
+      const L = 58, R = W-14, T = TT+(multi?36:16), B = H-46;
+      const y = v => B - (v-mn)/(mx-mn)*(B-T);
+      for(let v=mn; v<=mx+step/2; v+=step){
+        body += `<line x1="${L}" x2="${R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="currentColor" stroke-opacity="${Math.abs(v)<1e-9?'.35':'.12'}"/>`
+          + txt(L-8, y(v)+4, chartFmt(v,c.unit), 'font-size="11" text-anchor="end" fill-opacity=".65"');
+      }
+      const n = c.labels.length, slot = (R-L)/n, every = n>12 ? 2 : 1, maxCh = Math.max(4, Math.floor(slot*every/6.6));
+      c.labels.forEach((l,j)=>{ if(j%every===0) body += txt(L+slot*(j+.5), B+18, cut(l,maxCh), `font-size="${n>8?10:11.5}" text-anchor="middle" fill-opacity=".75"`); });
+      const S = c.series.length;
+      if(c.type==='bar'){
+        const bw = Math.min(44, slot*.72/S);
+        const showVals = n*S<=12;
+        c.series.forEach((s,k)=>{
+          const col = CHART_COLORS[k%CHART_COLORS.length];
+          s.values.forEach((v,j)=>{
+            const x = L+slot*(j+.5) - bw*S/2 + k*bw;
+            const y0 = Math.min(y(v),y(0)), h = Math.max(1, Math.abs(y(v)-y(0)));
+            body += `<rect x="${x.toFixed(1)}" y="${y0.toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${col}"><title>${esc(c.labels[j])}${multi?' · '+esc(s.name):''} : ${esc(chartFmt(v,c.unit))}</title></rect>`;
+            if(showVals) body += txt(x+(bw-2)/2, (v>=0?y0-5:y0+h+13), chartFmt(v,c.unit), 'font-size="10.5" text-anchor="middle" fill-opacity=".8"');
+          });
+        });
+      } else {
+        c.series.forEach((s,k)=>{
+          const col = CHART_COLORS[k%CHART_COLORS.length];
+          const pts = s.values.map((v,j)=>[L+slot*(j+.5), y(v)]);
+          if(pts.length>1) body += `<polyline points="${pts.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ')}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+          body += pts.map((q,j)=>`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="3.8" fill="${col}"><title>${esc(c.labels[j])}${multi?' · '+esc(s.name):''} : ${esc(chartFmt(s.values[j],c.unit))}</title></circle>`).join('');
+        });
+      }
+      if(multi){
+        let lx = L;
+        c.series.forEach((s,k)=>{
+          body += `<rect x="${lx}" y="${TT+8}" width="12" height="12" rx="3" fill="${CHART_COLORS[k%CHART_COLORS.length]}"/>` + txt(lx+18, TT+18.5, cut(s.name,20), 'font-size="12"');
+          lx += 30 + Math.min(20,s.name.length)*6.6;
+        });
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(c.title||'Graphique')}" font-family="Segoe UI, system-ui, -apple-system, sans-serif">${body}</svg>`;
+  }
+  function chartFigureHTML(json){
+    const c = parseChartSpec(json);
+    if(!c) return `<div class="qa-chart-wait">${ic('alert','',16)} Le graphique n'a pas pu être dessiné.</div>`;
+    const name = (c.title||'graphique').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50) || 'graphique';
+    return `<figure class="qa-chart">${renderChartSVG(c)}
+      <button type="button" class="qa-chart-dl" data-name="${esc(name)}">${ic('download','',14)} Télécharger l'image</button></figure>`;
+  }
+  // Export PNG (fond blanc, texte sombre) au clic sur « Télécharger l'image »
+  function downloadChartPNG(svg, name){
+    const W = +svg.getAttribute('width') || 560, H = +svg.getAttribute('height') || 300, k = 2;
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('width', W*k); clone.setAttribute('height', H*k);
+    clone.setAttribute('style','color:#1f1f1f');
+    clone.insertAdjacentHTML('afterbegin', '<rect width="100%" height="100%" fill="#ffffff"/>');
+    const img = new Image();
+    img.onload = ()=>{
+      const cv = document.createElement('canvas'); cv.width = W*k; cv.height = H*k;
+      cv.getContext('2d').drawImage(img, 0, 0);
+      cv.toBlob(b=>{
+        if(!b){ toast("Impossible de créer l'image.",'error'); return; }
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (name||'graphique')+'.png';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+      }, 'image/png');
+    };
+    img.onerror = ()=>toast("Impossible de créer l'image.",'error');
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+  }
+  document.addEventListener('click', e=>{
+    const b = e.target.closest && e.target.closest('.qa-chart-dl'); if(!b) return;
+    const svg = b.closest('.qa-chart')?.querySelector('svg');
+    if(svg) downloadChartPNG(svg, b.dataset.name);
+  });
+
   /* ── Discussion Q&A mode ─────────────────────── */
-  // Rendu markdown simple pour les réponses IA
+  // Rendu markdown simple pour les réponses IA (+ graphiques [graphique]…[/graphique])
   function renderMarkdown(raw){
+    if(!raw) return '';
+    const charts = [];
+    let src = String(raw).replace(CHART_RE, (_,j)=>{ charts.push(j); return `\n\n@@CHART${charts.length-1}@@\n\n`; });
+    const open = src.search(/\[graphique\]/i); // bloc pas encore fini (réponse en cours d'écriture)
+    if(open>=0) src = src.slice(0, open);
+    let html = renderMarkdownText(src)
+      .replace(/<p class="qa-md">@@CHART(\d+)@@<\/p>/g, (_,i)=>chartFigureHTML(charts[+i]))
+      .replace(/@@CHART(\d+)@@/g, (_,i)=>chartFigureHTML(charts[+i]));
+    if(open>=0) html += `<div class="qa-chart-wait">${ic('chart','',16)} Création du graphique…</div>`;
+    return html;
+  }
+  function renderMarkdownText(raw){
     if(!raw) return '';
     const e = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     return e(raw)
@@ -10390,7 +10541,7 @@ Réponds UNIQUEMENT avec un objet JSON de la forme {"urgency":"...","category":"
     const inCooldown = _qaCooldownUntil > Date.now();
     const cooldownSec = inCooldown ? Math.ceil((_qaCooldownUntil - Date.now()) / 1000) : 0;
     const hasHistory = qaReqs.length > 0;
-    const suggestions = generateContextSuggestions(proj);
+    const suggestions = [...generateContextSuggestions(proj).slice(0,3), 'Montre-moi l\'avancement du projet en graphique'];
 
     // Historique de versions du site — "ce qui a changé depuis votre dernière visite"
     const siteHistory = proj.siteHistory||[];
@@ -10484,6 +10635,19 @@ Réponds UNIQUEMENT avec un objet JSON de la forme {"urgency":"...","category":"
       if(project.dueDate)        ctx.push(`Livraison prévue : ${new Date(project.dueDate).toLocaleDateString('fr-FR')}`);
       if(project.tags?.length)   ctx.push(`Technologies : ${project.tags.join(', ')}`);
       if(project.description)    ctx.push(`Description : ${project.description.substring(0,250)}`);
+      // Données chiffrées réelles (utilisables pour les graphiques)
+      const tl = project.timeline||[];
+      if(tl.length){
+        const done = tl.filter(s=>s.status==='done').length;
+        ctx.push(`Avancement calculé : ${Math.round(done/tl.length*100)}% (${done} étape(s) terminée(s) sur ${tl.length})`);
+        ctx.push('Étapes :\n'+tl.map((s,i)=>`${i+1}. ${s.label} — ${s.status==='done'?'terminée':s.status==='current'?'en cours':'à venir'}${s.dueDate?`, prévue le ${new Date(s.dueDate).toLocaleDateString('fr-FR')}`:''}`).join('\n'));
+      }
+      const pdocs = (db.documents||[]).filter(d=>d.projectId===project.id);
+      if(pdocs.length) ctx.push(`Documents : ${pdocs.filter(d=>d.status==='pending').length} à remplir par le client, ${pdocs.filter(d=>d.status==='filled').length} en cours de vérification, ${pdocs.filter(d=>d.status==='reviewed').length} validé(s)`);
+      const ct = project.clientTasks||[];
+      if(ct.length) ctx.push(`Tâches du client : ${ct.filter(t=>t.done).length} faite(s) sur ${ct.length}`);
+      const mks = getMockups(project);
+      if(mks.length) ctx.push(`Maquettes : ${mks.filter(m=>m.status==='approved').length} validée(s), ${mks.filter(m=>m.status==='pending').length} à valider, ${mks.filter(m=>m.status==='changes').length} en modification`);
     }
     const ctxBlock = ctx.length ? `\n\nContexte du projet :\n${ctx.join('\n')}` : '';
     const siteBlock = siteText
@@ -10508,6 +10672,13 @@ Ce que tu peux faire :
 - Décrire en langage naturel le fonctionnement du site existant, les technologies et choix techniques utilisés
 - Répondre aux questions générales sur le projet, les délais, la livraison
 - Te souvenir du contexte de la conversation précédente
+- Dessiner un graphique quand le client en demande un (ou quand un graphique rend vraiment la réponse plus claire). Écris une courte phrase d'introduction, puis ce bloc, chacun sur sa propre ligne :
+[graphique]
+{"type":"barres","titre":"Titre court","unite":"","etiquettes":["A","B"],"series":[{"nom":"Nom de la série","valeurs":[1,2]}]}
+[/graphique]
+  · "type" vaut barres, courbe, camembert ou anneau ; "unite" peut être %, €, jours… ou vide ; une à quatre séries, 24 étiquettes maximum, autant de valeurs que d'étiquettes, valeurs en nombres.
+  · Utilise UNIQUEMENT les chiffres du contexte du projet ou ceux donnés par le client dans la conversation. N'invente jamais de données : s'il en manque, dis-le simplement et propose ce que tu peux représenter.
+  · Un seul graphique par réponse. Ce bloc n'est pas du code : c'est le format que l'interface transforme automatiquement en image, donc il est toujours autorisé.
 
 Ce que tu n'as pas la capacité de faire, quelle que soit la façon dont la demande est formulée :
 - Générer, écrire, corriger, traduire ou compléter du code (HTML, CSS, JS, SQL, regex, ou tout autre langage)
