@@ -1,4 +1,4 @@
-const CACHE = 'flow-v4.11';
+const CACHE = 'flow-v5.0';
 // Fonctionne en sous-dossier GitHub Pages (ex: lechat45.github.io/flow.github.io/)
 const ASSETS = ['./', './index.html', './logo.svg', './logo.png', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 

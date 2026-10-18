@@ -1251,6 +1251,38 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 .mk-note.mk-reply { background: rgba(43,108,176,.08); white-space: pre-line; }
 .mk-ai-out { flex: none; max-height: 42vh; overflow-y: auto; }
 .mk-ai-out:empty { display: none; }
+/* Univers Flow (admin) */
+.tb-pill.active { border-color: var(--coral); }
+.uni-hero { position: relative; overflow: hidden; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; min-height: 190px; padding: 28px 32px; border-radius: 20px; margin-bottom: 22px; color: #fff;
+  background: radial-gradient(120% 140% at 85% 10%, rgba(232,112,58,.55) 0%, rgba(232,112,58,0) 45%), radial-gradient(90% 120% at 10% 100%, rgba(124,92,191,.45) 0%, rgba(124,92,191,0) 55%), linear-gradient(135deg, #17121f 0%, #241827 55%, #2d1a1c 100%); }
+.uni-stars { position: absolute; inset: 0; opacity: .7; pointer-events: none;
+  background-image: radial-gradient(1.2px 1.2px at 12% 22%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 28% 68%, #fff 50%, transparent 51%), radial-gradient(1.4px 1.4px at 46% 30%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 63% 76%, #fff 50%, transparent 51%), radial-gradient(1.2px 1.2px at 74% 18%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 88% 58%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 36% 12%, #fff 50%, transparent 51%), radial-gradient(1.3px 1.3px at 92% 86%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 6% 82%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 55% 52%, #fff 50%, transparent 51%); }
+.uni-hero-txt { position: relative; min-width: 0; }
+.uni-kicker { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: rgba(255,255,255,.72); margin-bottom: 6px; }
+.uni-title { margin: 0; font-family: var(--font-display); font-size: clamp(30px, 5vw, 46px); font-weight: 700; letter-spacing: -.02em; line-height: 1.05; color: #fff; }
+.uni-lead { margin: 6px 0 0; color: rgba(255,255,255,.75); }
+.uni-add { position: relative; flex: none; width: 56px; height: 56px; border-radius: 18px; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--coral); box-shadow: 0 10px 26px rgba(196,80,44,.45); transition: transform .15s, box-shadow .15s; }
+.uni-add:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(196,80,44,.55); }
+.uni-add:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.uni-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+.uni-tile { position: relative; }
+.uni-open { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px 12px 16px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface-1); color: var(--ink); font: inherit; cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
+.uni-open:hover { transform: translateY(-3px); box-shadow: var(--shadow-md, 0 10px 24px rgba(0,0,0,.12)); border-color: var(--coral); }
+.uni-open:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+.uni-logo { position: relative; width: 76px; height: 76px; flex: none; border-radius: 20px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--c, var(--coral)); color: #fff; box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+.uni-logo b { font-size: 24px; font-weight: 700; letter-spacing: .02em; }
+.uni-logo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 14%; background: #fff; }
+.uni-name { font-weight: 600; font-size: 14px; text-align: center; line-height: 1.3; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.uni-more { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 9px; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s, background .15s; }
+.uni-tile:hover .uni-more, .uni-more:focus-visible { opacity: 1; }
+.uni-more:hover { background: rgba(var(--fg-rgb),.07); color: var(--ink); }
+@media (hover: none) { .uni-more { opacity: 1; } }
+.uni-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 48px 20px; border: 1px dashed var(--border); border-radius: 16px; color: var(--ink-3); }
+.uni-empty h2 { margin: 6px 0 0; color: var(--ink); }
+.uni-empty-ic { width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: var(--coral-tint); color: var(--coral); }
+.uni-actions { display: flex; flex-direction: column; gap: 8px; }
+.uni-actions .btn { justify-content: flex-start; }
+@media (max-width: 600px) { .uni-hero { padding: 22px 20px; min-height: 160px; } .uni-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; } }
 /* Outils IA v3.8 */
 .ai-mh { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .ai-sec { margin-top: 14px; }
@@ -1511,7 +1543,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   };
   firebase.initializeApp(firebaseConfig);
   const fbdb = firebase.database();
-  const APP_VERSION = '3.9';
+  const APP_VERSION = '4.0';
   // Thème Windows 11 : clair par défaut. Nouvelle clé (v5) pour que l'ancien
   // réglage « sombre » du design précédent ne masque pas le nouveau design.
   const THEME_KEY = 'flow_theme_v5';
@@ -1581,6 +1613,8 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     bulb:'M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.4.3.5.7.5 1.1v1h6v-1c0-.4.2-.8.5-1.1A6 6 0 0 0 12 3z',
     arrowup:'M12 19V5 M6 11l6-6 6 6',
     mic:'M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0z M5 11a7 7 0 0 0 14 0 M12 18v3',
+    planet:'M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z M17.2 8.3c2.6-1.3 4.4-1.6 4.8-.8.7 1.4-3.3 4.8-8.9 7.6S3.3 18.9 2.6 17.5c-.4-.8.7-2.3 2.9-3.9',
+    apps:'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
     pin:'M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
     pushpin:'M9 3h6 M10 3v6l-4 4h12l-4-4V3 M12 13v8',
     brain:'M9 4a3 3 0 0 0-3 3v.5a3 3 0 0 0-2 3 3 3 0 0 0 1 2.2A3 3 0 0 0 6 18a3 3 0 0 0 3 2 3 3 0 0 0 3-3V7a3 3 0 0 0-3-3z M15 4a3 3 0 0 1 3 3v.5a3 3 0 0 1 2 3 3 3 0 0 1-1 2.2 3 3 0 0 1-1 5.3 3 3 0 0 1-3 2 3 3 0 0 1-3-3',
@@ -1786,49 +1820,52 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     try{ const s=localStorage.getItem('flow_v3'); if(s) return JSON.parse(s); }catch(_){}
     return null;
   }
-  function saveLocalDB(){ localStorage.setItem('flow_v3',JSON.stringify(db)); }
+  function saveLocalDB(){ try{ localStorage.setItem('flow_v3',JSON.stringify(db)); }catch(_){} }
   let _saveTimer = null;
   let _refreshTimer = null;
   let _lastSavedJSON = null;
+  // Rangement des données (v4) :
+  //  'legacy' → ancien format, tout dans /flow (avant migration)
+  //  'staff'  → admin/contrôleur : /flow (équipe) + /cx/* (un espace par client)
+  //  'client' → le client ne lit et n'écrit QUE /cx/{son id} (+ /team, /shared)
+  let _dataMode = 'legacy';
+  let _myCid = null;
+  let _lastSplit = null;
   function saveDB(){
     normalizeDB();
     saveLocalDB();
     if(typeof publishPublicData==='function') publishPublicData();
-    const nextJSON = JSON.stringify(db);
-    if(nextJSON === _lastSavedJSON){ setSyncState('ok'); return; }
+    // Rien n'est envoyé tant que personne n'est connecté : évite qu'une copie
+    // locale ancienne ou partielle écrase les données distantes.
+    if(!me){ setSyncState('ok'); return; }
     setSyncState('syncing');
     clearTimeout(_saveTimer);
     _saveTimer = setTimeout(()=>{
+      if(!me) return;
       if(!navigator.onLine){
         // ── File d'attente hors-ligne ──
-        localStorage.setItem('flow_pending_sync', nextJSON);
+        localStorage.setItem('flow_pending_sync', JSON.stringify({ mode:_dataMode, cid:_myCid, at:Date.now() }));
         setSyncState('error');
         return;
       }
-      const payload = JSON.parse(nextJSON);
-      fbdb.ref('flow').set(payload)
-        .then(()=>{ _lastSavedJSON = nextJSON; setSyncState('ok'); localStorage.removeItem('flow_pending_sync'); })
-        .catch(()=>setSyncState('error'));
+      writeRemote()
+        .then(()=>{ setSyncState('ok'); localStorage.removeItem('flow_pending_sync'); })
+        .catch(e=>{ console.warn('[Flow] Sauvegarde refusée :', e&&e.message); setSyncState('error'); });
     }, 650);
   }
-  // Rejoue toute modification mise en file pendant une période hors-ligne.
-  // Appelée à la fois sur l'événement "online" ET au démarrage de l'app :
-  // si la page a été fermée/rechargée hors-ligne puis rouverte alors que la
-  // connexion était déjà rétablie, l'événement "online" ne se déclenche
-  // jamais — sans cet appel au boot, les changements resteraient bloqués
-  // indéfiniment dans localStorage sans jamais remonter vers Firebase.
+  // Rejoue les modifications faites hors-ligne pendant cette session, dans le
+  // même mode de rangement (jamais une copie d'une autre session ou d'un autre
+  // compte, qui pourrait écraser des données).
   function flushPendingSync(silent){
-    const pending = localStorage.getItem('flow_pending_sync');
-    if(!pending || !navigator.onLine) return;
-    try{
-      const payload = JSON.parse(pending);
-      fbdb.ref('flow').set(payload).then(()=>{
-        _lastSavedJSON = pending;
-        setSyncState('ok');
-        localStorage.removeItem('flow_pending_sync');
-        if(!silent) toast('✅ Données synchronisées après reconnexion.','success');
-      }).catch(()=>setSyncState('error'));
-    }catch(_){}
+    const raw = localStorage.getItem('flow_pending_sync');
+    if(!raw || !navigator.onLine || !me) return;
+    let p = null; try{ p = JSON.parse(raw); }catch(_){}
+    if(!p || !p.mode || p.mode!==_dataMode || (p.cid||null)!==(_myCid||null)){ localStorage.removeItem('flow_pending_sync'); return; }
+    writeRemote().then(()=>{
+      setSyncState('ok');
+      localStorage.removeItem('flow_pending_sync');
+      if(!silent) toast('✅ Données synchronisées après reconnexion.','success');
+    }).catch(()=>setSyncState('error'));
   }
   window.addEventListener('online', ()=>flushPendingSync(false));
 
@@ -1837,7 +1874,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     if(!db || typeof db !== 'object') db = JSON.parse(JSON.stringify(SEED));
     if(!Array.isArray(db.users)) db.users = [];
     // Réinitialisation unique du mot de passe de Sacha (u1) → 1596B
-    if(db._pwdResetU1 !== 2){
+    if(db._pwdResetU1 !== 2 && _dataMode!=='client'){
       const s = db.users.find(u=>u.id==='u1');
       if(s) s.password = 'sha256:7f204f9d4c60db37b8307d493622894f6d20577a0a87ecb6d7b532bb58b9cee3';
       db._pwdResetU1 = 2;
@@ -1873,7 +1910,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     if(!Array.isArray(db.aiRequests)) db.aiRequests = [];
     if(!Array.isArray(db.pubPosts)) db.pubPosts = [];
     if(!Array.isArray(db.messages)) db.messages = [];
-    if(!db.users.find(u=>u.id==='u_teste1')){
+    if(_dataMode!=='client' && !db.users.find(u=>u.id==='u_teste1')){
       db.users.push({ id:'u_teste1', username:'teste1', password:'sha256:15bf532d22345576b4a51b96da4754c039ef3458494066d76828e893d69ebd1e', role:'client',
         firstName:'Teste', lastName:'Un', email:'teste1@flow.app', photo:null,
         projectId:null, createdAt:'2024-01-01', hasDiscussion:true });
@@ -1978,10 +2015,10 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   // recipientId: id d'un user précis, ou 'admins' pour tous les admin/contrôleur
   function pushNotification(recipientId, title, body, type){
     if(!Array.isArray(db.notifications)) db.notifications=[];
-    db.notifications.unshift({
-      id: uid(), recipientId, title, body, type: type||'info',
-      read:false, createdAt:new Date().toISOString()
-    });
+    const n = { id: uid(), recipientId, title, body, type: type||'info', read:false, createdAt:new Date().toISOString() };
+    // Notification créée par un client : elle est rangée dans son propre espace
+    if(me && me.role==='client') n.fromClient = me.id;
+    db.notifications.unshift(n);
     if(db.notifications.length>300) db.notifications=db.notifications.slice(0,300);
   }
   function getNotificationsFor(userId, role){
@@ -2019,6 +2056,8 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
       ['📄','Tous les PDF ont été redessinés : résumé de projet, documents, devis et factures'],
     ];
     const adminItems = [
+      ['🪐','Nouveau : « Univers Flow » (bouton en haut, à côté de Rubis) pour réunir vos autres sites, avec leur logo trouvé automatiquement. Réservé aux administrateurs'],
+      ['🔒','Sécurité : chaque client a maintenant son propre espace. Pensez à republier les règles Firebase (Utilisateurs → Sécurité des comptes → Étapes et règles Firebase)'],
       ['✨','IA : compte rendu d\'appel (⋯ d\'un projet), synthèse et réponse aux commentaires de maquette, dates proposées pour les étapes, et « Plan d\'action » du jour dans les Alertes'],
       ['🔑','Clés Groq : bouton « Tester les clés », nettoyage automatique du copier-coller et bascule vers un autre modèle si Groq retire le modèle habituel'],
       ['📁','Nouvel onglet « Projets » : tous vos projets au même endroit, avec recherche, tri, modification rapide, archivage et suppression'],
@@ -2086,13 +2125,9 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 
   function logActivity(type, description){
     if(!db.activityLog) db.activityLog = [];
-    db.activityLog.unshift({
-      id: uid(),
-      actor: me ? me.username : 'système',
-      type,
-      description,
-      at: new Date().toISOString()
-    });
+    const e = { id: uid(), actor: me ? me.username : 'système', type, description, at: new Date().toISOString() };
+    if(me && me.role==='client') e.byClient = me.id; // rangé dans l'espace du client
+    db.activityLog.unshift(e);
     if(db.activityLog.length > 100) db.activityLog = db.activityLog.slice(0, 100);
   }
 
@@ -2283,22 +2318,257 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   // restent utilisables tels quels, sans rien changer pour l'utilisateur.
   function fbPw(pwd){ return 'flow:' + String(pwd||''); }
 
-  // Recharge la base distante (après connexion, quand la lecture est réservée
-  // aux comptes authentifiés).
-  async function loadRemoteDB(){
-    const snap = await fbdb.ref('flow').once('value');
-    const remote = snap.val();
-    if(remote && remote.users){
-      db = remote;
-      const preStr = JSON.stringify(db);
-      normalizeDB();
-      const postStr = JSON.stringify(db);
-      saveLocalDB();
-      if(postStr !== preStr){ fbdb.ref('flow').set(db).catch(()=>{}); }
-      _lastSavedJSON = postStr;
-      setSyncState('ok');
-      startRealtimeSync();
+  // ═══════════════════════════════════════════════
+  //  RANGEMENT SÉCURISÉ DES DONNÉES (v4)
+  //  /flow           → données de l'équipe (finance, comptes de l'équipe,
+  //                    modèles, réglages, partie interne des projets…)
+  //  /cx/{clientId}  → l'espace d'UN client : son compte, ses projets, ses
+  //                    documents, devis, notifications, échanges avec l'IA
+  //  /cxIndex/{uid}  → relie un compte de connexion Firebase à son espace
+  //  /team, /shared  → noms de l'équipe (sans e-mail) et réglages utiles aux clients
+  //  Les règles Firebase n'autorisent un client qu'à lire son propre espace :
+  //  il ne peut ni voir les autres clients, ni la finance, ni les notes internes.
+  // ═══════════════════════════════════════════════
+  const isStaffRole = r => r==='admin' || r==='controller';
+  const CX_COLS = ['projects','documents','invoices','aiRequests','reviews','notifications','activityLog','messages'];
+  // Champs internes d'un projet : jamais copiés dans l'espace du client
+  const PROJECT_PRIVATE_KEYS = ['budgetEstimated','internalTasks','callReports','toneScores','assignedTo','pinned'];
+  const TEAM_KEYS = ['id','username','firstName','lastName','role','photo','color'];
+  const asArr = v => Array.isArray(v) ? v.filter(x=>x!=null) : (v && typeof v==='object') ? Object.values(v).filter(x=>x!=null) : [];
+
+  function cxHome(col, it, clients, projClient){
+    const c = id => (id && clients.has(id)) ? id : null;
+    if(!it || typeof it!=='object') return null;
+    if(col==='documents')     return c(it.clientId) || c(projClient[it.projectId]);
+    if(col==='notifications') return c(it.recipientId) || c(it.fromClient);
+    if(col==='activityLog')   return c(it.byClient);
+    if(col==='messages')      return c(it.fromId) || c(it.toId);
+    return c(it.clientId); // projects, invoices, aiRequests, reviews
+  }
+
+  function splitDB(d){
+    const clients = new Set(asArr(d.users).filter(u=>u.role==='client').map(u=>u.id));
+    const projClient = {};
+    asArr(d.projects).forEach(p=>{ projClient[p.id] = p.clientId; });
+    const flow = {};
+    Object.keys(d).forEach(k=>{ if(!CX_COLS.includes(k) && k!=='users') flow[k] = d[k]; });
+    flow.users = asArr(d.users).filter(u=>!clients.has(u.id));
+    flow.projectPrivate = {};
+    const cx = {};
+    clients.forEach(id=>{ cx[id] = { user: asArr(d.users).find(u=>u.id===id) }; CX_COLS.forEach(c=>{ cx[id][c] = []; }); });
+    CX_COLS.forEach(col=>{
+      flow[col] = [];
+      asArr(d[col]).forEach(it=>{
+        const h = cxHome(col, it, clients, projClient);
+        if(col==='projects' && h){
+          const pub = { ...it }, priv = {};
+          PROJECT_PRIVATE_KEYS.forEach(k=>{ if(k in pub){ priv[k] = pub[k]; delete pub[k]; } });
+          flow.projectPrivate[it.id] = priv;
+          cx[h].projects.push(pub);
+        } else if(h) cx[h][col].push(it);
+        else flow[col].push(it);
+      });
+    });
+    flow._split = 4;
+    const team = asArr(d.users).filter(u=>isStaffRole(u.role))
+      .map(u=>Object.fromEntries(TEAM_KEYS.filter(k=>u[k]!==undefined && u[k]!==null).map(k=>[k,u[k]])));
+    const shared = { aiConfig: d.aiConfig||{}, companyInfo: d.companyInfo||{} };
+    const cxIndex = {};
+    asArr(d.users).forEach(u=>{ if(clients.has(u.id) && u.authUid) cxIndex[u.authUid] = u.id; });
+    return { flow, cx, team, shared, cxIndex };
+  }
+
+  // Équipe : /flow + tous les espaces clients → une seule base en mémoire
+  function assembleStaff(flow, cxAll){
+    const d = { ...(flow||{}) };
+    const priv = d.projectPrivate || {};
+    delete d.projectPrivate; delete d._split;
+    d.users = asArr(d.users);
+    CX_COLS.forEach(c=>{ d[c] = asArr(d[c]); });
+    Object.entries(cxAll||{}).forEach(([cid, b])=>{
+      if(!b || typeof b!=='object') return;
+      if(b.user){
+        d.users = d.users.filter(x=>x.id!==cid);
+        d.users.push({ ...b.user, id:cid, role:'client' }); // un espace client ne peut pas se donner un autre rôle
+      }
+      CX_COLS.forEach(c=>{
+        asArr(b[c]).forEach(it=>{
+          if(c==='projects') it = { ...it, ...(priv[it.id]||{}) };
+          const i = it.id ? d[c].findIndex(x=>x && x.id===it.id) : -1;
+          if(i>=0) d[c][i] = it; else d[c].push(it);
+        });
+      });
+    });
+    const t = x => new Date(x||0).getTime() || 0;
+    d.notifications.sort((a,b)=>t(b.createdAt)-t(a.createdAt));
+    d.activityLog.sort((a,b)=>t(b.at)-t(a.at));
+    return d;
+  }
+
+  // Client : uniquement son espace + l'équipe (sans e-mail) + les réglages partagés
+  function assembleClient(cid, b, team, shared){
+    const d = { users:[], aiConfig:(shared&&shared.aiConfig)||{}, companyInfo:(shared&&shared.companyInfo)||{} };
+    if(b && b.user) d.users.push({ ...b.user, id:cid, role:'client' });
+    asArr(team).forEach(m=>{ if(m && m.id!==cid) d.users.push({ ...m }); });
+    CX_COLS.forEach(c=>{ d[c] = asArr(b && b[c]); });
+    return d;
+  }
+
+  function splitJSON(parts){
+    const out = { flow:JSON.stringify(parts.flow), team:JSON.stringify(parts.team), shared:JSON.stringify(parts.shared), cxIndex:JSON.stringify(parts.cxIndex), cx:{} };
+    Object.entries(parts.cx).forEach(([k,v])=>{ out.cx[k] = JSON.stringify(v); });
+    return out;
+  }
+
+  // Envoie à Firebase uniquement ce qui a changé, à l'endroit prévu
+  function writeRemote(){
+    if(_dataMode==='legacy'){
+      const j = JSON.stringify(db);
+      if(j===_lastSavedJSON) return Promise.resolve();
+      return fbdb.ref('flow').set(JSON.parse(j)).then(()=>{ _lastSavedJSON = j; });
     }
+    const parts = splitDB(db);
+    if(_dataMode==='client'){
+      const b = parts.cx[_myCid];
+      if(!b) return Promise.resolve();
+      const j = JSON.stringify(b);
+      if(_lastSplit && _lastSplit.cx && _lastSplit.cx[_myCid]===j) return Promise.resolve();
+      return fbdb.ref('cx/'+_myCid).set(JSON.parse(j)).then(()=>{ _lastSplit = { cx:{ [_myCid]:j } }; });
+    }
+    const next = splitJSON(parts);
+    const prev = _lastSplit || { cx:{} };
+    const up = {};
+    ['flow','team','shared','cxIndex'].forEach(k=>{ if(next[k]!==prev[k]) up[k] = parts[k]; });
+    Object.keys(next.cx).forEach(cid=>{ if(next.cx[cid]!==prev.cx[cid]) up['cx/'+cid] = parts.cx[cid]; });
+    Object.keys(prev.cx||{}).forEach(cid=>{ if(!(cid in next.cx)) up['cx/'+cid] = null; });
+    if(!Object.keys(up).length) return Promise.resolve();
+    return fbdb.ref().update(JSON.parse(JSON.stringify(up))).then(()=>{ _lastSplit = next; });
+  }
+
+  // ─── Écoute en temps réel selon le mode ───
+  let _rtRefs = [];
+  let _snap = { flow:null, cx:{}, team:null, shared:null };
+  let _reassembleTimer = null;
+  function listen(path, cb){
+    const r = fbdb.ref(path);
+    r.on('value', s=>cb(s.val()), err=>console.warn('[Flow] Accès refusé à', path, err&&err.code||''));
+    _rtRefs.push(r);
+  }
+  function stopRemoteSync(){
+    _rtRefs.forEach(r=>{ try{ r.off(); }catch(_){} });
+    _rtRefs = [];
+    _rtStarted = false;
+    _dataMode = 'legacy'; _myCid = null; _lastSplit = null;
+    _snap = { flow:null, cx:{}, team:null, shared:null };
+  }
+  function applyRemote(){
+    if(_dataMode==='staff'){
+      if(!_snap.flow) return;
+      db = assembleStaff(_snap.flow, _snap.cx);
+    } else if(_dataMode==='client'){
+      const b = _snap.cx[_myCid];
+      if(!b) return;
+      db = assembleClient(_myCid, b, _snap.team, _snap.shared);
+    } else return;
+    normalizeDB();
+    saveLocalDB();
+    if(_dataMode==='staff') _lastSplit = splitJSON(splitDB(db));
+    else _lastSplit = { cx:{ [_myCid]: JSON.stringify(splitDB(db).cx[_myCid]||null) } };
+    setSyncState('ok');
+    afterRemoteUpdate();
+  }
+  function scheduleApply(){ clearTimeout(_reassembleTimer); _reassembleTimer = setTimeout(applyRemote, 60); }
+  function startModeSync(){
+    if(_rtStarted) return;
+    _rtStarted = true;
+    prevFilledDocIds = new Set(db.documents.filter(d=>d.status==='filled').map(d=>d.id));
+    watchConnection();
+    if(_dataMode==='staff'){
+      listen('flow', v=>{ _snap.flow = v; scheduleApply(); });
+      listen('cx',   v=>{ _snap.cx = v||{}; scheduleApply(); });
+    } else if(_dataMode==='client'){
+      listen('cx/'+_myCid, v=>{ _snap.cx = { [_myCid]: v }; scheduleApply(); });
+      listen('team',   v=>{ _snap.team = v; scheduleApply(); });
+      listen('shared', v=>{ _snap.shared = v; scheduleApply(); });
+    }
+  }
+
+  // Espace d'un client (après connexion)
+  async function loadClientSpace(authUid, scan){
+    let cid = null;
+    try{ cid = (await fbdb.ref('cxIndex/'+authUid).once('value')).val(); }catch(_){}
+    if(!cid && scan){
+      // Base pas encore verrouillée : on retrouve l'espace par le compte de connexion
+      try{
+        const all = (await fbdb.ref('cx').once('value')).val() || {};
+        cid = Object.keys(all).find(k=>all[k] && all[k].user && all[k].user.authUid===authUid) || null;
+        if(cid) fbdb.ref('cxIndex/'+authUid).set(cid).catch(()=>{});
+      }catch(_){}
+    }
+    if(!cid) return false;
+    const get = p => fbdb.ref(p).once('value').then(s=>s.val()).catch(()=>null);
+    const [b, team, shared] = await Promise.all([get('cx/'+cid), get('team'), get('shared')]);
+    if(!b || !b.user) return false;
+    stopRemoteSync();
+    _dataMode = 'client'; _myCid = cid;
+    _snap = { flow:null, cx:{ [cid]:b }, team, shared };
+    applyRemote();
+    startModeSync();
+    return true;
+  }
+
+  // Base de l'équipe ; migre l'ancien format (avec une sauvegarde complète avant)
+  async function loadStaffSpace(remote){
+    stopRemoteSync();
+    _dataMode = 'staff';
+    if(remote && remote._split){
+      const cxAll = (await fbdb.ref('cx').once('value')).val() || {};
+      _snap = { flow:remote, cx:cxAll, team:null, shared:null };
+      applyRemote();
+    } else {
+      if(remote && remote.users){
+        try{ await fbdb.ref('backups/avant-v4-'+Date.now()).set(remote); }
+        catch(e){ _dataMode = 'legacy'; throw e; } // pas de sauvegarde = pas de migration
+        db = remote;
+      }
+      normalizeDB(); saveLocalDB();
+      _lastSplit = null;            // tout sera écrit au nouveau format
+      await writeRemote();
+      console.info('[Flow] Données rangées au nouveau format sécurisé (v4).');
+    }
+    startModeSync();
+  }
+
+  // Recharge la base distante après connexion, selon le rôle du compte
+  async function loadRemoteDB(){
+    const user = fbauth && fbauth.currentUser;
+    let role = null;
+    if(user){ try{ role = (await fbdb.ref('roles/'+user.uid).once('value')).val(); }catch(_){} }
+    if(user && role && !isStaffRole(role)){
+      if(await loadClientSpace(user.uid)) return;
+    }
+    let remote = null;
+    try{ remote = (await fbdb.ref('flow').once('value')).val(); }
+    catch(e){ if(user && !isStaffRole(role)){ await loadClientSpace(user.uid, true); return; } throw e; }
+    if(remote && remote._split){
+      if(isStaffRole(role)) return loadStaffSpace(remote);
+      // Rôle inconnu (compte ancien) : on cherche le compte dans les données
+      const inFlow = user && asArr(remote.users).find(u=>u.authUid===user.uid);
+      if(inFlow && isStaffRole(inFlow.role)) return loadStaffSpace(remote);
+      if(user) await loadClientSpace(user.uid, true);
+      return;
+    }
+    if(!remote || !remote.users) return;
+    const me0 = user && asArr(remote.users).find(u=>u.authUid===user.uid);
+    if(isStaffRole(role) || (me0 && isStaffRole(me0.role))) return loadStaffSpace(remote);
+    // Client alors que l'équipe n'a pas encore migré : ancien fonctionnement
+    stopRemoteSync();
+    db = remote;
+    normalizeDB();
+    saveLocalDB();
+    _lastSavedJSON = JSON.stringify(db);
+    setSyncState('ok');
+    startRealtimeSync();
   }
 
   function finishLogin(u){
@@ -2341,7 +2611,15 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
     }
     // Compte pas encore sécurisé : vérification avec l'ancienne empreinte,
     // puis création automatique du compte sécurisé avec le même mot de passe
-    const u = db.users.find(x=>x.username.toLowerCase()===uname.toLowerCase());
+    let u = db.users.find(x=>x.username.toLowerCase()===uname.toLowerCase());
+    if(!u){
+      // Format sécurisé (v4) : un ancien compte client est rangé dans son espace
+      try{
+        const all = (await fbdb.ref('cx').once('value')).val() || {};
+        const hit = Object.entries(all).find(([,b])=>b && b.user && String(b.user.username||'').toLowerCase()===uname.toLowerCase());
+        if(hit) u = { ...hit[1].user, id:hit[0], role:'client' };
+      }catch(_){}
+    }
     if(!u || !u.password) return 'fail';
     if(!(await verifyPwd(password, u.password))) return 'fail';
     if(!fbauth){
@@ -2352,7 +2630,11 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
       const cred = await fbauth.createUserWithEmailAndPassword(authEmailFor(u.username), fbPw(password));
       const su = markSecured(u, cred.user.uid);
       try{ await writeRole(su); }catch(_){ await fbauth.signOut(); return 'norole'; }
-      saveDB(); finishLogin(su); return 'ok';
+      if(su.role==='client'){ try{ await fbdb.ref('cxIndex/'+cred.user.uid).set(su.id); }catch(_){} }
+      // Charger l'espace du compte avant d'enregistrer quoi que ce soit
+      try{ await loadRemoteDB(); }catch(_){}
+      const live = markSecured(db.users.find(x=>x.id===su.id) || su, cred.user.uid);
+      saveDB(); finishLogin(live); return 'ok';
     }catch(e){
       if(e && e.code==='auth/email-already-in-use') return 'fail'; // déjà sécurisé : c'est l'ancien mot de passe
       finishLogin(u); return 'ok'; // service indisponible : on laisse entrer comme avant
@@ -2428,8 +2710,37 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   const FIREBASE_RULES = `{
   "rules": {
     "flow": {
+      ".read":  "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')",
+      ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')"
+    },
+    "cx": {
+      ".read":  "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')",
+      ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')",
+      "$cid": {
+        ".read":  "auth != null && root.child('cxIndex').child(auth.uid).val() === $cid",
+        ".write": "auth != null && root.child('cxIndex').child(auth.uid).val() === $cid && root.child('roles').child(auth.uid).val() === 'client'"
+      }
+    },
+    "cxIndex": {
+      ".read":  "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')",
+      ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')",
+      "$uid": { ".read": "auth != null && auth.uid === $uid" }
+    },
+    "team": {
       ".read":  "auth != null && root.child('roles').child(auth.uid).exists()",
-      ".write": "auth != null && root.child('roles').child(auth.uid).exists()"
+      ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')"
+    },
+    "shared": {
+      ".read":  "auth != null && root.child('roles').child(auth.uid).exists()",
+      ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')"
+    },
+    "universe": {
+      ".read":  "auth != null && root.child('roles').child(auth.uid).val() === 'admin'",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'admin'"
+    },
+    "backups": {
+      ".read":  "auth != null && root.child('roles').child(auth.uid).val() === 'admin'",
+      ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'admin' || root.child('roles').child(auth.uid).val() === 'controller')"
     },
     "roles": {
       ".read": "auth != null",
@@ -2711,7 +3022,16 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
 
     fbdb.ref('flow').once('value')
       .then(snap=>{
+        // Déjà chargé selon le rôle (session ouverte) : rien à faire ici
+        if(_dataMode!=='legacy') return;
         const remote = snap.val();
+        if(remote && remote._split){
+          // Format sécurisé : avant connexion, on ne garde que la liste des
+          // comptes de l'équipe (pour les anciens comptes) et on n'écrit rien.
+          if(!me){ db = assembleStaff(remote, {}); normalizeDB(); }
+          setSyncState('ok');
+          return;
+        }
         if(remote && remote.users){
           db = remote;
           const preStr = JSON.stringify(db);
@@ -2720,7 +3040,7 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
           saveLocalDB();
           if(postStr !== preStr){ fbdb.ref('flow').set(db).catch(()=>{}); }
           _lastSavedJSON = postStr;
-        } else { fbdb.ref('flow').set(db); }
+        } else if(!remote){ fbdb.ref('flow').set(db); }
         setSyncState('ok');
         startRealtimeSync();
         // Les données distantes ont pu différer du seed/cache local affiché
@@ -2739,12 +3059,11 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
       });
   }
   let _rtStarted = false;
-  function startRealtimeSync(){
-    if(_rtStarted) return;
-    _rtStarted = true;
-    prevFilledDocIds = new Set(db.documents.filter(d=>d.status==='filled').map(d=>d.id));
-
-    // F3 — Offline banner
+  let _connWatched = false;
+  // F3 — Offline banner
+  function watchConnection(){
+    if(_connWatched) return;
+    _connWatched = true;
     fbdb.ref('.info/connected').on('value', snap=>{
       let banner = document.getElementById('offline-banner');
       if(snap.val()===false){
@@ -2759,17 +3078,38 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
         if(banner) banner.remove();
       }
     });
+  }
 
-    fbdb.ref('flow').on('value', snap=>{
+  // Ancien format (avant migration) : tout le monde écoute /flow
+  function startRealtimeSync(){
+    if(_rtStarted) return;
+    _rtStarted = true;
+    prevFilledDocIds = new Set(db.documents.filter(d=>d.status==='filled').map(d=>d.id));
+    watchConnection();
+    const r = fbdb.ref('flow');
+    _rtRefs.push(r);
+    r.on('value', snap=>{
       const remote = snap.val();
       if(!remote || !remote.users) return;
+      if(remote._split){
+        // L'équipe vient de passer au format sécurisé : on recharge proprement
+        if(me && _dataMode==='legacy'){ stopRemoteSync(); loadRemoteDB().then(()=>{ if(me){ me = db.users.find(u=>u.id===me.id)||me; render(); } }).catch(()=>{}); }
+        return;
+      }
+      if(_dataMode!=='legacy') return;
       db = remote;
       const preStr = JSON.stringify(db);
       normalizeDB();
       const postStr = JSON.stringify(db);
       saveLocalDB();
-      if(postStr !== preStr){ fbdb.ref('flow').set(db).catch(()=>{}); }
+      if(me && postStr !== preStr){ fbdb.ref('flow').set(db).catch(()=>{}); }
       _lastSavedJSON = postStr;
+      afterRemoteUpdate();
+    }, ()=>{ _rtStarted = false; }); // accès refusé (base verrouillée) : on réessaiera après connexion
+  }
+
+  // Après chaque mise à jour reçue : alertes « document rempli » et rafraîchissement
+  function afterRemoteUpdate(){
       if(me && me.role !== 'client'){
         const nowFilled = db.documents.filter(d=>d.status==='filled');
         nowFilled.forEach(d=>{
@@ -2784,14 +3124,19 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
         prevFilledDocIds = new Set(nowFilled.map(d=>d.id));
       }
       if(me){ me = db.users.find(u=>u.id===me.id)||me; clearTimeout(_refreshTimer); _refreshTimer=setTimeout(()=>{ if(!me) return; if(me.role==='client') refreshClientTab(); else { refreshAdminTab(); refreshTopbar(); checkPendingSignupsPopup(); } },500); }
-    }, ()=>{ _rtStarted = false; }); // accès refusé (base verrouillée) : on réessaiera après connexion
   }
 
   function logout(){
     clearTimeout(_refreshTimer);
+    clearTimeout(_saveTimer);
     me = null;
     sessionStorage.removeItem('flow_uid');
     stopSignupListener();
+    stopRemoteSync();
+    if(typeof stopUniverse==='function') stopUniverse();
+    // Ne rien laisser de lisible dans ce navigateur après la déconnexion
+    try{ localStorage.removeItem('flow_v3'); localStorage.removeItem('flow_pending_sync'); }catch(_){}
+    db = JSON.parse(JSON.stringify(SEED)); normalizeDB();
     if(fbauth && fbauth.currentUser) fbauth.signOut().catch(()=>{});
     activeTab = 'home';
     // Purger les états globaux qui pourraient fuiter entre sessions
@@ -3281,6 +3626,10 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
         <button class="tb-pill" data-tab="rubis" aria-label="Demander à Rubis">
           ${ic('rubis')}<span class="tb-pill-label">Demander à Rubis</span>
         </button>`:''}
+        ${me.role==='admin'?`
+        <button class="tb-pill tb-pill-uni ${activeTab==='univers'?'active':''}" data-tab="univers" aria-label="Univers Flow">
+          ${ic('planet')}<span class="tb-pill-label">Univers Flow</span>
+        </button>`:''}
         <button class="tb-icon" id="tb-notifs" onclick="openNotificationsModal()" aria-label="Notifications">
           ${ic('bell','',18)}
           ${unread>0?`<span class="tb-badge">${unread>9?'9+':unread}</span>`:''}
@@ -3358,6 +3707,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     if(activeTab==='ai-visual')      return renderAdminAIVisual();
     if(activeTab==='myproject')      return renderAdminMyProject();
     if(activeTab==='profile')        return renderAdminProfile();
+    if(activeTab==='univers')        return me.role==='admin' ? renderUniverse() : renderAdminHome();
     activeTab = 'home';              // onglet supprimé ou inconnu → accueil
     return renderAdminHome();
   }
@@ -3412,6 +3762,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       document.querySelectorAll('.btn-step-comments').forEach(btn=>{ btn.addEventListener('click',()=>openStepCommentsModal(btn.dataset.pid, btn.dataset.sid)); });
     }
     if(activeTab==='profile')       wireAdminProfile();
+    if(activeTab==='univers' && me.role==='admin') wireUniverse();
     renderMobileTabbar('admin');
   }
 
@@ -4231,7 +4582,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       <ol class="sec-steps">${steps.map(([t,d])=>`<li><strong>${t}</strong><span class="fl-meta">${d}</span></li>`).join('')}</ol>
       <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px;"><span class="label" style="margin:0;">Règles à coller</span><button id="rules-copy" class="btn btn-ghost btn-sm">${ic('clipboard','',14)} Copier</button></div>
       <pre class="sec-rules">${esc(FIREBASE_RULES)}</pre>
-      <p class="fl-meta" style="margin-top:8px;">Ces règles réservent les données aux comptes acceptés et empêchent un client de se donner un rôle d'administrateur. Les clés de l'assistant IA restent lisibles par les comptes connectés : pour les cacher complètement, il faudra un petit serveur intermédiaire.</p>`,
+      <p class="fl-meta" style="margin-top:8px;">Avec ces règles, chaque client ne peut lire que son propre espace : ni les autres clients, ni la finance, ni les notes internes de l'équipe. Les sites d'« Univers Flow » ne sont lisibles que par les administrateurs. Seules les clés de l'assistant IA restent lisibles par les comptes connectés : pour les cacher complètement, il faudra un petit serveur intermédiaire.</p>`,
     ()=>{
       document.getElementById('rules-copy').addEventListener('click',()=>{
         navigator.clipboard?.writeText(FIREBASE_RULES).then(()=>toast('Règles copiées.','success')).catch(()=>toast('Copie impossible : sélectionnez le texte à la main.','info'));
@@ -11543,6 +11894,237 @@ Commence directement par le résumé, sans formule d'accueil générique. Utilis
     return full;
   }
 
+
+  // ════════════════════════════════════════════════
+  //  UNIVERS FLOW (administrateurs uniquement)
+  //  Raccourcis vers vos autres sites. Rangés à part dans /universe :
+  //  lisibles seulement par les administrateurs (règles Firebase), jamais
+  //  copiés dans la base principale, le navigateur, Rubis ou la recherche.
+  // ════════════════════════════════════════════════
+  let _uni = null;      // { id: site } une fois chargé
+  let _uniRef = null;
+  let _uniErr = '';
+  function stopUniverse(){
+    if(_uniRef){ try{ _uniRef.off(); }catch(_){} _uniRef = null; }
+    _uni = null; _uniErr = '';
+  }
+  function startUniverse(){
+    if(_uniRef || !me || me.role!=='admin') return;
+    _uniRef = fbdb.ref('universe');
+    _uniRef.on('value', s=>{
+      _uni = s.val() || {}; _uniErr = '';
+      if(activeTab==='univers') refreshUniverseGrid();
+    }, ()=>{
+      _uniRef = null; _uni = {};
+      _uniErr = 'Accès refusé : seuls les comptes administrateurs sécurisés peuvent ouvrir Univers Flow.';
+      if(activeTab==='univers') refreshUniverseGrid();
+    });
+  }
+  const uniHttps = v => { try{ const u = new URL(String(v||'').trim()); return /^https?:$/.test(u.protocol) ? u.href : ''; }catch(_){ return ''; } };
+  const uniNormUrl = v => { v = String(v||'').trim(); if(v && !/^[a-z]+:\/\//i.test(v)) v = 'https://'+v; return uniHttps(v); };
+  const uniList = () => Object.entries(_uni||{}).filter(([,s])=>s && typeof s==='object')
+    .map(([id,s])=>({ id, ...s })).sort((a,b)=>(a.order||0)-(b.order||0));
+  const uniInitials = n => String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+  function uniColor(n){
+    const cols = ['#c4502c','#2b6cb0','#2f7d4f','#7c5cbf','#a8650f','#2a8c8c','#b4235a'];
+    let h = 0; String(n||'').split('').forEach(c=>{ h = (h*31 + c.charCodeAt(0)) >>> 0; });
+    return cols[h % cols.length];
+  }
+  const uniHost = u => { try{ return new URL(u).host.replace(/^www\./,''); }catch(_){ return ''; } };
+
+  function renderUniverse(){
+    return `<div class="fade-up uni">
+      <header class="uni-hero">
+        <div class="uni-stars" aria-hidden="true"></div>
+        <div class="uni-hero-txt">
+          <div class="uni-kicker">${ic('lock','',13)} Espace privé · administrateurs</div>
+          <h1 class="uni-title">Univers Flow</h1>
+          <p class="uni-lead">Tous vos sites, réunis au même endroit.</p>
+        </div>
+        <button id="uni-add" class="uni-add" aria-label="Ajouter un site" title="Ajouter un site">${ic('plus','',24)}</button>
+      </header>
+      <div id="uni-grid">${uniGridHTML()}</div>
+    </div>`;
+  }
+  function uniLogoHTML(s, size){
+    const logo = uniHttps(s.logo);
+    return `<span class="uni-logo" style="--c:${uniColor(s.name)};${size?`width:${size}px;height:${size}px;`:''}">
+      <b>${esc(uniInitials(s.name))}</b>
+      ${logo?`<img src="${esc(logo)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">`:''}
+    </span>`;
+  }
+  function uniGridHTML(){
+    if(_uniErr) return `<div class="uni-empty">${ic('lock','',24)}<p>${esc(_uniErr)}</p></div>`;
+    if(_uni===null) return `<div class="uni-empty">${ic('planet','',24)}<p>Chargement de vos sites…</p></div>`;
+    const list = uniList();
+    if(!list.length) return `<div class="uni-empty">
+      <span class="uni-empty-ic">${ic('planet','',30)}</span>
+      <h2>Votre univers est encore vide</h2>
+      <p class="fl-meta">Cliquez sur le bouton « + » en haut pour ajouter votre premier site.</p>
+    </div>`;
+    return `<div class="uni-grid">${list.map(s=>`
+      <div class="uni-tile">
+        <button class="uni-open" data-id="${esc(s.id)}" title="Ouvrir ${esc(s.name)}">
+          ${uniLogoHTML(s)}
+          <span class="uni-name">${esc(s.name)}</span>
+        </button>
+        <button class="uni-more" data-id="${esc(s.id)}" aria-label="Options pour ${esc(s.name)}" title="Options">${ic('gear','',15)}</button>
+      </div>`).join('')}</div>`;
+  }
+  function refreshUniverseGrid(){
+    const g = document.getElementById('uni-grid');
+    if(g) g.innerHTML = uniGridHTML();
+  }
+  function wireUniverse(){
+    startUniverse();
+    document.getElementById('uni-add')?.addEventListener('click', ()=>openUniverseSiteModal());
+    document.getElementById('uni-grid')?.addEventListener('click', e=>{
+      const more = e.target.closest('.uni-more');
+      if(more){ openUniverseOptions(more.dataset.id); return; }
+      const open = e.target.closest('.uni-open');
+      if(open) openUniverseSite(open.dataset.id);
+    });
+  }
+  function openUniverseSite(id){
+    const s = (_uni||{})[id];
+    const url = s && uniHttps(s.url);
+    if(!url){ toast('Lien du site invalide.','error'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  // Recherche du logo : icônes déclarées par le site (manifeste, apple-touch-icon,
+  // favicon), puis emplacements habituels, puis l'avatar GitHub du dépôt.
+  async function findSiteLogo(siteUrl, repoUrl){
+    let base; try{ base = new URL(siteUrl); }catch(_){ return ''; }
+    // Dossier du site (important pour les sites GitHub Pages en sous-dossier)
+    let dir = base.href.split(/[?#]/)[0];
+    if(!dir.endsWith('/')) dir = /\.[a-z0-9]{2,5}$/i.test(dir.split('/').pop()) ? dir.replace(/[^/]*$/,'') : dir+'/';
+    const cands = [];
+    const add = (href, from) => { try{ const u = new URL(href, from||dir).href; if(/^https?:/.test(u) && !cands.includes(u)) cands.push(u); }catch(_){} };
+    const size = s => Math.max(0, ...String(s||'0').split(/\s+/).map(x=>parseInt(x)||0));
+    const withTimeout = (p, ms) => Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms))]);
+    try{
+      const r = await withTimeout(fetch(dir, { credentials:'omit', referrerPolicy:'no-referrer' }), 6000);
+      if(r.ok){
+        const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+        const manHref = doc.querySelector('link[rel="manifest"]')?.getAttribute('href');
+        if(manHref){
+          try{
+            const mu = new URL(manHref, dir).href;
+            const mj = await withTimeout(fetch(mu, { credentials:'omit' }).then(x=>x.json()), 5000);
+            asArr(mj.icons).filter(i=>i && i.src && String(i.purpose||'any').trim()!=='maskable')
+              .sort((a,b)=>size(b.sizes)-size(a.sizes)).forEach(i=>add(i.src, mu));
+          }catch(_){}
+        }
+        [...doc.querySelectorAll('link[rel~="apple-touch-icon"], link[rel~="apple-touch-icon-precomposed"]')].forEach(l=>add(l.getAttribute('href')));
+        [...doc.querySelectorAll('link[rel~="icon"]')].sort((a,b)=>size(b.getAttribute('sizes'))-size(a.getAttribute('sizes'))).forEach(l=>add(l.getAttribute('href')));
+      }
+    }catch(_){ /* le site n'autorise pas la lecture : on essaie les emplacements habituels */ }
+    ['apple-touch-icon.png','logo.svg','logo.png','icons/icon-512.png','favicon.svg','favicon.png','favicon.ico'].forEach(f=>add(f));
+    add('/favicon.ico', base.origin);
+    const gh = String(repoUrl||'').match(/github\.com\/([A-Za-z0-9-]+)/i);
+    if(gh) add('https://github.com/'+gh[1]+'.png?size=160');
+    const loads = src => new Promise(res=>{
+      const im = new Image(); im.referrerPolicy = 'no-referrer';
+      const t = setTimeout(()=>{ im.src=''; res(false); }, 5000);
+      im.onload = ()=>{ clearTimeout(t); res(im.naturalWidth>=16); };
+      im.onerror = ()=>{ clearTimeout(t); res(false); };
+      im.src = src;
+    });
+    for(const c of cands.slice(0,14)){ if(await loads(c)) return c; }
+    return '';
+  }
+
+  function openUniverseSiteModal(id){
+    const s = id ? (_uni||{})[id] : null;
+    showModal(`
+      <div class="ai-mh">
+        <span class="file-ic">${ic('planet','',18)}</span>
+        <div style="flex:1;min-width:0;"><h2 style="margin:0;">${s?'Modifier le site':'Ajouter un site'}</h2><div class="fl-meta">Univers Flow · visible uniquement par les administrateurs</div></div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <form id="uni-form" novalidate>
+        <label class="label" for="uni-name">Nom du site</label>
+        <input id="uni-name" class="glass-input" maxlength="60" required placeholder="Ex. : Boutique Lumière" value="${esc(s?s.name:'')}" />
+        <label class="label" for="uni-url" style="margin-top:12px;">Lien du site</label>
+        <input id="uni-url" class="glass-input" type="url" inputmode="url" required placeholder="https://monsite.github.io/boutique/" value="${esc(s?s.url:'')}" spellcheck="false" />
+        <label class="label" for="uni-repo" style="margin-top:12px;">Dépôt <span class="fl-meta">(facultatif)</span></label>
+        <input id="uni-repo" class="glass-input" type="url" inputmode="url" placeholder="https://github.com/vous/boutique" value="${esc(s?(s.repo||''):'')}" spellcheck="false" />
+        <div id="uni-msg" class="fl-meta" style="min-height:18px;margin-top:10px;" aria-live="polite"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button type="button" onclick="closeModal()" class="btn btn-ghost">Annuler</button>
+          <button type="submit" id="uni-save" class="btn btn-primary">${ic(s?'check':'plus','',16)} ${s?'Enregistrer':'Ajouter le site'}</button>
+        </div>
+      </form>`,
+    ()=>{
+      document.getElementById('uni-name').focus();
+      let busy = false;
+      document.getElementById('uni-form').addEventListener('submit', async e=>{
+        e.preventDefault();
+        if(busy) return; // un seul envoi à la fois (double clic, touche Entrée)
+        const msg = document.getElementById('uni-msg'), btn = document.getElementById('uni-save');
+        const name = document.getElementById('uni-name').value.trim();
+        const url  = uniNormUrl(document.getElementById('uni-url').value);
+        const rawRepo = document.getElementById('uni-repo').value.trim();
+        const repo = rawRepo ? uniNormUrl(rawRepo) : '';
+        if(!name){ msg.textContent = 'Indiquez le nom du site.'; msg.style.color='var(--danger)'; return; }
+        if(!url){ msg.textContent = 'Le lien du site doit commencer par https://'; msg.style.color='var(--danger)'; return; }
+        if(rawRepo && !repo){ msg.textContent = 'Le lien du dépôt n\'est pas valide.'; msg.style.color='var(--danger)'; return; }
+        busy = true; btn.disabled = true; msg.style.color = '';
+        msg.innerHTML = ic('sparkle','',13)+' Recherche du logo du site…';
+        const keepLogo = s && s.url===url && s.repo===repo && s.logo;
+        const logo = keepLogo ? s.logo : await findSiteLogo(url, repo);
+        const key = id || uid();
+        const data = { name, url, repo, logo: logo||'', order: s ? (s.order||Date.now()) : Date.now(), createdAt: s ? (s.createdAt||new Date().toISOString()) : new Date().toISOString(), updatedAt:new Date().toISOString() };
+        try{
+          await fbdb.ref('universe/'+key).set(data);
+          closeModal();
+          toast(logo ? `« ${name} » ajouté avec son logo.` : `« ${name} » ajouté (logo introuvable : initiales affichées).`, 'success');
+        }catch(err){
+          busy = false; btn.disabled = false;
+          msg.textContent = 'Enregistrement refusé : seul un administrateur connecté peut modifier Univers Flow.'; msg.style.color='var(--danger)';
+        }
+      });
+    });
+  }
+
+  function openUniverseOptions(id){
+    const s = (_uni||{})[id]; if(!s) return;
+    const repo = uniHttps(s.repo);
+    showModal(`
+      <div class="ai-mh">
+        ${uniLogoHTML(s, 44)}
+        <div style="flex:1;min-width:0;"><h2 style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.name)}</h2><div class="fl-meta">${esc(uniHost(s.url))}</div></div>
+        <button onclick="closeModal()" class="btn btn-ghost btn-sm" aria-label="Fermer">${ic('close','',14)}</button>
+      </div>
+      <div class="uni-actions">
+        <button class="btn btn-primary" data-act="open">${ic('globe','',16)} Ouvrir le site</button>
+        ${repo?`<button class="btn btn-ghost" data-act="repo">${ic('link','',16)} Ouvrir le dépôt</button>`:''}
+        <button class="btn btn-ghost" data-act="edit">${ic('edit','',16)} Modifier</button>
+        <button class="btn btn-ghost" data-act="logo">${ic('refresh','',16)} Chercher le logo à nouveau</button>
+        <button class="btn btn-ghost" data-act="del" style="color:var(--danger);">${ic('trash','',16)} Retirer de l'univers</button>
+      </div>`,
+    ()=>{
+      document.querySelectorAll('.uni-actions [data-act]').forEach(b=>b.addEventListener('click', async ()=>{
+        const act = b.dataset.act;
+        if(act==='open'){ closeModal(); openUniverseSite(id); }
+        if(act==='repo'){ closeModal(); window.open(repo, '_blank', 'noopener,noreferrer'); }
+        if(act==='edit'){ closeModal(); setTimeout(()=>openUniverseSiteModal(id), 50); }
+        if(act==='logo'){
+          b.disabled = true; b.innerHTML = ic('sparkle','',16)+' Recherche…';
+          const logo = await findSiteLogo(s.url, s.repo);
+          try{ await fbdb.ref('universe/'+id+'/logo').set(logo||''); }catch(_){}
+          closeModal(); toast(logo ? 'Logo mis à jour.' : 'Aucun logo trouvé : les initiales restent affichées.', logo?'success':'info');
+        }
+        if(act==='del'){
+          closeModal();
+          confirmAction(`Retirer « ${s.name} » d'Univers Flow ? Le site lui-même n'est pas touché.`, ()=>{
+            fbdb.ref('universe/'+id).remove().then(()=>toast('Site retiré.','info')).catch(()=>toast('Suppression refusée.','error'));
+          }, {label:'Retirer'});
+        }
+      }));
+    });
+  }
 
   // ════════════════════════════════════════════════
   //  OUTILS IA (v3.8) : compte rendu d'appel, synthèse des maquettes,
