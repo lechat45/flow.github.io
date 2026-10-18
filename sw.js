@@ -1,6 +1,6 @@
-const CACHE = 'flow-v4.10';
+const CACHE = 'flow-v4.11';
 // Fonctionne en sous-dossier GitHub Pages (ex: lechat45.github.io/flow.github.io/)
-const ASSETS = ['./', './index.html', './logo.png', './manifest.json'];
+const ASSETS = ['./', './index.html', './logo.svg', './logo.png', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(

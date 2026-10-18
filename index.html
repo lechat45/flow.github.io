@@ -75,14 +75,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Flow — Gestion de Projet</title>
   <meta name="description" content="Plateforme de gestion de projet et suivi client" />
-  <meta name="theme-color" content="#d97757" />
+  <meta name="theme-color" content="#c4502c" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Flow" />
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="logo.png" />
-  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -1479,8 +1480,6 @@ select.glass-input option { background: var(--surface-1); color: var(--ink); }
   #sync-dot { display: none; }
 }
 </style>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#d97757">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2868,7 +2867,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
       <div class="lg-center">
         <form class="lg-form fade-up" id="li-form" novalidate onsubmit="return false;">
           <button type="button" class="lg-logo" id="login-logo" onclick="showWhatsNew&&showWhatsNew()" aria-label="Flow — Quoi de neuf ?">
-            <img src="logo.png" alt="Flow">
+            <img src="logo.svg" alt="Flow">
           </button>
           <div>
             <h1 class="lg-title">Bienvenue sur Flow</h1>
@@ -3266,7 +3265,7 @@ if(me.role==='client'){ app.innerHTML = renderClientShell(); wireClient(); }
     return `
     <header id="topbar">
       <button class="tb-brand" onclick="showWhatsNew()" aria-label="Flow — Quoi de neuf ?">
-        <span class="tb-logo"><img src="logo.png" alt=""></span>
+        <span class="tb-logo"><img src="logo.svg" alt=""></span>
         <span class="tb-name">Flow</span>
         <span class="tb-ver">v${APP_VERSION}</span>
         ${hasNew?'<span class="tb-new" title="Nouveautés"></span>':''}
